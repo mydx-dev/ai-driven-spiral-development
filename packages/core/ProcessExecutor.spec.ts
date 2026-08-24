@@ -25,7 +25,7 @@ describe("プロセス実行者", () => {
   it("サイクルとアーティファクトを元に、呼び出し入力を生成できる", () => {
     expectTypeOf<
       Parameters<ProcessExecutor<string, CustomArtifact>["call"]>[0]
-    >().toEqualTypeOf<Cycle>();
+    >().toEqualTypeOf<string>();
 
     expectTypeOf<
       Parameters<ProcessExecutor<string, CustomArtifact>["call"]>[1]
@@ -36,8 +36,8 @@ describe("プロセス実行者", () => {
     const send = vi.fn<(input: string) => Promise<void>>(async () => {});
 
     const createCallInput = vi.fn(
-      (cycle: Cycle, artifacts: CustomArtifact[]) =>
-        `${cycle.id}:${artifacts.map((artifact) => artifact.id).join(",")}`,
+      (cycleId: string, artifacts: CustomArtifact[]) =>
+        `${cycleId}:${artifacts.map((artifact) => artifact.id).join(",")}`,
     );
 
     const executor = new ProcessExecutor<string, CustomArtifact>({
@@ -56,9 +56,9 @@ describe("プロセス実行者", () => {
       new CustomArtifact("artifact-2", "bar"),
     ];
 
-    await executor.call(cycle, artifacts);
+    await executor.call(cycle.id, artifacts);
 
-    expect(createCallInput).toHaveBeenCalledWith(cycle, artifacts);
+    expect(createCallInput).toHaveBeenCalledWith(cycle.id, artifacts);
 
     expect(send).toHaveBeenCalledWith("cycle-1:artifact-1,artifact-2");
   });

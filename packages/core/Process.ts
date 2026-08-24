@@ -1,8 +1,6 @@
-import { Artifact, ArtifactRepository } from "./Artifact";
-import { Cycle } from "./Cycle";
+import type { Artifact, ArtifactRepository } from "./Artifact";
 import type { ProcessExecutor } from "./ProcessExecutor";
-import type { GatePass } from "./ProcessGate";
-import { ProcessGate } from "./ProcessGate";
+import type { GatePass, ProcessGate } from "./ProcessGate";
 
 export class Process<TArtifact extends Artifact, TCallInput> {
   constructor({
@@ -27,14 +25,13 @@ export class Process<TArtifact extends Artifact, TCallInput> {
   private readonly gate: ProcessGate<TArtifact>;
   private readonly executor: ProcessExecutor<TCallInput, TArtifact>;
 
-  async start(cycle: Cycle): Promise<void> {
-    const artifacts = await this.artifactRepository.findByCycle(cycle.id);
-    await this.executor.call(cycle, artifacts);
+  async start(cycleId: string): Promise<void> {
+    const artifacts = await this.artifactRepository.findByCycle(cycleId);
+    await this.executor.call(cycleId, artifacts);
   }
 
-  async structuralComplete(cycle: Cycle): Promise<GatePass> {
-    const artifacts = await this.artifactRepository.findByCycle(cycle.id);
-    const result = this.gate.evaluate(artifacts);
-    return result;
+  async verifyComplete(cycleId: string): Promise<GatePass> {
+    const artifacts = await this.artifactRepository.findByCycle(cycleId);
+    return this.gate.verifyStructuralComplete(artifacts);
   }
 }

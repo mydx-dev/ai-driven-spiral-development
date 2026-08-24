@@ -1,21 +1,22 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
-import type { Artifact, ArtifactRepository } from "./Artifact";
-import type { Cycle, CycleFeedbackResult } from "./Cycle";
-import { Process } from "./Process";
+import {
+  Cycle,
+  type CycleFactory,
+  type CycleFeedbackResult,
+  type CycleRepository,
+} from "./Cycle";
 import { type SemanticCompletionEvent, Spiral } from "./Spiral";
 
-class CustomArtifact implements Artifact {
-  constructor(public readonly id: string) {}
-}
-
-class CustomCycle implements Cycle {
+class CustomCycle extends Cycle {
   constructor(
     public readonly id: string,
     public readonly needNextCycle = false,
-  ) {}
+  ) {
+    super();
+  }
 
-  fallback(processName: string): Cycle {
+  fallback(processName: string): CustomCycle {
     return new CustomCycle(
       `${this.id}-fallback-${processName}`,
       this.needNextCycle,
@@ -30,233 +31,297 @@ class CustomCycle implements Cycle {
 }
 
 const createCycleRepository = (
-  cycle: Cycle | undefined,
-): ArtifactRepository<Cycle> => ({
-  find: vi.fn().mockResolvedValue(cycle),
+  cycle?: CustomCycle,
+): CycleRepository<CustomCycle> => ({
+  create: vi.fn().mockResolvedValue(new CustomCycle("created-cycle")),
 
-  findByCycle: vi.fn().mockResolvedValue(cycle ? [cycle] : []),
+  find: vi.fn().mockResolvedValue(cycle),
 
   save: vi.fn().mockResolvedValue(undefined),
 });
 
-const createProcess = (name: string) => {
-  const process = new Process<CustomArtifact, string>({
-    name,
-
-    artifactRepository: {
-      find: vi.fn().mockResolvedValue(undefined),
-      findByCycle: vi.fn().mockResolvedValue([]),
-      save: vi.fn().mockResolvedValue(undefined),
-    },
-
-    gate: {
-      evaluate: vi.fn().mockReturnValue({
-        passed: true,
-      }),
-    },
-
-    executor: {
-      call: vi.fn().mockResolvedValue(undefined),
-      channel: {
-        send: vi.fn().mockResolvedValue(undefined),
-      },
-      createCallInput: vi.fn().mockReturnValue(""),
-    },
-  });
-
-  return process;
-};
-
 describe("スパイラル", () => {
-  it("意味的完了イベントによって対象プロセスを特定できる", () => {
+  it("意味的完了イベントはサイクルとプロセスを特定する情報を持つ", () => {
     expectTypeOf<SemanticCompletionEvent>().toEqualTypeOf<{
       readonly cycleId: string;
       readonly processName: string;
     }>();
   });
 
-  it("ルートに登録された順序で次のプロセスを開始する", async () => {
+  it("意味的完了イベントを対象サイクルへ渡して進行させる", async () => {
     const cycle = new CustomCycle("cycle-1");
+
     const cycleRepository = createCycleRepository(cycle);
 
-    const firstProcess = createProcess("first");
-
-    const secondProcess = createProcess("second");
-
-    const firstStructuralComplete = vi
-      .spyOn(firstProcess, "structuralComplete")
-      .mockResolvedValue({
+    const proceed = vi.spyOn(cycle, "proceed").mockResolvedValue({
+      completed: false,
+      cycle,
+      gatePass: {
         passed: true,
-      });
-
-    const secondStart = vi.spyOn(secondProcess, "start").mockResolvedValue();
-
-    const spiral = new Spiral(cycleRepository)
-      .route(firstProcess)
-      .route(secondProcess);
-
-    await spiral.next({
-      cycleId: "cycle-1",
-      processName: "first",
+      },
     });
 
-    expect(firstStructuralComplete).toHaveBeenCalledWith(cycle);
+    const cycleFactory: CycleFactory<CustomCycle> = vi.fn();
 
-    expect(secondStart).toHaveBeenCalledWith(cycle);
+    const spiral = new Spiral({
+      cycleRepository,
+      cycleFactory,
+    });
+
+    await spiral.circulate({
+      cycleId: "cycle-1",
+      processName: "process-a",
+    });
+
+    expect(cycleRepository.find).toHaveBeenCalledWith("cycle-1");
+
+    expect(proceed).toHaveBeenCalledWith("process-a");
   });
 
-  it("プロセスが構造的に完了していない場合はそのサイクルをフォールバックする", async () => {
+  it("サイクルの進行結果を保存する", async () => {
     const cycle = new CustomCycle("cycle-1");
-    const cycleRepository = createCycleRepository(cycle);
 
-    const firstProcess = createProcess("first");
-
-    const secondProcess = createProcess("second");
-
-    vi.spyOn(firstProcess, "structuralComplete").mockResolvedValue({
-      passed: false,
-      errors: ["構造的に未完了"],
-    });
-
-    const secondStart = vi.spyOn(secondProcess, "start");
-
-    const spiral = new Spiral(cycleRepository)
-      .route(firstProcess)
-      .route(secondProcess);
-
-    const result = await spiral.next({
-      cycleId: "cycle-1",
-      processName: "first",
-    });
-
-    expect(result).toEqual({
-      passed: false,
-      errors: ["構造的に未完了"],
-    });
-
-    expect(cycleRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: "cycle-1-fallback-first",
-      }),
-    );
-
-    expect(secondStart).not.toHaveBeenCalled();
-  });
-
-  it("最後のプロセスが構造的に完了するとサイクルをフィードバックする", async () => {
-    const cycle = new CustomCycle("cycle-1", false);
+    const fallbackCycle = new CustomCycle("cycle-1-fallback-process-a");
 
     const cycleRepository = createCycleRepository(cycle);
 
-    const process = createProcess("last");
-
-    vi.spyOn(process, "structuralComplete").mockResolvedValue({
-      passed: true,
+    vi.spyOn(cycle, "proceed").mockResolvedValue({
+      completed: false,
+      cycle: fallbackCycle,
+      gatePass: {
+        passed: false,
+        errors: ["構造的に未完了"],
+      },
     });
 
-    const feedback = vi.spyOn(cycle, "feedback");
+    const spiral = new Spiral({
+      cycleRepository,
+      cycleFactory: vi.fn(),
+    });
 
-    const start = vi.spyOn(process, "start");
-
-    const spiral = new Spiral(cycleRepository).route(process);
-
-    await spiral.next({
+    await spiral.circulate({
       cycleId: "cycle-1",
-      processName: "last",
+      processName: "process-a",
     });
 
-    expect(feedback).toHaveBeenCalledOnce();
-
-    expect(start).not.toHaveBeenCalled();
+    expect(cycleRepository.save).toHaveBeenCalledWith(fallbackCycle);
   });
 
-  it("サイクルフィードバックで次のサイクルが必要なら最初のプロセスを開始する", async () => {
+  it("サイクルが未完了ならフィードバックを行わない", async () => {
     const cycle = new CustomCycle("cycle-1", true);
 
     const cycleRepository = createCycleRepository(cycle);
 
-    const firstProcess = createProcess("first");
-
-    const lastProcess = createProcess("last");
-
-    vi.spyOn(lastProcess, "structuralComplete").mockResolvedValue({
-      passed: true,
+    vi.spyOn(cycle, "proceed").mockResolvedValue({
+      completed: false,
+      cycle,
+      gatePass: {
+        passed: true,
+      },
     });
 
-    const firstStart = vi.spyOn(firstProcess, "start").mockResolvedValue();
+    const feedback = vi.spyOn(cycle, "feedback");
 
-    const spiral = new Spiral(cycleRepository)
-      .route(firstProcess)
-      .route(lastProcess);
+    const cycleFactory = vi.fn<CycleFactory<CustomCycle>>();
 
-    await spiral.next({
+    const spiral = new Spiral({
+      cycleRepository,
+      cycleFactory,
+    });
+
+    await spiral.circulate({
       cycleId: "cycle-1",
-      processName: "last",
+      processName: "process-a",
     });
 
-    expect(firstStart).toHaveBeenCalledWith(cycle);
+    expect(feedback).not.toHaveBeenCalled();
+    expect(cycleFactory).not.toHaveBeenCalled();
   });
 
-  it("サイクルが存在しない場合は次へ進まない", async () => {
-    const cycleRepository = createCycleRepository(undefined);
-
-    const spiral = new Spiral(cycleRepository).route(createProcess("process"));
-
-    await expect(
-      spiral.next({
-        cycleId: "unknown",
-        processName: "process",
-      }),
-    ).rejects.toThrow("Cycle not found: unknown");
-  });
-
-  it("意味的完了イベントに対応するプロセスが存在しない場合は次へ進まない", async () => {
-    const cycle = new CustomCycle("cycle-1");
-
-    const spiral = new Spiral(createCycleRepository(cycle)).route(
-      createProcess("process"),
-    );
-
-    await expect(
-      spiral.next({
-        cycleId: "cycle-1",
-        processName: "unknown",
-      }),
-    ).rejects.toThrow("Process not found: unknown");
-  });
-
-  it("サイクルフィードバックで次のサイクルが不要ならスパイラルを終了する", async () => {
+  it("サイクルが完了するとフィードバックを行う", async () => {
     const cycle = new CustomCycle("cycle-1", false);
 
     const cycleRepository = createCycleRepository(cycle);
 
-    const firstProcess = createProcess("first");
-
-    const lastProcess = createProcess("last");
-
-    vi.spyOn(lastProcess, "structuralComplete").mockResolvedValue({
-      passed: true,
+    vi.spyOn(cycle, "proceed").mockResolvedValue({
+      completed: true,
+      cycle,
+      gatePass: {
+        passed: true,
+      },
     });
-
-    const firstStart = vi.spyOn(firstProcess, "start");
 
     const feedback = vi.spyOn(cycle, "feedback");
 
-    const spiral = new Spiral(cycleRepository)
-      .route(firstProcess)
-      .route(lastProcess);
-
-    const result = await spiral.next({
-      cycleId: "cycle-1",
-      processName: "last",
+    const spiral = new Spiral({
+      cycleRepository,
+      cycleFactory: vi.fn(),
     });
 
-    expect(result).toEqual({
-      passed: true,
+    await spiral.circulate({
+      cycleId: "cycle-1",
+      processName: "last-process",
     });
 
     expect(feedback).toHaveBeenCalledOnce();
+  });
 
-    expect(firstStart).not.toHaveBeenCalled();
+  it("フィードバックで次のサイクルが不要ならスパイラルを終了する", async () => {
+    const cycle = new CustomCycle("cycle-1", false);
+
+    const cycleRepository = createCycleRepository(cycle);
+
+    vi.spyOn(cycle, "proceed").mockResolvedValue({
+      completed: true,
+      cycle,
+      gatePass: {
+        passed: true,
+      },
+    });
+
+    const cycleFactory = vi.fn<CycleFactory<CustomCycle>>();
+
+    const spiral = new Spiral({
+      cycleRepository,
+      cycleFactory,
+    });
+
+    await spiral.circulate({
+      cycleId: "cycle-1",
+      processName: "last-process",
+    });
+
+    expect(cycleFactory).not.toHaveBeenCalled();
+
+    expect(cycleRepository.save).toHaveBeenCalledTimes(1);
+  });
+
+  it("フィードバックで次のサイクルが必要なら新しいサイクルを生成する", async () => {
+    const cycle = new CustomCycle("cycle-1", true);
+
+    const newCycle = new CustomCycle("cycle-2");
+
+    const cycleRepository = createCycleRepository(cycle);
+
+    vi.spyOn(cycle, "proceed").mockResolvedValue({
+      completed: true,
+      cycle,
+      gatePass: {
+        passed: true,
+      },
+    });
+
+    vi.spyOn(newCycle, "start").mockResolvedValue();
+
+    const cycleFactory = vi
+      .fn<CycleFactory<CustomCycle>>()
+      .mockResolvedValue(newCycle);
+
+    const spiral = new Spiral({
+      cycleRepository,
+      cycleFactory,
+    });
+
+    await spiral.circulate({
+      cycleId: "cycle-1",
+      processName: "last-process",
+    });
+
+    expect(cycleFactory).toHaveBeenCalledWith(cycle);
+  });
+
+  it("生成した次のサイクルを保存する", async () => {
+    const cycle = new CustomCycle("cycle-1", true);
+
+    const newCycle = new CustomCycle("cycle-2");
+
+    const cycleRepository = createCycleRepository(cycle);
+
+    vi.spyOn(cycle, "proceed").mockResolvedValue({
+      completed: true,
+      cycle,
+      gatePass: {
+        passed: true,
+      },
+    });
+
+    vi.spyOn(newCycle, "start").mockResolvedValue();
+
+    const cycleFactory: CycleFactory<CustomCycle> = vi
+      .fn()
+      .mockResolvedValue(newCycle);
+
+    const spiral = new Spiral({
+      cycleRepository,
+      cycleFactory,
+    });
+
+    await spiral.circulate({
+      cycleId: "cycle-1",
+      processName: "last-process",
+    });
+
+    expect(cycleRepository.save).toHaveBeenNthCalledWith(1, cycle);
+
+    expect(cycleRepository.save).toHaveBeenNthCalledWith(2, newCycle);
+  });
+
+  it("生成した次のサイクルを開始する", async () => {
+    const cycle = new CustomCycle("cycle-1", true);
+
+    const newCycle = new CustomCycle("cycle-2");
+
+    const cycleRepository = createCycleRepository(cycle);
+
+    vi.spyOn(cycle, "proceed").mockResolvedValue({
+      completed: true,
+      cycle,
+      gatePass: {
+        passed: true,
+      },
+    });
+
+    const start = vi.spyOn(newCycle, "start").mockResolvedValue();
+
+    const spiral = new Spiral({
+      cycleRepository,
+      cycleFactory: vi
+        .fn<CycleFactory<CustomCycle>>()
+        .mockResolvedValue(newCycle),
+    });
+
+    await spiral.circulate({
+      cycleId: "cycle-1",
+      processName: "last-process",
+    });
+
+    expect(start).toHaveBeenCalledOnce();
+  });
+
+  it("サイクルが存在しない場合は循環できない", async () => {
+    const spiral = new Spiral({
+      cycleRepository: createCycleRepository(undefined),
+
+      cycleFactory: vi.fn<CycleFactory<CustomCycle>>(),
+    });
+
+    await expect(
+      spiral.circulate({
+        cycleId: "unknown",
+        processName: "process-a",
+      }),
+    ).rejects.toThrow("Cycle not found: unknown");
+  });
+
+  it("利用側で任意のサイクル生成方法を定義できる", () => {
+    expectTypeOf<
+      (previousCycle?: CustomCycle) => Promise<CustomCycle>
+    >().toMatchTypeOf<CycleFactory<CustomCycle>>();
+  });
+
+  it("利用側で任意のサイクルリポジトリを実装できる", () => {
+    expectTypeOf<ReturnType<typeof createCycleRepository>>().toMatchTypeOf<
+      CycleRepository<CustomCycle>
+    >();
   });
 });

@@ -10,5 +10,5 @@ export type GatePass =
     };
 
 export interface ProcessGate<TArtifact extends Artifact> {
-  evaluate(artifacts: TArtifact[]): GatePass;
+  verifyStructuralComplete(artifacts: TArtifact[]): GatePass;
 }

@@ -13,7 +13,7 @@ describe("プロセス", () => {
     };
 
     const gate: ProcessGate<Artifact> = {
-      evaluate: vi.fn(),
+      verifyStructuralComplete: vi.fn(),
     };
 
     const artifactRepository: ArtifactRepository<Artifact> = {

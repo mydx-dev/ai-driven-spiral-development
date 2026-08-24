@@ -12,7 +12,7 @@ class CustomArtifact implements Artifact {
 }
 
 class CustomProcessGate implements ProcessGate<CustomArtifact> {
-  evaluate(artifacts: CustomArtifact[]): GatePass {
+  verifyStructuralComplete(artifacts: CustomArtifact[]): GatePass {
     const passed = artifacts.every((artifact) => artifact.bar > 0);
 
     if (passed) {
@@ -36,12 +36,12 @@ describe("プロセスゲート", () => {
   });
 
   it("プロセスゲートはアーティファクトを評価してゲートの通過可否を返す", () => {
-    expectTypeOf<Parameters<CustomProcessGate["evaluate"]>[0]>().toEqualTypeOf<
-      CustomArtifact[]
-    >();
+    expectTypeOf<
+      Parameters<CustomProcessGate["verifyStructuralComplete"]>[0]
+    >().toEqualTypeOf<CustomArtifact[]>();
 
     expectTypeOf<
-      ReturnType<CustomProcessGate["evaluate"]>
+      ReturnType<CustomProcessGate["verifyStructuralComplete"]>
     >().toEqualTypeOf<GatePass>();
   });
 });

@@ -1,5 +1,4 @@
 import type { Artifact } from "./Artifact";
-import { Cycle } from "./Cycle";
 
 export interface ExecutionChannel<TInput> {
   send(input: TInput): Promise<void>;
@@ -11,7 +10,7 @@ export class ProcessExecutor<TCallInput, TArtifact extends Artifact> {
     createCallInput,
   }: {
     channel: ExecutionChannel<TCallInput>;
-    createCallInput: (cycle: Cycle, artifacts: TArtifact[]) => TCallInput;
+    createCallInput: (cycleId: string, artifacts: TArtifact[]) => TCallInput;
   }) {
     this.channel = channel;
     this.createCallInput = createCallInput;
@@ -20,12 +19,12 @@ export class ProcessExecutor<TCallInput, TArtifact extends Artifact> {
   public readonly channel: ExecutionChannel<TCallInput>;
 
   public readonly createCallInput: (
-    cycle: Cycle,
+    cycleId: string,
     artifacts: TArtifact[],
   ) => TCallInput;
 
-  async call(cycle: Cycle, artifacts: TArtifact[]): Promise<void> {
-    const input = this.createCallInput(cycle, artifacts);
+  async call(cycleId: string, artifacts: TArtifact[]): Promise<void> {
+    const input = this.createCallInput(cycleId, artifacts);
     await this.channel.send(input);
   }
 }
