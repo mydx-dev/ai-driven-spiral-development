@@ -33,8 +33,18 @@ export class Process<TArtifact extends Artifact, TCallMessage> {
 
   async verifyComplete(cycleId: string): Promise<GatePass<TArtifact>> {
     const artifacts = await this.artifactRepository.findByCycle(cycleId);
-    const result = this.gate.verifyStructuralComplete(artifacts);
-    return result;
+    try {
+      return this.gate.verifyStructuralComplete(artifacts);
+    } catch (error) {
+      return {
+        passed: false,
+        artifacts,
+        errors: [
+          "Process Gate verification failed due to an unexpected error.",
+          error instanceof Error ? error.message : String(error),
+        ],
+      };
+    }
   }
 
   async retry(
