@@ -114,6 +114,10 @@ describe("スパイラル", () => {
 
     expect(cycleRepository.save).toHaveBeenCalledWith(fallbackCycle);
     expect(dispatchSpy).toHaveBeenCalledTimes(1);
+    expect(cycleRepository.save).toHaveBeenCalledBefore(dispatchSpy);
+    expect(
+      vi.mocked(cycleRepository.save).mock.invocationCallOrder[0],
+    ).toBeLessThan(dispatchSpy.mock.invocationCallOrder[0]);
   });
 
   it("サイクルが未完了ならフィードバックを行わない", async () => {
