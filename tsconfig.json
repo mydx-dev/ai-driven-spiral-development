@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "packages",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noEmit": false,
+    "types": ["node"]
+  },
+  "exclude": ["dist", "**/*.spec.ts", "**/*.test.ts"],
+  "include": ["packages/**/*"]
+}
