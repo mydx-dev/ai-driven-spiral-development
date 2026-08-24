@@ -1,30 +1,45 @@
 import type { Artifact } from "./Artifact";
 
-export interface ExecutionChannel<TInput> {
-  send(input: TInput): Promise<void>;
+export interface ExecutionChannel<TMessage> {
+  send(message: TMessage): Promise<void>;
 }
 
-export class ProcessExecutor<TCallInput, TArtifact extends Artifact> {
+export class ProcessExecutor<TCallMessage, TArtifact extends Artifact> {
   constructor({
     channel,
-    createCallInput,
+    createStartMessage,
+    createRetryMessage,
   }: {
-    channel: ExecutionChannel<TCallInput>;
-    createCallInput: (cycleId: string, artifacts: TArtifact[]) => TCallInput;
+    channel: ExecutionChannel<TCallMessage>;
+    createStartMessage: (
+      cycleId: string,
+      artifacts: TArtifact[],
+    ) => TCallMessage;
+    createRetryMessage: (
+      cycleId: string,
+      artifacts: TArtifact[],
+      errors: string[],
+    ) => TCallMessage;
   }) {
     this.channel = channel;
-    this.createCallInput = createCallInput;
+    this.createStartMessage = createStartMessage;
+    this.createRetryMessage = createRetryMessage;
   }
 
-  public readonly channel: ExecutionChannel<TCallInput>;
+  public readonly channel: ExecutionChannel<TCallMessage>;
 
-  public readonly createCallInput: (
+  public readonly createStartMessage: (
     cycleId: string,
     artifacts: TArtifact[],
-  ) => TCallInput;
+  ) => TCallMessage;
 
-  async call(cycleId: string, artifacts: TArtifact[]): Promise<void> {
-    const input = this.createCallInput(cycleId, artifacts);
+  public readonly createRetryMessage: (
+    cycleId: string,
+    artifacts: TArtifact[],
+    errors: string[],
+  ) => TCallMessage;
+
+  async call(input: TCallMessage): Promise<void> {
     await this.channel.send(input);
   }
 }

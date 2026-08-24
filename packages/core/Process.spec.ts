@@ -9,7 +9,8 @@ describe("プロセス", () => {
     const executor: ProcessExecutor<unknown, Artifact> = {
       call: vi.fn(),
       channel: {} as any,
-      createCallInput: vi.fn(),
+      createStartMessage: vi.fn(),
+      createRetryMessage: vi.fn(),
     };
 
     const gate: ProcessGate<Artifact> = {

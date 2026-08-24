@@ -1,7 +1,5 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
-
 import type { Artifact } from "./Artifact";
-import type { Cycle } from "./Cycle";
 import { type ExecutionChannel, ProcessExecutor } from "./ProcessExecutor";
 
 class CustomArtifact implements Artifact {
@@ -12,7 +10,7 @@ class CustomArtifact implements Artifact {
 }
 
 class CustomExecutionChannel implements ExecutionChannel<string> {
-  async send(input: string): Promise<void> {}
+  async send(message: string): Promise<void> {}
 }
 
 describe("プロセス実行者", () => {
@@ -22,44 +20,70 @@ describe("プロセス実行者", () => {
     >();
   });
 
-  it("サイクルとアーティファクトを元に、呼び出し入力を生成できる", () => {
+  it("任意のメッセージ型で実行者を呼び出せる", () => {
     expectTypeOf<
       Parameters<ProcessExecutor<string, CustomArtifact>["call"]>[0]
     >().toEqualTypeOf<string>();
 
+    type CustomCallMessage = {
+      text: string;
+    };
+
     expectTypeOf<
-      Parameters<ProcessExecutor<string, CustomArtifact>["call"]>[1]
-    >().toEqualTypeOf<CustomArtifact[]>();
+      Parameters<ProcessExecutor<CustomCallMessage, CustomArtifact>["call"]>[0]
+    >().toEqualTypeOf<CustomCallMessage>();
   });
 
-  it("サイクルとアーティファクトから呼び出し入力を生成してチャンネルへ送信する", async () => {
-    const send = vi.fn<(input: string) => Promise<void>>(async () => {});
-
-    const createCallInput = vi.fn(
+  it("サイクルIDとアーティファクトから開始メッセージを生成する", async () => {
+    const createStartMessage = vi.fn(
       (cycleId: string, artifacts: CustomArtifact[]) =>
         `${cycleId}:${artifacts.map((artifact) => artifact.id).join(",")}`,
     );
 
     const executor = new ProcessExecutor<string, CustomArtifact>({
       channel: {
-        send,
+        send: vi.fn(),
       },
-      createCallInput,
+      createStartMessage,
+      createRetryMessage: vi.fn(),
     });
-
-    const cycle = {
-      id: "cycle-1",
-    } as Cycle;
 
     const artifacts = [
       new CustomArtifact("artifact-1", "foo"),
       new CustomArtifact("artifact-2", "bar"),
     ];
 
-    await executor.call(cycle.id, artifacts);
+    const message = executor.createStartMessage("cycle-1", artifacts);
 
-    expect(createCallInput).toHaveBeenCalledWith(cycle.id, artifacts);
+    expect(message).toEqual("cycle-1:artifact-1,artifact-2");
+  });
 
-    expect(send).toHaveBeenCalledWith("cycle-1:artifact-1,artifact-2");
+  it("サイクルID、アーティファクト、エラーメッセージからリトライメッセージを生成する", async () => {
+    const createRetryMessage = vi.fn(
+      (cycleId: string, artifacts: CustomArtifact[], errors: string[]) =>
+        `${cycleId}:${artifacts.map((artifact) => artifact.id).join(",")}:${errors.join(
+          ",",
+        )}`,
+    );
+
+    const executor = new ProcessExecutor<string, CustomArtifact>({
+      channel: {
+        send: vi.fn(),
+      },
+      createStartMessage: vi.fn(),
+      createRetryMessage,
+    });
+
+    const artifacts = [
+      new CustomArtifact("artifact-1", "foo"),
+      new CustomArtifact("artifact-2", "bar"),
+    ];
+
+    const message = executor.createRetryMessage("cycle-1", artifacts, [
+      "error-1",
+      "error-2",
+    ]);
+
+    expect(message).toEqual("cycle-1:artifact-1,artifact-2:error-1,error-2");
   });
 });

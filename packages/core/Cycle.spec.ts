@@ -16,13 +16,14 @@ class CustomArtifact implements Artifact {
 class CustomCycle extends Cycle {
   constructor(
     public readonly id: string,
-    public readonly state: string,
+    public state: string,
   ) {
     super();
   }
 
-  fallback(processName: string): CustomCycle {
-    return new CustomCycle(this.id, `${this.state}:${processName}`);
+  fallback(processName: string) {
+    this.state = `${this.state}:${processName}`;
+    return this;
   }
 
   feedback(): CycleFeedbackResult {
@@ -67,7 +68,8 @@ const createProcess = (name: string) =>
       channel: {
         send: async () => {},
       },
-      createCallInput: () => "",
+      createStartMessage: () => "",
+      createRetryMessage: () => "",
     },
   });
 
@@ -128,7 +130,7 @@ describe("サイクル", () => {
     expect(secondStart).not.toHaveBeenCalled();
   });
 
-  it("プロセスが構造的に完了していなければフォールバックする", async () => {
+  it("プロセスが構造的に完了していなければサイクルをフォールバックして、現行プロセスをリトライする", async () => {
     class FallbackCycle extends CustomCycle {}
 
     const process = createProcess("process");
@@ -137,10 +139,14 @@ describe("サイクル", () => {
 
     vi.spyOn(process, "verifyComplete").mockResolvedValue({
       passed: false,
+      artifacts: [new CustomArtifact("artifact-1")],
       errors: ["構造的に完了していません"],
     });
 
+    const retrySpy = vi.spyOn(process, "retry").mockResolvedValue();
+
     const cycle = new FallbackCycle("cycle-1", "semantic-completed");
+    const fallbackSpy = vi.spyOn(cycle, "fallback");
 
     const result = await cycle.proceed("process");
 
@@ -152,9 +158,18 @@ describe("サイクル", () => {
       }),
       gatePass: {
         passed: false,
+        artifacts: [new CustomArtifact("artifact-1")],
         errors: ["構造的に完了していません"],
       },
     });
+
+    expect(fallbackSpy).toHaveBeenCalledWith("process");
+
+    expect(retrySpy).toHaveBeenCalledWith(
+      "cycle-1",
+      [new CustomArtifact("artifact-1")],
+      ["構造的に完了していません"],
+    );
   });
 
   it("プロセスが構造的に完了していて次のプロセスがあれば開始する", async () => {

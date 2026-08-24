@@ -28,7 +28,7 @@ export class Spiral<TCycle extends Cycle> {
     }
 
     const result = await cycle.proceed(event.processName);
-    await this.cycleRepository.save(result.cycle as TCycle);
+    await this.cycleRepository.save(result.cycle);
 
     if (!result.completed) {
       return;
@@ -39,7 +39,7 @@ export class Spiral<TCycle extends Cycle> {
       return;
     }
 
-    const newCycle = await this.cycleFactory(result.cycle as TCycle);
+    const newCycle = await this.cycleFactory(result.cycle);
     await this.cycleRepository.save(newCycle);
 
     await newCycle.start();

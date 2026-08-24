@@ -6,29 +6,25 @@ export type CycleFeedbackResult = {
   readonly needNextCycle: boolean;
 };
 
-export type CycleNextResult =
+export type CycleProceedResult<TCycle> =
   | {
       readonly completed: false;
-      readonly cycle: Cycle;
+      readonly cycle: TCycle;
       readonly gatePass: GatePass;
     }
   | {
       readonly completed: true;
-      readonly cycle: Cycle;
+      readonly cycle: TCycle;
       readonly gatePass: GatePass;
     };
 
-type CycleClass = {
-  readonly prototype: Cycle;
-};
-
 export abstract class Cycle implements Artifact {
   protected static readonly routeRegistry = new WeakMap<
-    CycleClass,
+    Function,
     Process<any, any>[]
   >();
 
-  static route<TCycleClass extends CycleClass>(
+  static route<TCycleClass extends Function>(
     this: TCycleClass,
     process: Process<any, any>,
   ): TCycleClass {
@@ -42,9 +38,9 @@ export abstract class Cycle implements Artifact {
   }
 
   abstract readonly id: string;
+
   protected get routes(): readonly Process<any, any>[] {
-    const CycleConstructor = this.constructor as typeof Cycle;
-    return CycleConstructor.routeRegistry.get(CycleConstructor) ?? [];
+    return Cycle.routeRegistry.get(this.constructor) ?? [];
   }
 
   public async start(): Promise<void> {
@@ -57,7 +53,7 @@ export abstract class Cycle implements Artifact {
     await firstProcess.start(this.id);
   }
 
-  public async proceed(processName: string): Promise<CycleNextResult> {
+  public async proceed(processName: string): Promise<CycleProceedResult<this>> {
     const index = this.routes.findIndex(
       (process) => process.name === processName,
     );
@@ -71,9 +67,11 @@ export abstract class Cycle implements Artifact {
     const gatePass = await process.verifyComplete(this.id);
 
     if (!gatePass.passed) {
+      const fallbackCycle = this.fallback(process.name);
+      await process.retry(this.id, gatePass.artifacts, gatePass.errors);
       return {
         completed: false,
-        cycle: this.fallback(process.name),
+        cycle: fallbackCycle,
         gatePass,
       };
     }
@@ -97,7 +95,7 @@ export abstract class Cycle implements Artifact {
     };
   }
 
-  abstract fallback(processName: string): Cycle;
+  abstract fallback(processName: string): this;
   abstract feedback(): CycleFeedbackResult;
 }
 
@@ -108,5 +106,5 @@ export interface CycleRepository<TCycle extends Cycle> {
 }
 
 export type CycleFactory<TCycle extends Cycle> = (
-  previousCycle?: TCycle,
+  previousCycle: TCycle,
 ) => Promise<TCycle>;

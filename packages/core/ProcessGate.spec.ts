@@ -23,6 +23,7 @@ class CustomProcessGate implements ProcessGate<CustomArtifact> {
 
     return {
       passed: false,
+      artifacts: artifacts.filter((artifact) => artifact.bar <= 0),
       errors: ["bar must be greater than 0"],
     };
   }

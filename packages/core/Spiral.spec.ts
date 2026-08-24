@@ -1,4 +1,12 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import type { Artifact } from "./Artifact";
+
+class CustomArtifact implements Artifact {
+  constructor(
+    public readonly id: string,
+    public readonly value: string = "",
+  ) {}
+}
 
 import {
   Cycle,
@@ -16,11 +24,8 @@ class CustomCycle extends Cycle {
     super();
   }
 
-  fallback(processName: string): CustomCycle {
-    return new CustomCycle(
-      `${this.id}-fallback-${processName}`,
-      this.needNextCycle,
-    );
+  fallback(processName: string) {
+    return this;
   }
 
   feedback(): CycleFeedbackResult {
@@ -90,6 +95,7 @@ describe("スパイラル", () => {
       cycle: fallbackCycle,
       gatePass: {
         passed: false,
+        artifacts: [new CustomArtifact("artifact-1")],
         errors: ["構造的に未完了"],
       },
     });
