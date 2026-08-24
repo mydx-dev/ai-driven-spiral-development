@@ -156,9 +156,8 @@ describe("サイクル", () => {
         id: "cycle-1",
         state: "semantic-completed:process",
       }),
-      gatePass: {
+      gateResult: {
         passed: false,
-        artifacts: [new CustomArtifact("artifact-1")],
         errors: ["構造的に完了していません"],
       },
     });
@@ -196,7 +195,7 @@ describe("サイクル", () => {
     expect(result).toEqual({
       completed: false,
       cycle,
-      gatePass: {
+      gateResult: {
         passed: true,
       },
     });
@@ -220,7 +219,7 @@ describe("サイクル", () => {
     expect(result).toEqual({
       completed: true,
       cycle,
-      gatePass: {
+      gateResult: {
         passed: true,
       },
     });

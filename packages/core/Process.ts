@@ -31,7 +31,7 @@ export class Process<TArtifact extends Artifact, TCallMessage> {
     await this.executor.call(message);
   }
 
-  async verifyComplete(cycleId: string): Promise<GatePass> {
+  async verifyComplete(cycleId: string): Promise<GatePass<TArtifact>> {
     const artifacts = await this.artifactRepository.findByCycle(cycleId);
     const result = this.gate.verifyStructuralComplete(artifacts);
     return result;

@@ -1,22 +1,24 @@
 import type { Artifact } from "./Artifact";
 import type { Process } from "./Process";
-import type { GatePass } from "./ProcessGate";
 
 export type CycleFeedbackResult = {
   readonly needNextCycle: boolean;
 };
 
-export type CycleProceedResult<TCycle> =
+export type GateResult =
   | {
-      readonly completed: false;
-      readonly cycle: TCycle;
-      readonly gatePass: GatePass;
+      readonly passed: true;
     }
   | {
-      readonly completed: true;
-      readonly cycle: TCycle;
-      readonly gatePass: GatePass;
+      readonly passed: false;
+      readonly errors: string[];
     };
+
+export type CycleProceedResult<TCycle> = {
+  readonly completed: boolean;
+  readonly cycle: TCycle;
+  readonly gateResult: GateResult;
+};
 
 export abstract class Cycle implements Artifact {
   protected static readonly routeRegistry = new WeakMap<
@@ -72,7 +74,10 @@ export abstract class Cycle implements Artifact {
       return {
         completed: false,
         cycle: fallbackCycle,
-        gatePass,
+        gateResult: {
+          passed: false,
+          errors: gatePass.errors,
+        },
       };
     }
 
@@ -84,14 +89,14 @@ export abstract class Cycle implements Artifact {
       return {
         completed: false,
         cycle: this,
-        gatePass,
+        gateResult: gatePass,
       };
     }
 
     return {
       completed: true,
       cycle: this,
-      gatePass,
+      gateResult: gatePass,
     };
   }
 

@@ -61,7 +61,7 @@ describe("スパイラル", () => {
     const proceed = vi.spyOn(cycle, "proceed").mockResolvedValue({
       completed: false,
       cycle,
-      gatePass: {
+      gateResult: {
         passed: true,
       },
     });
@@ -93,9 +93,8 @@ describe("スパイラル", () => {
     vi.spyOn(cycle, "proceed").mockResolvedValue({
       completed: false,
       cycle: fallbackCycle,
-      gatePass: {
+      gateResult: {
         passed: false,
-        artifacts: [new CustomArtifact("artifact-1")],
         errors: ["構造的に未完了"],
       },
     });
@@ -121,7 +120,7 @@ describe("スパイラル", () => {
     vi.spyOn(cycle, "proceed").mockResolvedValue({
       completed: false,
       cycle,
-      gatePass: {
+      gateResult: {
         passed: true,
       },
     });
@@ -152,7 +151,7 @@ describe("スパイラル", () => {
     vi.spyOn(cycle, "proceed").mockResolvedValue({
       completed: true,
       cycle,
-      gatePass: {
+      gateResult: {
         passed: true,
       },
     });
@@ -180,7 +179,7 @@ describe("スパイラル", () => {
     vi.spyOn(cycle, "proceed").mockResolvedValue({
       completed: true,
       cycle,
-      gatePass: {
+      gateResult: {
         passed: true,
       },
     });
@@ -212,7 +211,7 @@ describe("スパイラル", () => {
     vi.spyOn(cycle, "proceed").mockResolvedValue({
       completed: true,
       cycle,
-      gatePass: {
+      gateResult: {
         passed: true,
       },
     });
@@ -246,7 +245,7 @@ describe("スパイラル", () => {
     vi.spyOn(cycle, "proceed").mockResolvedValue({
       completed: true,
       cycle,
-      gatePass: {
+      gateResult: {
         passed: true,
       },
     });
@@ -282,7 +281,7 @@ describe("スパイラル", () => {
     vi.spyOn(cycle, "proceed").mockResolvedValue({
       completed: true,
       cycle,
-      gatePass: {
+      gateResult: {
         passed: true,
       },
     });
