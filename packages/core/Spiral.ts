@@ -29,6 +29,7 @@ export class Spiral<TCycle extends Cycle> {
 
     const result = await cycle.proceed(event.processName);
     await this.cycleRepository.save(result.cycle);
+    await result.dispatch();
 
     if (!result.completed) {
       return;

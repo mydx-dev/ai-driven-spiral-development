@@ -18,6 +18,7 @@ export type CycleProceedResult<TCycle> = {
   readonly completed: boolean;
   readonly cycle: TCycle;
   readonly gateResult: GateResult;
+  readonly dispatch: () => Promise<void>;
 };
 
 export abstract class Cycle implements Artifact {
@@ -70,7 +71,7 @@ export abstract class Cycle implements Artifact {
 
     if (!gatePass.passed) {
       const fallbackCycle = this.fallback(process.name);
-      await process.retry(this.id, gatePass.artifacts, gatePass.errors);
+
       return {
         completed: false,
         cycle: fallbackCycle,
@@ -78,18 +79,19 @@ export abstract class Cycle implements Artifact {
           passed: false,
           errors: gatePass.errors,
         },
+        dispatch: () =>
+          process.retry(this.id, gatePass.artifacts, gatePass.errors),
       };
     }
 
     const nextProcess = this.routes[index + 1];
 
     if (nextProcess) {
-      await nextProcess.start(this.id);
-
       return {
         completed: false,
         cycle: this,
         gateResult: gatePass,
+        dispatch: () => nextProcess.start(this.id),
       };
     }
 
@@ -97,6 +99,7 @@ export abstract class Cycle implements Artifact {
       completed: true,
       cycle: this,
       gateResult: gatePass,
+      dispatch: async () => {},
     };
   }
 

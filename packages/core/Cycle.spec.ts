@@ -130,7 +130,7 @@ describe("サイクル", () => {
     expect(secondStart).not.toHaveBeenCalled();
   });
 
-  it("プロセスが構造的に完了していなければサイクルをフォールバックして、現行プロセスをリトライする", async () => {
+  it("プロセスが構造的に完了していなければサイクルをフォールバックして、現行プロセスのリトライをディスパッチする", async () => {
     class FallbackCycle extends CustomCycle {}
 
     const process = createProcess("process");
@@ -160,10 +160,13 @@ describe("サイクル", () => {
         passed: false,
         errors: ["構造的に完了していません"],
       },
+      dispatch: expect.any(Function),
     });
 
     expect(fallbackSpy).toHaveBeenCalledWith("process");
+    expect(retrySpy).not.toHaveBeenCalled();
 
+    await result.dispatch();
     expect(retrySpy).toHaveBeenCalledWith(
       "cycle-1",
       [new CustomArtifact("artifact-1")],
@@ -171,7 +174,7 @@ describe("サイクル", () => {
     );
   });
 
-  it("プロセスが構造的に完了していて次のプロセスがあれば開始する", async () => {
+  it("プロセスが構造的に完了していて次のプロセスの開始をディスパッチする", async () => {
     class ProceedCycle extends CustomCycle {}
 
     const firstProcess = createProcess("first");
@@ -190,7 +193,7 @@ describe("サイクル", () => {
 
     const result = await cycle.proceed("first");
 
-    expect(secondStart).toHaveBeenCalledWith("cycle-1");
+    expect(secondStart).not.toHaveBeenCalled();
 
     expect(result).toEqual({
       completed: false,
@@ -198,7 +201,11 @@ describe("サイクル", () => {
       gateResult: {
         passed: true,
       },
+      dispatch: expect.any(Function),
     });
+
+    await result.dispatch();
+    expect(secondStart).toHaveBeenCalledWith("cycle-1");
   });
 
   it("最後のプロセスが構造的に完了するとサイクル完了を返す", async () => {
@@ -222,6 +229,7 @@ describe("サイクル", () => {
       gateResult: {
         passed: true,
       },
+      dispatch: expect.any(Function),
     });
   });
 

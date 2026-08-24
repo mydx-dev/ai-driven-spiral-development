@@ -64,6 +64,7 @@ describe("スパイラル", () => {
       gateResult: {
         passed: true,
       },
+      dispatch: async () => {},
     });
 
     const cycleFactory: CycleFactory<CustomCycle> = vi.fn();
@@ -83,13 +84,14 @@ describe("スパイラル", () => {
     expect(proceed).toHaveBeenCalledWith("process-a");
   });
 
-  it("サイクルの進行結果を保存する", async () => {
+  it("サイクルの進行結果を保存したのち、ディスパッチを実行する", async () => {
     const cycle = new CustomCycle("cycle-1");
 
     const fallbackCycle = new CustomCycle("cycle-1-fallback-process-a");
 
     const cycleRepository = createCycleRepository(cycle);
 
+    const dispatchSpy = vi.fn().mockResolvedValue(undefined);
     vi.spyOn(cycle, "proceed").mockResolvedValue({
       completed: false,
       cycle: fallbackCycle,
@@ -97,6 +99,7 @@ describe("スパイラル", () => {
         passed: false,
         errors: ["構造的に未完了"],
       },
+      dispatch: dispatchSpy,
     });
 
     const spiral = new Spiral({
@@ -110,6 +113,7 @@ describe("スパイラル", () => {
     });
 
     expect(cycleRepository.save).toHaveBeenCalledWith(fallbackCycle);
+    expect(dispatchSpy).toHaveBeenCalledTimes(1);
   });
 
   it("サイクルが未完了ならフィードバックを行わない", async () => {
@@ -123,6 +127,7 @@ describe("スパイラル", () => {
       gateResult: {
         passed: true,
       },
+      dispatch: async () => {},
     });
 
     const feedback = vi.spyOn(cycle, "feedback");
@@ -154,6 +159,7 @@ describe("スパイラル", () => {
       gateResult: {
         passed: true,
       },
+      dispatch: async () => {},
     });
 
     const feedback = vi.spyOn(cycle, "feedback");
@@ -182,6 +188,7 @@ describe("スパイラル", () => {
       gateResult: {
         passed: true,
       },
+      dispatch: vi.fn(),
     });
 
     const cycleFactory = vi.fn<CycleFactory<CustomCycle>>();
@@ -214,6 +221,7 @@ describe("スパイラル", () => {
       gateResult: {
         passed: true,
       },
+      dispatch: vi.fn(),
     });
 
     vi.spyOn(newCycle, "start").mockResolvedValue();
@@ -248,6 +256,7 @@ describe("スパイラル", () => {
       gateResult: {
         passed: true,
       },
+      dispatch: vi.fn(),
     });
 
     vi.spyOn(newCycle, "start").mockResolvedValue();
@@ -284,6 +293,7 @@ describe("スパイラル", () => {
       gateResult: {
         passed: true,
       },
+      dispatch: vi.fn(),
     });
 
     const start = vi.spyOn(newCycle, "start").mockResolvedValue();
