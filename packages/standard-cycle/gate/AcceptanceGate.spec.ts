@@ -21,7 +21,7 @@ describe("AcceptanceGate", () => {
         new DemandAcceptance("demand-1", true, "期待した状態になっている"),
         new DemandAcceptance("demand-2", true, "問題なく利用できる"),
       ],
-      new AcceptanceFeedback(false, false),
+      new AcceptanceFeedback(false, false, false),
     );
 
     expect(gate.verifyStructuralComplete([report])).toEqual({
@@ -34,7 +34,7 @@ describe("AcceptanceGate", () => {
       "acceptance-report-1",
       ["demand-1", "demand-2"],
       [new DemandAcceptance("demand-1", true, "確認済み")],
-      new AcceptanceFeedback(false, false),
+      new AcceptanceFeedback(false, false, false),
     );
 
     const result = gate.verifyStructuralComplete([report]);
@@ -51,13 +51,13 @@ describe("AcceptanceGate", () => {
       "acceptance-report-1",
       ["demand-1"],
       [new DemandAcceptance("demand-1", true, "")],
-      new AcceptanceFeedback(false, false),
+      new AcceptanceFeedback(false, false, false),
     );
 
     expect(gate.verifyStructuralComplete([report]).passed).toBe(false);
   });
 
-  it("Demandが未到達でも評価が完了していればAcceptance Processは構造的完了", () => {
+  it("Demandが未到達の場合は構造的未完了", () => {
     const report = new AcceptanceReport(
       "acceptance-report-1",
       ["demand-1"],
@@ -68,11 +68,12 @@ describe("AcceptanceGate", () => {
           "期待した状態には到達していない",
         ),
       ],
-      new AcceptanceFeedback(false, true),
+      new AcceptanceFeedback(false, true, false),
     );
 
     expect(gate.verifyStructuralComplete([report])).toEqual({
-      passed: true,
+      passed: false,
+      errors: ["demand-1: Demandが期待状態に到達していません"],
     });
   });
 
@@ -81,7 +82,7 @@ describe("AcceptanceGate", () => {
       "acceptance-report-1",
       ["demand-1"],
       [new DemandAcceptance("demand-1", true, "既存要求は満たされた")],
-      new AcceptanceFeedback(true, false),
+      new AcceptanceFeedback(true, false, false),
     );
 
     expect(gate.verifyStructuralComplete([report])).toEqual({

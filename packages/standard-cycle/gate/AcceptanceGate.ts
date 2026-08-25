@@ -29,6 +29,10 @@ export class AcceptanceGate implements ProcessGate<AcceptanceReport> {
         continue;
       }
 
+      if (!result.reached) {
+        errors.push(`${demandId}: Demandが期待状態に到達していません`);
+      }
+
       if (!result.evaluation.trim()) {
         errors.push(`${demandId}: 要求者による評価がありません`);
       }

@@ -33,6 +33,14 @@ export class ReleaseGate implements ProcessGate<Release> {
       errors.push("検収手順がありません");
     }
 
+    if (!release.implementationId.trim()) {
+      errors.push("Release対象のImplementationを特定できません");
+    }
+
+    if (!release.qaReportId.trim()) {
+      errors.push("QA結果を特定できません");
+    }
+
     return errors.length === 0 ? { passed: true } : { passed: false, errors };
   }
 }

@@ -12,6 +12,8 @@ describe("ReleaseGate", () => {
   it("検収可能なReleaseが準備されている場合は構造的完了", () => {
     const release = new Release(
       "release-1",
+      "implementation-1",
+      "qa-report-1",
       "production",
       "受注管理機能を追加",
       "本番環境へデプロイする",
@@ -28,6 +30,8 @@ describe("ReleaseGate", () => {
   it("Release処理が完了していない場合は構造的未完了", () => {
     const release = new Release(
       "release-1",
+      "implementation-1",
+      "qa-report-1",
       "production",
       "Release Notes",
       "Release手順",
@@ -41,19 +45,55 @@ describe("ReleaseGate", () => {
   it.each([
     [
       "Release対象",
-      new Release("release-1", "", "notes", "release", "acceptance", true),
+      new Release(
+        "release-1",
+        "implementation-1",
+        "qa-report-1",
+        "",
+        "notes",
+        "release",
+        "acceptance",
+        true,
+      ),
     ],
     [
       "Release Notes",
-      new Release("release-1", "target", "", "release", "acceptance", true),
+      new Release(
+        "release-1",
+        "implementation-1",
+        "qa-report-1",
+        "target",
+        "",
+        "release",
+        "acceptance",
+        true,
+      ),
     ],
     [
       "Release手順",
-      new Release("release-1", "target", "notes", "", "acceptance", true),
+      new Release(
+        "release-1",
+        "implementation-1",
+        "qa-report-1",
+        "target",
+        "notes",
+        "",
+        "acceptance",
+        true,
+      ),
     ],
     [
       "検収手順",
-      new Release("release-1", "target", "notes", "release", "", true),
+      new Release(
+        "release-1",
+        "implementation-1",
+        "qa-report-1",
+        "target",
+        "notes",
+        "release",
+        "",
+        true,
+      ),
     ],
   ])("%s が不足している場合は構造的未完了", (_, release) => {
     expect(gate.verifyStructuralComplete([release]).passed).toBe(false);
@@ -62,6 +102,8 @@ describe("ReleaseGate", () => {
   it("versionは存在しなくても構造的完了できる", () => {
     const release = new Release(
       "release-1",
+      "implementation-1",
+      "qa-report-1",
       "production",
       "Release Notes",
       "Release手順",

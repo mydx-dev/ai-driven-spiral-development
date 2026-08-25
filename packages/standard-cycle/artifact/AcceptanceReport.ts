@@ -19,6 +19,7 @@ export class DemandAcceptance {
 
 export class AcceptanceFeedback {
   constructor(
+    public readonly currentCycleDefect: boolean,
     public readonly newDemand: boolean,
     public readonly changedDemand: boolean,
   ) {}

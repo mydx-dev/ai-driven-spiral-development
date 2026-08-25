@@ -23,8 +23,24 @@ export class EngineeringGate implements ProcessGate<Implementation> {
         errors.push("Feature識別子がありません");
       }
 
-      if (!feature.completed) {
-        errors.push(`${feature.featureId}: Featureの実装が完了していません`);
+      if (!feature.testPassed) {
+        errors.push(`${feature.featureId}: テストが成功していません`);
+      }
+
+      if (!feature.staticAnalysisPassed) {
+        errors.push(`${feature.featureId}: 静的解析が成功していません`);
+      }
+
+      if (!feature.buildPassed) {
+        errors.push(`${feature.featureId}: Buildが成功していません`);
+      }
+
+      if (!feature.reviewResolved) {
+        errors.push(`${feature.featureId}: Reviewが完了していません`);
+      }
+
+      if (!feature.integrated) {
+        errors.push(`${feature.featureId}: 実装成果物が統合されていません`);
       }
     }
 
