@@ -15,11 +15,7 @@ export class ProcessExecutor<TCallMessage, TArtifact extends Artifact> {
       cycleId: string,
       artifacts: TArtifact[],
     ) => TCallMessage;
-    createRetryMessage: (
-      cycleId: string,
-      artifacts: TArtifact[],
-      errors: string[],
-    ) => TCallMessage;
+    createRetryMessage: (cycleId: string, errors: string[]) => TCallMessage;
   }) {
     this.channel = channel;
     this.createStartMessage = createStartMessage;
@@ -35,7 +31,6 @@ export class ProcessExecutor<TCallMessage, TArtifact extends Artifact> {
 
   public readonly createRetryMessage: (
     cycleId: string,
-    artifacts: TArtifact[],
     errors: string[],
   ) => TCallMessage;
 

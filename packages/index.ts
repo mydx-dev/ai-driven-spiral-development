@@ -10,3 +10,4 @@ export * from "./core/Process";
 export * from "./core/Spiral";
 
 export * from "./core/ProcessExecutor";
+export * from "./core/SemanticCompletionEvent";

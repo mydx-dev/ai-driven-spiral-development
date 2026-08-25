@@ -36,6 +36,50 @@ describe("プロセス", () => {
     expect(process["executor"]).toBe(executor);
   });
 
+  it("アーティファクトの復元で例外が発生した場合はゲート失敗結果として返す", async () => {
+    const artifacts: Artifact[] = [
+      {
+        id: "artifact-1",
+      } as Artifact,
+    ];
+
+    const executor: ProcessExecutor<unknown, Artifact> = {
+      call: vi.fn(),
+      channel: {} as any,
+      createStartMessage: vi.fn(),
+      createRetryMessage: vi.fn(),
+    };
+
+    const gate: ProcessGate<Artifact> = {
+      verifyStructuralComplete: vi.fn(),
+    };
+
+    const artifactRepository: ArtifactRepository<Artifact> = {
+      find: vi.fn(),
+      findByCycle: vi.fn(() => {
+        throw new Error("Artifact retrieval failed");
+      }),
+      save: vi.fn(),
+    };
+
+    const process = new Process({
+      name: "TestProcess",
+      artifactRepository,
+      gate,
+      executor,
+    });
+
+    const result = await process.verifyComplete("cycle-1");
+
+    expect(result).toEqual({
+      passed: false,
+      errors: [
+        "Artifact restoration failed during process completion verification.",
+        "Artifact retrieval failed",
+      ],
+    });
+  });
+
   it("ゲート評価で例外が発生した場合は失敗結果として返す", async () => {
     const artifacts: Artifact[] = [
       {
@@ -73,7 +117,6 @@ describe("プロセス", () => {
 
     expect(result).toEqual({
       passed: false,
-      artifacts,
       errors: [
         "Process Gate verification failed due to an unexpected error.",
         "Gate evaluation failed",
