@@ -1,8 +1,8 @@
 export * from "./core/Artifact";
 export * from "./core/Cycle";
-export * from "./standard-process/artifact/Demand";
-export * from "./standard-process/artifact/Requirement";
-export * from "./standard-process/artifact/Spec";
+export * from "./standard-cycle/artifact/Demand";
+export * from "./standard-cycle/artifact/ExternalSpec";
+export * from "./standard-cycle/artifact/Requirement";
 
 export * from "./core/ProcessGate";
 
