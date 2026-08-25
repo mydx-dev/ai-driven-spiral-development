@@ -126,6 +126,16 @@ describe("サイクル", () => {
     expect(secondStart).not.toHaveBeenCalled();
   });
 
+  it("サイクルは'cycle'という名称のプロセスをルートに登録できない", () => {
+    class InvalidCycle extends CustomCycle {}
+
+    const process = createProcess("cycle");
+
+    expect(() => InvalidCycle.route(process)).toThrow(
+      '"cycle" is reserved for cycle completion.',
+    );
+  });
+
   it("サイクルはルートされたプロセス名を取得できる", () => {
     class RoutedCycle extends CustomCycle {}
 

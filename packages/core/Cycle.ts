@@ -56,12 +56,15 @@ export abstract class Cycle implements Artifact {
       InstanceType<TCycleClass>,
       InferProcessNames<TCycleClass> | TName
     > {
+    if (process.name === "cycle") {
+      throw new Error('"cycle" is reserved for cycle completion.');
+    }
     const routes = Cycle.routeRegistry.get(this) ?? [];
 
     routes.push(process);
     Cycle.routeRegistry.set(this, routes);
 
-    return this as any;
+    return this;
   }
   static processNames<TCycleClass extends Function>(
     this: TCycleClass,
@@ -136,9 +139,20 @@ export abstract class Cycle implements Artifact {
 export interface CycleRepository<TCycle extends Cycle> {
   create(): Promise<TCycle>;
   find(id: string): Promise<TCycle | undefined>;
+  /**
+   * Saving the same cycle identity multiple times must not
+   * create duplicate logical cycles.
+   */
   save(cycle: TCycle): Promise<void>;
 }
 
+/**
+ * Creates the next cycle from the previous cycle.
+ *
+ * Implementations must be idempotent with respect to the
+ * previous cycle identity. Repeated calls for the same
+ * previous cycle must not create multiple logical next cycles.
+ */
 export type CycleFactory<TCycle extends Cycle> = (
   previousCycle: TCycle,
 ) => Promise<TCycle>;
