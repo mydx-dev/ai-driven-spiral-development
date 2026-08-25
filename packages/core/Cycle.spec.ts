@@ -131,7 +131,7 @@ describe("サイクル", () => {
 
     const process = createProcess("cycle");
 
-    expect(() => InvalidCycle.route(process)).toThrow(
+    expect(() => InvalidCycle.route(process as never)).toThrow(
       '"cycle" is reserved for cycle completion.',
     );
   });

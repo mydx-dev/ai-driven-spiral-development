@@ -50,7 +50,9 @@ export abstract class Cycle implements Artifact {
     TCallMessage,
   >(
     this: TCycleClass,
-    process: Process<TName, TArtifact, TCallMessage>,
+    process: TName extends "cycle"
+      ? never
+      : Process<TName, TArtifact, TCallMessage>,
   ): Omit<TCycleClass, "__processNames" | "processNames"> &
     CycleClass<
       InstanceType<TCycleClass>,
