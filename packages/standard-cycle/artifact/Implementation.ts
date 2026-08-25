@@ -3,6 +3,7 @@ import type { Artifact } from "../../core/Artifact";
 export class Implementation implements Artifact {
   constructor(
     public readonly id: string,
+    public readonly featureIds: string[],
     public readonly features: ImplementedFeature[],
   ) {}
 }

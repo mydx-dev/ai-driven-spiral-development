@@ -14,11 +14,25 @@ export class EngineeringGate implements ProcessGate<Implementation> {
 
     const implementation = implementations[0];
 
+    const implementedFeatureIds = new Set(
+      implementation.features.map((feature) => feature.featureId),
+    );
+
+    for (const featureId of implementation.featureIds) {
+      if (!implementedFeatureIds.has(featureId)) {
+        errors.push(`${featureId}: 実装成果物が存在しません`);
+      }
+    }
+
     if (implementation.features.length === 0) {
       errors.push("実装対象となるFeatureが存在しません");
     }
 
     for (const feature of implementation.features) {
+      if (!implementation.featureIds.includes(feature.featureId)) {
+        errors.push(`${feature.featureId}: 実装対象ではないFeatureです`);
+      }
+
       if (!feature.featureId.trim()) {
         errors.push("Feature識別子がありません");
       }

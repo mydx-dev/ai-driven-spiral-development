@@ -4,9 +4,14 @@
   "description": "",
   "main": "index.js",
   "exports": {
-    ".": "./dist/index.js",
-    "./github": "./dist/adapter/github/index.js",
-    "./slack": "./dist/adapter/slack/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./standard-cycle": {
+      "types": "./dist/standard-cycle.d.ts",
+      "import": "./dist/standard-cycle.js"
+    }
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
