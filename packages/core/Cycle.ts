@@ -1,5 +1,6 @@
 import type { Artifact } from "./Artifact";
 import type { Process } from "./Process";
+import type { GatePass } from "./ProcessGate";
 
 export type CycleFeedbackResult = {
   readonly needNextCycle: boolean;
@@ -17,8 +18,9 @@ export type GateResult =
 export type CycleClass<
   TCycle extends Cycle,
   TProcessNames extends string = never,
+  TConstructorArgs extends unknown[] = never[],
 > = {
-  new (...args: any[]): TCycle;
+  new (...args: TConstructorArgs): TCycle;
   readonly __processNames?: TProcessNames;
   processNames(): TProcessNames[];
 };
@@ -37,14 +39,31 @@ export type InferProcessNames<TCycleClass> = TCycleClass extends {
   ? Extract<TProcessNames, string>
   : never;
 
+type RoutedProcess = {
+  readonly name: string;
+  start(cycleId: string): Promise<void>;
+  verifyComplete(cycleId: string): Promise<GatePass>;
+  retry(cycleId: string, errors: string[]): Promise<void>;
+};
+
+type RoutedCycleClass<
+  TCycleClass extends CycleClass<Cycle, string>,
+  TName extends string,
+> = Omit<TCycleClass, "__processNames" | "processNames"> &
+  CycleClass<
+    InstanceType<TCycleClass>,
+    InferProcessNames<TCycleClass> | TName,
+    ConstructorParameters<TCycleClass>
+  >;
+
 export abstract class Cycle implements Artifact {
   protected static readonly routeRegistry = new WeakMap<
-    Function,
-    Process<any, any, any>[]
+    object,
+    RoutedProcess[]
   >();
 
   static route<
-    TCycleClass extends CycleClass<any, any>,
+    TCycleClass extends CycleClass<Cycle, string>,
     TName extends string,
     TArtifact extends Artifact,
     TCallMessage,
@@ -53,22 +72,19 @@ export abstract class Cycle implements Artifact {
     process: TName extends "cycle"
       ? never
       : Process<TName, TArtifact, TCallMessage>,
-  ): Omit<TCycleClass, "__processNames" | "processNames"> &
-    CycleClass<
-      InstanceType<TCycleClass>,
-      InferProcessNames<TCycleClass> | TName
-    > {
+  ): RoutedCycleClass<TCycleClass, TName> {
     if (process.name === "cycle") {
       throw new Error('"cycle" is reserved for cycle completion.');
     }
+
     const routes = Cycle.routeRegistry.get(this) ?? [];
 
     routes.push(process);
     Cycle.routeRegistry.set(this, routes);
 
-    return this;
+    return this as unknown as RoutedCycleClass<TCycleClass, TName>;
   }
-  static processNames<TCycleClass extends Function>(
+  static processNames<TCycleClass extends CycleClass<Cycle, string>>(
     this: TCycleClass,
   ): string[] {
     return (Cycle.routeRegistry.get(this) ?? []).map((process) => process.name);
@@ -76,7 +92,7 @@ export abstract class Cycle implements Artifact {
 
   abstract readonly id: string;
 
-  protected get routes(): readonly Process<any, any, any>[] {
+  protected get routes(): readonly RoutedProcess[] {
     return Cycle.routeRegistry.get(this.constructor) ?? [];
   }
 
@@ -130,7 +146,7 @@ export abstract class Cycle implements Artifact {
       cycle: this,
       gateResult: gatePass,
       dispatch: async () => {},
-      retry: async (errors: string[]) => process.retry(this.id, errors),
+      retry: (errors: string[]) => process.retry(this.id, errors),
     };
   }
 
@@ -141,20 +157,9 @@ export abstract class Cycle implements Artifact {
 export interface CycleRepository<TCycle extends Cycle> {
   create(): Promise<TCycle>;
   find(id: string): Promise<TCycle | undefined>;
-  /**
-   * Saving the same cycle identity multiple times must not
-   * create duplicate logical cycles.
-   */
   save(cycle: TCycle): Promise<void>;
 }
 
-/**
- * Creates the next cycle from the previous cycle.
- *
- * Implementations must be idempotent with respect to the
- * previous cycle identity. Repeated calls for the same
- * previous cycle must not create multiple logical next cycles.
- */
 export type CycleFactory<TCycle extends Cycle> = (
   previousCycle: TCycle,
 ) => Promise<TCycle>;
