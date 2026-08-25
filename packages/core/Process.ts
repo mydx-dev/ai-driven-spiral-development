@@ -2,14 +2,18 @@ import type { Artifact, ArtifactRepository } from "./Artifact";
 import type { ProcessExecutor } from "./ProcessExecutor";
 import type { GatePass, ProcessGate } from "./ProcessGate";
 
-export class Process<TArtifact extends Artifact, TCallMessage> {
+export class Process<
+  const TName extends string,
+  TArtifact extends Artifact,
+  TCallMessage,
+> {
   constructor({
     name,
     artifactRepository,
     gate,
     executor,
   }: {
-    name: string;
+    name: TName;
     artifactRepository: ArtifactRepository<TArtifact>;
     gate: ProcessGate<TArtifact>;
     executor: ProcessExecutor<TCallMessage, TArtifact>;
@@ -20,7 +24,7 @@ export class Process<TArtifact extends Artifact, TCallMessage> {
     this.executor = executor;
   }
 
-  public readonly name: string;
+  public readonly name: TName;
   private readonly artifactRepository: ArtifactRepository<TArtifact>;
   private readonly gate: ProcessGate<TArtifact>;
   private readonly executor: ProcessExecutor<TCallMessage, TArtifact>;
@@ -31,14 +35,13 @@ export class Process<TArtifact extends Artifact, TCallMessage> {
     await this.executor.call(message);
   }
 
-  async verifyComplete(cycleId: string): Promise<GatePass<TArtifact>> {
-    const artifacts = await this.artifactRepository.findByCycle(cycleId);
+  async verifyComplete(cycleId: string): Promise<GatePass> {
     try {
+      const artifacts = await this.artifactRepository.findByCycle(cycleId);
       return this.gate.verifyStructuralComplete(artifacts);
     } catch (error) {
       return {
         passed: false,
-        artifacts,
         errors: [
           "Process Gate verification failed due to an unexpected error.",
           error instanceof Error ? error.message : String(error),
@@ -47,16 +50,8 @@ export class Process<TArtifact extends Artifact, TCallMessage> {
     }
   }
 
-  async retry(
-    cycleId: string,
-    artifacts: TArtifact[],
-    errors: string[],
-  ): Promise<void> {
-    const retryMessage = this.executor.createRetryMessage(
-      cycleId,
-      artifacts,
-      errors,
-    );
+  async retry(cycleId: string, errors: string[]): Promise<void> {
+    const retryMessage = this.executor.createRetryMessage(cycleId, errors);
     await this.executor.call(retryMessage);
   }
 }

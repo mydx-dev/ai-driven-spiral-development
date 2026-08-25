@@ -14,35 +14,64 @@ export type GateResult =
       readonly errors: string[];
     };
 
+export type CycleClass<
+  TCycle extends Cycle,
+  TProcessNames extends string = never,
+> = {
+  new (...args: any[]): TCycle;
+  readonly __processNames?: TProcessNames;
+  processNames(): TProcessNames[];
+};
+
 export type CycleProceedResult<TCycle> = {
   readonly completed: boolean;
   readonly cycle: TCycle;
   readonly gateResult: GateResult;
   readonly dispatch: () => Promise<void>;
+  readonly retry: (errors: string[]) => Promise<void>;
 };
+
+export type InferProcessNames<TCycleClass> = TCycleClass extends {
+  readonly __processNames?: infer TProcessNames;
+}
+  ? Extract<TProcessNames, string>
+  : never;
 
 export abstract class Cycle implements Artifact {
   protected static readonly routeRegistry = new WeakMap<
     Function,
-    Process<any, any>[]
+    Process<any, any, any>[]
   >();
 
-  static route<TCycleClass extends Function>(
+  static route<
+    TCycleClass extends CycleClass<any, any>,
+    TName extends string,
+    TArtifact extends Artifact,
+    TCallMessage,
+  >(
     this: TCycleClass,
-    process: Process<any, any>,
-  ): TCycleClass {
+    process: Process<TName, TArtifact, TCallMessage>,
+  ): Omit<TCycleClass, "__processNames" | "processNames"> &
+    CycleClass<
+      InstanceType<TCycleClass>,
+      InferProcessNames<TCycleClass> | TName
+    > {
     const routes = Cycle.routeRegistry.get(this) ?? [];
 
     routes.push(process);
-
     Cycle.routeRegistry.set(this, routes);
 
-    return this;
+    return this as any;
+  }
+  static processNames<TCycleClass extends Function>(
+    this: TCycleClass,
+  ): string[] {
+    return (Cycle.routeRegistry.get(this) ?? []).map((process) => process.name);
   }
 
   abstract readonly id: string;
 
-  protected get routes(): readonly Process<any, any>[] {
+  protected get routes(): readonly Process<any, any, any>[] {
     return Cycle.routeRegistry.get(this.constructor) ?? [];
   }
 
@@ -70,17 +99,12 @@ export abstract class Cycle implements Artifact {
     const gatePass = await process.verifyComplete(this.id);
 
     if (!gatePass.passed) {
-      const fallbackCycle = this.fallback(process.name);
-
       return {
         completed: false,
-        cycle: fallbackCycle,
-        gateResult: {
-          passed: false,
-          errors: gatePass.errors,
-        },
-        dispatch: () =>
-          process.retry(this.id, gatePass.artifacts, gatePass.errors),
+        cycle: this,
+        gateResult: gatePass,
+        dispatch: async () => {},
+        retry: (errors: string[]) => process.retry(this.id, errors),
       };
     }
 
@@ -92,6 +116,7 @@ export abstract class Cycle implements Artifact {
         cycle: this,
         gateResult: gatePass,
         dispatch: () => nextProcess.start(this.id),
+        retry: (errors: string[]) => process.retry(this.id, errors),
       };
     }
 
@@ -100,6 +125,7 @@ export abstract class Cycle implements Artifact {
       cycle: this,
       gateResult: gatePass,
       dispatch: async () => {},
+      retry: async (errors: string[]) => process.retry(this.id, errors),
     };
   }
 

@@ -1,17 +1,13 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
-import type { Artifact } from "./Artifact";
 import {
   Cycle,
   type CycleFactory,
   type CycleFeedbackResult,
   type CycleRepository,
+  InferProcessNames,
 } from "./Cycle";
 import { Process } from "./Process";
-
-class CustomArtifact implements Artifact {
-  constructor(public readonly id: string) {}
-}
 
 class CustomCycle extends Cycle {
   constructor(
@@ -47,8 +43,8 @@ class CustomCycleRepository implements CycleRepository<CustomCycle> {
   }
 }
 
-const createProcess = (name: string) =>
-  new Process<CustomArtifact, string>({
+const createProcess = <T extends string>(name: T) =>
+  new Process({
     name,
 
     artifactRepository: {
@@ -130,7 +126,35 @@ describe("サイクル", () => {
     expect(secondStart).not.toHaveBeenCalled();
   });
 
-  it("プロセスが構造的に完了していなければサイクルをフォールバックして、現行プロセスのリトライをディスパッチする", async () => {
+  it("サイクルはルートされたプロセス名を取得できる", () => {
+    class RoutedCycle extends CustomCycle {}
+
+    const first = createProcess("Requirement Definition");
+    const second = createProcess("External Design");
+
+    const CycleDefinition = RoutedCycle.route(first).route(second);
+
+    expect(CycleDefinition.processNames()).toEqual([
+      "Requirement Definition",
+      "External Design",
+    ]);
+  });
+
+  it("サイクル定義からルートされたプロセス名を推論できる", async () => {
+    class RoutedCycle extends CustomCycle {}
+
+    const first = createProcess("Requirement Definition");
+    const second = createProcess("External Design");
+
+    const CycleDefinition = RoutedCycle.route(first).route(second);
+    type Names = InferProcessNames<typeof CycleDefinition>;
+
+    expectTypeOf<Names>().toEqualTypeOf<
+      "Requirement Definition" | "External Design"
+    >();
+  });
+
+  it("プロセスが構造的に完了していなければサイクルをフォールバックしないで、現行プロセスのリトライをディスパッチする", async () => {
     class FallbackCycle extends CustomCycle {}
 
     const process = createProcess("process");
@@ -139,7 +163,6 @@ describe("サイクル", () => {
 
     vi.spyOn(process, "verifyComplete").mockResolvedValue({
       passed: false,
-      artifacts: [new CustomArtifact("artifact-1")],
       errors: ["構造的に完了していません"],
     });
 
@@ -154,27 +177,26 @@ describe("サイクル", () => {
       completed: false,
       cycle: expect.objectContaining({
         id: "cycle-1",
-        state: "semantic-completed:process",
+        state: "semantic-completed",
       }),
       gateResult: {
         passed: false,
         errors: ["構造的に完了していません"],
       },
       dispatch: expect.any(Function),
+      retry: expect.any(Function),
     });
 
-    expect(fallbackSpy).toHaveBeenCalledWith("process");
+    expect(fallbackSpy).not.toHaveBeenCalledWith("process");
     expect(retrySpy).not.toHaveBeenCalled();
 
-    await result.dispatch();
-    expect(retrySpy).toHaveBeenCalledWith(
-      "cycle-1",
-      [new CustomArtifact("artifact-1")],
-      ["構造的に完了していません"],
-    );
+    await result.retry(["構造的に完了していません"]);
+    expect(retrySpy).toHaveBeenCalledWith("cycle-1", [
+      "構造的に完了していません",
+    ]);
   });
 
-  it("プロセスが構造的に完了していて次のプロセスの開始をディスパッチする", async () => {
+  it("プロセスが構造的に完了している場合、次のプロセスの開始とリトライをディスパッチする", async () => {
     class ProceedCycle extends CustomCycle {}
 
     const firstProcess = createProcess("first");
@@ -186,6 +208,8 @@ describe("サイクル", () => {
     vi.spyOn(firstProcess, "verifyComplete").mockResolvedValue({
       passed: true,
     });
+
+    vi.spyOn(firstProcess, "retry");
 
     const secondStart = vi.spyOn(secondProcess, "start").mockResolvedValue();
 
@@ -202,10 +226,16 @@ describe("サイクル", () => {
         passed: true,
       },
       dispatch: expect.any(Function),
+      retry: expect.any(Function),
     });
 
     await result.dispatch();
+    await result.retry(["spiral error"]);
+
     expect(secondStart).toHaveBeenCalledWith("cycle-1");
+    expect(firstProcess.retry).toHaveBeenCalledWith("cycle-1", [
+      "spiral error",
+    ]);
   });
 
   it("最後のプロセスが構造的に完了するとサイクル完了を返す", async () => {
@@ -230,6 +260,7 @@ describe("サイクル", () => {
         passed: true,
       },
       dispatch: expect.any(Function),
+      retry: expect.any(Function),
     });
   });
 

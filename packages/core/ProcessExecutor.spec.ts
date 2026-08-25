@@ -58,12 +58,9 @@ describe("プロセス実行者", () => {
     expect(message).toEqual("cycle-1:artifact-1,artifact-2");
   });
 
-  it("サイクルID、アーティファクト、エラーメッセージからリトライメッセージを生成する", async () => {
+  it("サイクルID、エラーメッセージからリトライメッセージを生成する", async () => {
     const createRetryMessage = vi.fn(
-      (cycleId: string, artifacts: CustomArtifact[], errors: string[]) =>
-        `${cycleId}:${artifacts.map((artifact) => artifact.id).join(",")}:${errors.join(
-          ",",
-        )}`,
+      (cycleId: string, errors: string[]) => `${cycleId}:${errors.join(",")}`,
     );
 
     const executor = new ProcessExecutor<string, CustomArtifact>({
@@ -79,11 +76,11 @@ describe("プロセス実行者", () => {
       new CustomArtifact("artifact-2", "bar"),
     ];
 
-    const message = executor.createRetryMessage("cycle-1", artifacts, [
+    const message = executor.createRetryMessage("cycle-1", [
       "error-1",
       "error-2",
     ]);
 
-    expect(message).toEqual("cycle-1:artifact-1,artifact-2:error-1,error-2");
+    expect(message).toEqual("cycle-1:error-1,error-2");
   });
 });
