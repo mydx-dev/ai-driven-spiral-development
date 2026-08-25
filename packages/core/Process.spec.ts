@@ -74,7 +74,7 @@ describe("プロセス", () => {
     expect(result).toEqual({
       passed: false,
       errors: [
-        "Process Gate verification failed due to an unexpected error.",
+        "Artifact restoration failed during process completion verification.",
         "Artifact retrieval failed",
       ],
     });

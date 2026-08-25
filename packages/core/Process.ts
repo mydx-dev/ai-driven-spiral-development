@@ -36,8 +36,21 @@ export class Process<
   }
 
   async verifyComplete(cycleId: string): Promise<GatePass> {
+    let artifacts: TArtifact[];
+
     try {
-      const artifacts = await this.artifactRepository.findByCycle(cycleId);
+      artifacts = await this.artifactRepository.findByCycle(cycleId);
+    } catch (error) {
+      return {
+        passed: false,
+        errors: [
+          "Artifact restoration failed during process completion verification.",
+          error instanceof Error ? error.message : String(error),
+        ],
+      };
+    }
+
+    try {
       return this.gate.verifyStructuralComplete(artifacts);
     } catch (error) {
       return {
