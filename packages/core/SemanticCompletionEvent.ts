@@ -1,5 +1,9 @@
 import type { CycleClass, InferProcessNames } from "./Cycle";
 
+const semanticCompletionEventBrand: unique symbol = Symbol(
+  "SemanticCompletionEvent",
+);
+
 export class SemanticCompletionEvent<TCycleClass extends CycleClass<any, any>> {
   constructor({
     cycleId,
@@ -20,10 +24,12 @@ export class SemanticCompletionEvent<TCycleClass extends CycleClass<any, any>> {
     this.name = name as "cycle" | InferProcessNames<TCycleClass>;
   }
 
+  public readonly [semanticCompletionEventBrand] = true;
+
   public readonly cycleId: string;
   public readonly name: "cycle" | InferProcessNames<TCycleClass>;
 
-  isCycleCompletion(): boolean {
+  public isCycleCompletion(): boolean {
     return this.name === "cycle";
   }
 }

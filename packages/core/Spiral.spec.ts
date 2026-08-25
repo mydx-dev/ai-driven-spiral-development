@@ -1,19 +1,11 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
-import type { Artifact } from "./Artifact";
-
-class CustomArtifact implements Artifact {
-  constructor(
-    public readonly id: string,
-    public readonly value: string = "",
-  ) {}
-}
-
 import {
   Cycle,
   type CycleFactory,
   type CycleFeedbackResult,
   type CycleRepository,
 } from "./Cycle";
+import { Process } from "./Process";
 import { SemanticCompletionEvent } from "./SemanticCompletionEvent";
 import { Spiral } from "./Spiral";
 
@@ -36,6 +28,29 @@ class CustomCycle extends Cycle {
   }
 }
 
+const processA = new Process({
+  name: "process-a",
+  artifactRepository: {} as any,
+  gate: {} as any,
+  executor: {} as any,
+});
+
+const process = new Process({
+  name: "process",
+  artifactRepository: {} as any,
+  gate: {} as any,
+  executor: {} as any,
+});
+
+const lastProcess = new Process({
+  name: "last-process",
+  artifactRepository: {} as any,
+  gate: {} as any,
+  executor: {} as any,
+});
+
+CustomCycle.route(processA).route(process).route(lastProcess);
+
 const createCycleRepository = (
   cycle?: CustomCycle,
 ): CycleRepository<CustomCycle> => ({
@@ -48,11 +63,14 @@ const createCycleRepository = (
 
 describe("スパイラル", () => {
   it("意味的完了イベントはサイクルの識別子とイベント名称を持つ", () => {
-    expectTypeOf<SemanticCompletionEvent<typeof CustomCycle>>().toEqualTypeOf<{
-      readonly cycleId: string;
-      readonly name: "cycle";
-      isCycleCompletion(): boolean;
-    }>();
+    const event = new SemanticCompletionEvent({
+      cycleId: "cycle-1",
+      name: "cycle",
+      cycleDefinition: CustomCycle,
+    });
+    expectTypeOf<SemanticCompletionEvent<typeof CustomCycle>>().toEqualTypeOf<
+      typeof event
+    >();
   });
 
   it("意味的完了イベントを対象サイクルへ渡して進行させる", async () => {
@@ -77,11 +95,13 @@ describe("スパイラル", () => {
       cycleFactory,
     });
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "process-a",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+
+    await spiral.circulate(event);
 
     expect(cycleRepository.find).toHaveBeenCalledWith("cycle-1");
 
@@ -109,11 +129,13 @@ describe("スパイラル", () => {
       cycleFactory: vi.fn(),
     });
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "process-a",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+
+    await spiral.circulate(event);
 
     expect(dispatchSpy).toHaveBeenCalledTimes(1);
     expect(cycleRepository.save).not.toHaveBeenCalled();
@@ -145,11 +167,12 @@ describe("スパイラル", () => {
 
     vi.spyOn(spiral, "transition");
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "process-a",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+    await spiral.circulate(event);
 
     expect(spiral.transition).not.toHaveBeenCalled();
     expect(feedback).not.toHaveBeenCalled();
@@ -179,11 +202,12 @@ describe("スパイラル", () => {
       cycleFactory: vi.fn(),
     });
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "process",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+    await spiral.circulate(event);
 
     expect(fallbackSpy).toHaveBeenCalledWith("process");
   });
@@ -214,11 +238,12 @@ describe("スパイラル", () => {
       cycleFactory: vi.fn(),
     });
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "process",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+    await spiral.circulate(event);
 
     expect(fallbackSpy).toHaveBeenCalledWith("process");
     expect(cycleRepository.save).toHaveBeenCalledWith(cycle);
@@ -256,11 +281,12 @@ describe("スパイラル", () => {
       cycleFactory: vi.fn(),
     });
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "process",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+    await spiral.circulate(event);
 
     expect(fallbackSpy).toHaveBeenCalledWith("process");
     expect(retrySpy).toHaveBeenCalledWith(["構造的に完了していません"]);
@@ -293,11 +319,12 @@ describe("スパイラル", () => {
 
     vi.spyOn(spiral, "transition");
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "process",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+    await spiral.circulate(event);
 
     expect(spiral.transition).not.toHaveBeenCalled();
   });
@@ -319,13 +346,15 @@ describe("スパイラル", () => {
       cycleFactory: vi.fn(),
     });
 
-    await expect(
-      spiral.circulate({
-        cycleId: "cycle-1",
-        name: "process",
-        isCycleCompletion: () => false,
-      }),
-    ).rejects.toThrow("サイクル進行中に例外が発生しました");
+    const event = new SemanticCompletionEvent({
+      cycleId: "cycle-1",
+      name: "process",
+      cycleDefinition: CustomCycle,
+    });
+
+    await expect(spiral.circulate(event)).rejects.toThrow(
+      "サイクル進行中に例外が発生しました",
+    );
 
     expect(fallbackSpy).toHaveBeenCalledWith("process");
   });
@@ -346,13 +375,15 @@ describe("スパイラル", () => {
       cycleFactory: vi.fn(),
     });
 
-    await expect(
-      spiral.circulate({
-        cycleId: "cycle-1",
-        name: "process",
-        isCycleCompletion: () => false,
-      }),
-    ).rejects.toThrow("サイクル進行中に例外が発生しました");
+    const event = new SemanticCompletionEvent({
+      cycleId: "cycle-1",
+      name: "process",
+      cycleDefinition: CustomCycle,
+    });
+
+    await expect(spiral.circulate(event)).rejects.toThrow(
+      "サイクル進行中に例外が発生しました",
+    );
 
     expect(fallbackSpy).toHaveBeenCalledWith("process");
     expect(cycleRepository.save).toHaveBeenCalledWith(cycle);
@@ -384,13 +415,15 @@ describe("スパイラル", () => {
       cycleFactory: vi.fn(),
     });
 
-    await expect(
-      spiral.circulate({
-        cycleId: "cycle-1",
-        name: "process",
-        isCycleCompletion: () => false,
-      }),
-    ).rejects.toThrow("フォールバックに失敗しました");
+    const event = new SemanticCompletionEvent({
+      cycleId: "cycle-1",
+      name: "process",
+      cycleDefinition: CustomCycle,
+    });
+
+    await expect(spiral.circulate(event)).rejects.toThrow(
+      "フォールバックに失敗しました",
+    );
 
     expect(fallbackSpy).toHaveBeenCalledWith("process");
     expect(cycleRepository.save).not.toHaveBeenCalled();
@@ -412,11 +445,13 @@ describe("スパイラル", () => {
       .spyOn(spiral, "transition")
       .mockImplementation(async () => {});
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "cycle",
-      isCycleCompletion: () => true,
+      cycleDefinition: CustomCycle,
     });
+
+    await spiral.circulate(event);
 
     expect(transitionSpy).toHaveBeenCalledWith("cycle-1");
     expect(proceedSpy).not.toHaveBeenCalled();
@@ -498,11 +533,13 @@ describe("スパイラル", () => {
       cycleFactory,
     });
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "last-process",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+
+    await spiral.circulate(event);
 
     expect(cycleFactory).not.toHaveBeenCalled();
   });
@@ -597,11 +634,13 @@ describe("スパイラル", () => {
 
     vi.spyOn(spiral, "transition");
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "last-process",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+
+    await spiral.circulate(event);
 
     expect(feedback).toHaveBeenCalledOnce();
     expect(spiral.transition).toHaveBeenCalledWith("cycle-1");
@@ -629,11 +668,13 @@ describe("スパイラル", () => {
       cycleFactory,
     });
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "last-process",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+
+    await spiral.circulate(event);
 
     expect(cycleFactory).not.toHaveBeenCalled();
 
@@ -668,11 +709,13 @@ describe("スパイラル", () => {
       cycleFactory,
     });
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "last-process",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+
+    await spiral.circulate(event);
 
     expect(cycleFactory).toHaveBeenCalledWith(cycle);
   });
@@ -705,11 +748,13 @@ describe("スパイラル", () => {
       cycleFactory,
     });
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "last-process",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+
+    await spiral.circulate(event);
 
     expect(cycleRepository.save).toHaveBeenNthCalledWith(1, newCycle);
   });
@@ -740,11 +785,13 @@ describe("スパイラル", () => {
         .mockResolvedValue(newCycle),
     });
 
-    await spiral.circulate({
+    const event = new SemanticCompletionEvent({
       cycleId: "cycle-1",
       name: "last-process",
-      isCycleCompletion: () => false,
+      cycleDefinition: CustomCycle,
     });
+
+    await spiral.circulate(event);
 
     expect(start).toHaveBeenCalledOnce();
   });
@@ -756,13 +803,15 @@ describe("スパイラル", () => {
       cycleFactory: vi.fn<CycleFactory<CustomCycle>>(),
     });
 
-    await expect(
-      spiral.circulate({
-        cycleId: "unknown",
-        name: "process-a",
-        isCycleCompletion: () => false,
-      }),
-    ).rejects.toThrow("Cycle not found: unknown");
+    const event = new SemanticCompletionEvent({
+      cycleId: "unknown",
+      name: "process-a",
+      cycleDefinition: CustomCycle,
+    });
+
+    await expect(spiral.circulate(event)).rejects.toThrow(
+      "Cycle not found: unknown",
+    );
   });
 
   it("利用側で任意のサイクル生成方法を定義できる", () => {
