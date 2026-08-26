@@ -1,10 +1,12 @@
-import type { CycleClass, InferProcessNames } from "./Cycle";
+import type { Cycle, CycleClass, InferProcessNames } from "./Cycle";
 
 const semanticCompletionEventBrand: unique symbol = Symbol(
   "SemanticCompletionEvent",
 );
 
-export class SemanticCompletionEvent<TCycleClass extends CycleClass<any, any>> {
+export class SemanticCompletionEvent<
+  TCycleClass extends CycleClass<Cycle, string, never[]>,
+> {
   constructor({
     cycleId,
     name,
@@ -27,6 +29,7 @@ export class SemanticCompletionEvent<TCycleClass extends CycleClass<any, any>> {
   public readonly [semanticCompletionEventBrand] = true;
 
   public readonly cycleId: string;
+
   public readonly name: "cycle" | InferProcessNames<TCycleClass>;
 
   public isCycleCompletion(): boolean {

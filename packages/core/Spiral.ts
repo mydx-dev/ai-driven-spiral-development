@@ -1,4 +1,5 @@
 import type {
+  Cycle,
   CycleClass,
   CycleFactory,
   CycleProceedResult,
@@ -6,7 +7,7 @@ import type {
 } from "./Cycle";
 import type { SemanticCompletionEvent } from "./SemanticCompletionEvent";
 
-export class Spiral<TCycleClass extends CycleClass<any, any>> {
+export class Spiral<TCycleClass extends CycleClass<Cycle, string, never[]>> {
   constructor({
     cycleRepository,
     cycleFactory,
@@ -19,6 +20,7 @@ export class Spiral<TCycleClass extends CycleClass<any, any>> {
   }
 
   private readonly cycleRepository: CycleRepository<InstanceType<TCycleClass>>;
+
   private readonly cycleFactory: CycleFactory<InstanceType<TCycleClass>>;
 
   public async circulate(
@@ -40,7 +42,6 @@ export class Spiral<TCycleClass extends CycleClass<any, any>> {
     try {
       result = await cycle.proceed(event.name);
     } catch (error) {
-      // これはプロセスが見つからない場合のみなので、retryを呼び出せないから強制終了でいい
       const fallbackCycle = cycle.fallback(event.name);
       await this.cycleRepository.save(fallbackCycle);
       throw error;
@@ -66,6 +67,7 @@ export class Spiral<TCycleClass extends CycleClass<any, any>> {
 
   public async transition(cycleId: string) {
     const cycle = await this.cycleRepository.find(cycleId);
+
     if (!cycle) {
       throw new Error(`Cycle not found: ${cycleId}`);
     }

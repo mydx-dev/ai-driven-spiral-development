@@ -1,6 +1,6 @@
 {
   "name": "ai-driven-spiral-development",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "exports": {
@@ -8,13 +8,17 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./standard-cycle": {
-      "types": "./dist/standard-cycle.d.ts",
-      "import": "./dist/standard-cycle.js"
+    "./standard-process": {
+      "types": "./dist/standard-process.d.ts",
+      "import": "./dist/standard-process.js"
     }
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "build": "rm -rf dist && tsc -p tsconfig.json",
     "build:watch": "rm -rf dist && tsc -p tsconfig.json --watch"
   },
@@ -23,8 +27,12 @@
   "license": "ISC",
   "packageManager": "pnpm@10.18.0",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.2.0",
-    "typescript": "^7.0.2",
+    "eslint": "^10.9.1",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.68.0",
     "vitest": "^4.1.11"
   }
 }
