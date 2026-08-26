@@ -9,14 +9,53 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-  id-token: write
-
 jobs:
-  publish:
+  check-version:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    outputs:
+      should-publish: ${{ steps.version.outputs.should-publish }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Check package version
+        id: version
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+
+          echo "Package: ${PACKAGE_NAME}@${PACKAGE_VERSION}"
+
+          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version > /dev/null 2>&1; then
+            echo "${PACKAGE_NAME}@${PACKAGE_VERSION} is already published."
+            echo "should-publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "${PACKAGE_NAME}@${PACKAGE_VERSION} is not published yet."
+            echo "should-publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    needs: check-version
+    if: ${{ needs.check-version.outputs.should-publish == 'true' }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout
