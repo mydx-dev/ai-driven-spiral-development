@@ -90,10 +90,7 @@ describe("portable init", () => {
         '"executionChannel": "./scripts/spiral/execution-channel.mjs"',
       );
       expect(
-        readFileSync(
-          join(cwd, "scripts/spiral/execution-channel.mjs"),
-          "utf8",
-        ),
+        readFileSync(join(cwd, "scripts/spiral/execution-channel.mjs"), "utf8"),
       ).toContain("TODO: project固有Execution Channel");
       expect(existsSync(join(cwd, "scripts/spiral/main.mjs"))).toBe(true);
       expect(existsSync(join(cwd, "src/spiral"))).toBe(false);
@@ -278,9 +275,7 @@ describe("portable init", () => {
       );
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("safe create: spiral.config.mjs");
-      expect(result.stdout).toContain(
-        "safe create: scripts/spiral/main.mjs",
-      );
+      expect(result.stdout).toContain("safe create: scripts/spiral/main.mjs");
       expect(
         readJson(join(cwd, "package.json")).devDependencies,
       ).toHaveProperty("@mydx-dev/spiral-quality");
