@@ -11,7 +11,9 @@ describe("@mydx/spiral-standard package boundary", () => {
       "ai-driven-spiral-development": "^1.0.1",
     });
     expect(packageJson.dependencies["@mydx/spiral-github"]).toBeUndefined();
-    expect(packageJson.dependencies["@mydx/spiral-standard-github"]).toBeUndefined();
+    expect(
+      packageJson.dependencies["@mydx/spiral-standard-github"],
+    ).toBeUndefined();
     expect(packageJson.dependencies["@mydx/spiral"]).toBeUndefined();
   });
 });
