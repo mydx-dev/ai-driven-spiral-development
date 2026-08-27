@@ -1,14 +1,12 @@
 import { spawnSync } from "node:child_process";
-import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { ESLint } from "eslint";
 import { loadQualityConfig } from "./config.mjs";
 import { createEslintConfig } from "./eslint.mjs";
 import { runMetrics } from "./metrics.mjs";
-
-const require = createRequire(import.meta.url);
 
 export class QualityViolationError extends Error {
   constructor(violations) {
@@ -26,15 +24,21 @@ export class QualityToolError extends Error {
 }
 
 const packageRoot = (packageName) => {
-  let directory = dirname(require.resolve(packageName));
+  let directory = dirname(fileURLToPath(import.meta.url));
   while (directory !== dirname(directory)) {
+    const packageJsonPath = join(
+      directory,
+      "node_modules",
+      packageName,
+      "package.json",
+    );
     try {
-      const packageJson = JSON.parse(
-        readFileSync(join(directory, "package.json"), "utf8"),
-      );
-      if (packageJson.name === packageName) return { directory, packageJson };
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+      if (packageJson.name === packageName) {
+        return { directory: dirname(packageJsonPath), packageJson };
+      }
     } catch {
-      // Continue walking upward until the owning package.json is found.
+      // Continue walking upward until the dependency package.json is found.
     }
     directory = dirname(directory);
   }
