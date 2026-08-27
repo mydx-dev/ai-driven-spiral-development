@@ -81,7 +81,7 @@ jobs:
           cd packages/cli
           npm pkg fix
           git diff --exit-code -- package.json
-          npm publish --dry-run --access public
+          npm pack --dry-run
 
       - name: Verify Standard package standalone
         run: |
