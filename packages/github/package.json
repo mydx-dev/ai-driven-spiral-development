@@ -1,12 +1,10 @@
 {
   "name": "@mydx/spiral-github",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,12 +12,15 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && ../../node_modules/.bin/tsc -p tsconfig.json",
-    "test": "../../node_modules/.bin/vitest run",
-    "typecheck": "../../node_modules/.bin/tsc --noEmit -p tsconfig.json"
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
   },
   "license": "ISC",
-  "publishConfig": {
-    "access": "public"
-  }
+  "publishConfig": { "access": "public" }
 }
