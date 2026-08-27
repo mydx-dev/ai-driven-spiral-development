@@ -35,25 +35,33 @@ const createProcess = <const TName extends string>(name: TName) => {
 describe("StandardCycle", () => {
   describe("feedback", () => {
     it("新しいDemandが存在する場合は次Cycleを必要とする", () => {
-      expect(new StandardCycle("cycle-1", "exists", "none").feedback()).toEqual({
+      expect(
+        new StandardCycle("cycle-1", "exists", "none").feedback(),
+      ).toEqual({
         needNextCycle: true,
       });
     });
 
     it("変更されたDemandが存在する場合は次Cycleを必要とする", () => {
-      expect(new StandardCycle("cycle-1", "none", "exists").feedback()).toEqual({
+      expect(
+        new StandardCycle("cycle-1", "none", "exists").feedback(),
+      ).toEqual({
         needNextCycle: true,
       });
     });
 
     it("新規Demandと変更Demandの両方が存在する場合は次Cycleを必要とする", () => {
-      expect(new StandardCycle("cycle-1", "exists", "exists").feedback()).toEqual({
+      expect(
+        new StandardCycle("cycle-1", "exists", "exists").feedback(),
+      ).toEqual({
         needNextCycle: true,
       });
     });
 
     it("新規Demandも変更Demandも存在しない場合は次Cycleを必要としない", () => {
-      expect(new StandardCycle("cycle-1", "none", "none").feedback()).toEqual({
+      expect(
+        new StandardCycle("cycle-1", "none", "none").feedback(),
+      ).toEqual({
         needNextCycle: false,
       });
     });
@@ -74,7 +82,9 @@ describe("StandardCycle", () => {
 
   it("標準プロセスを定義された順序で構成できる", () => {
     class TestStandardCycle extends StandardCycle {}
-    const ConfiguredCycle = TestStandardCycle.route(createProcess("demand-definition"))
+    const ConfiguredCycle = TestStandardCycle.route(
+      createProcess("demand-definition"),
+    )
       .route(createProcess("requirement-definition"))
       .route(createProcess("external-design"))
       .route(createProcess("engineering"))
