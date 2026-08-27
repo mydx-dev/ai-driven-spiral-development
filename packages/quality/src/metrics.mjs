@@ -1,8 +1,7 @@
 import { relative, resolve } from "node:path";
 import { Node, Project, SyntaxKind } from "ts-morph";
 
-const escapeRegExp = (value) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const globRegExp = (glob) => {
   const escaped = glob
@@ -86,7 +85,8 @@ const cohesion = (methods, names) => {
   let connected = 0;
   for (let left = 0; left < sets.length; left += 1) {
     for (let right = left + 1; right < sets.length; right += 1) {
-      if ([...sets[left]].some((field) => sets[right].has(field))) connected += 1;
+      if ([...sets[left]].some((field) => sets[right].has(field)))
+        connected += 1;
     }
   }
   const tcc = pairs === 0 ? 1 : connected / pairs;
@@ -112,8 +112,7 @@ const importedIdentifiers = (sourceFile) => {
 const calculateCbo = (classDeclaration) => {
   const text = classDeclaration.getText();
   return importedIdentifiers(classDeclaration.getSourceFile()).filter(
-    (identifier) =>
-      new RegExp(`\\b${escapeRegExp(identifier)}\\b`).test(text),
+    (identifier) => new RegExp(`\\b${escapeRegExp(identifier)}\\b`).test(text),
   ).length;
 };
 
@@ -307,7 +306,8 @@ export const analyzeSourceFiles = (
           kind: "local-helper",
           file: sourceFile.getFilePath(),
           symbol: helper.name,
-          detail: "named local function/arrow helper creates a procedural boundary",
+          detail:
+            "named local function/arrow helper creates a procedural boundary",
         },
         policy.localHelper,
       );
@@ -340,7 +340,8 @@ export const analyzeSourceFiles = (
             kind: "static-only-class",
             file: sourceFile.getFilePath(),
             symbol: className,
-            detail: "class has no instance state/behavior and only static behavior",
+            detail:
+              "class has no instance state/behavior and only static behavior",
           },
           policy.staticOnlyClass,
           exceptionFor(quality, "staticOnlyClasses", className),

@@ -25,10 +25,7 @@ export const createEslintConfig = (quality) =>
       rules: {
         "class-methods-use-this": "off",
         complexity: ["error", quality.complexity.cyclomatic],
-        "sonarjs/cognitive-complexity": [
-          "error",
-          quality.complexity.cognitive,
-        ],
+        "sonarjs/cognitive-complexity": ["error", quality.complexity.cognitive],
         "@typescript-eslint/class-methods-use-this": "off",
         "@typescript-eslint/no-unused-vars": [
           "error",
