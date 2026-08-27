@@ -10,7 +10,7 @@ on:
       - main
 
 jobs:
-  check-version:
+  check-versions:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
@@ -18,7 +18,8 @@ jobs:
       contents: read
 
     outputs:
-      should-publish: ${{ steps.version.outputs.should-publish }}
+      publish-core: ${{ steps.versions.outputs.publish-core }}
+      publish-standard: ${{ steps.versions.outputs.publish-standard }}
 
     steps:
       - name: Checkout
@@ -32,25 +33,32 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      - name: Check package version
-        id: version
+      - name: Check package versions
+        id: versions
         run: |
-          PACKAGE_NAME=$(node -p "require('./package.json').name")
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          CORE_NAME=$(node -p "require('./package.json').name")
+          CORE_VERSION=$(node -p "require('./package.json').version")
+          STANDARD_NAME=$(node -p "require('./packages/standard/package.json').name")
+          STANDARD_VERSION=$(node -p "require('./packages/standard/package.json').version")
 
-          echo "Package: ${PACKAGE_NAME}@${PACKAGE_VERSION}"
+          echo "Core: ${CORE_NAME}@${CORE_VERSION}"
+          echo "Standard: ${STANDARD_NAME}@${STANDARD_VERSION}"
 
-          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version > /dev/null 2>&1; then
-            echo "${PACKAGE_NAME}@${PACKAGE_VERSION} is already published."
-            echo "should-publish=false" >> "$GITHUB_OUTPUT"
+          if npm view "${CORE_NAME}@${CORE_VERSION}" version > /dev/null 2>&1; then
+            echo "publish-core=false" >> "$GITHUB_OUTPUT"
           else
-            echo "${PACKAGE_NAME}@${PACKAGE_VERSION} is not published yet."
-            echo "should-publish=true" >> "$GITHUB_OUTPUT"
+            echo "publish-core=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          if npm view "${STANDARD_NAME}@${STANDARD_VERSION}" version > /dev/null 2>&1; then
+            echo "publish-standard=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish-standard=true" >> "$GITHUB_OUTPUT"
           fi
 
   publish:
-    needs: check-version
-    if: ${{ needs.check-version.outputs.should-publish == 'true' }}
+    needs: check-versions
+    if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-standard == 'true' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -75,14 +83,36 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Install Core dependencies
+        if: ${{ needs.check-versions.outputs.publish-core == 'true' }}
         run: pnpm install --frozen-lockfile
 
-      - name: Build
+      - name: Build Core
+        if: ${{ needs.check-versions.outputs.publish-core == 'true' }}
         run: pnpm build
 
-      - name: Verify package contents
+      - name: Verify Core package contents
+        if: ${{ needs.check-versions.outputs.publish-core == 'true' }}
         run: npm pack --dry-run
 
-      - name: Publish
+      - name: Publish Core
+        if: ${{ needs.check-versions.outputs.publish-core == 'true' }}
+        run: npm publish --provenance --access public
+
+      - name: Install Standard dependencies
+        if: ${{ needs.check-versions.outputs.publish-standard == 'true' }}
+        run: pnpm --dir packages/standard install --no-frozen-lockfile
+
+      - name: Build Standard
+        if: ${{ needs.check-versions.outputs.publish-standard == 'true' }}
+        run: pnpm --dir packages/standard build
+
+      - name: Verify Standard package contents
+        if: ${{ needs.check-versions.outputs.publish-standard == 'true' }}
+        working-directory: packages/standard
+        run: npm pack --dry-run
+
+      - name: Publish Standard
+        if: ${{ needs.check-versions.outputs.publish-standard == 'true' }}
+        working-directory: packages/standard
         run: npm publish --provenance --access public
