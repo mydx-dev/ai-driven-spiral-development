@@ -240,9 +240,9 @@ describe("Suppression and method policy", () => {
       { filePath: "example.ts" },
     );
     expect(result.errorCount).toBeGreaterThan(0);
-    expect(result.messages.some((message) => message.ruleId === "complexity")).toBe(
-      true,
-    );
+    expect(
+      result.messages.some((message) => message.ruleId === "complexity"),
+    ).toBe(true);
     expect(
       result.messages.some(
         (message) => message.ruleId === "sonarjs/cognitive-complexity",
