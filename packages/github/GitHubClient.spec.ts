@@ -33,6 +33,22 @@ describe("GitHubClient", () => {
     });
   });
 
+  it("preserves path segments in a custom API base URL", async () => {
+    const fetcher = vi.fn(
+      async () => new Response(JSON.stringify({ number: 12 }), { status: 200 }),
+    ) as unknown as typeof globalThis.fetch;
+    const client = createGitHubClient({
+      ...createConnection(fetcher),
+      apiBaseUrl: "https://ghe.example/api/v3",
+    });
+
+    await client.getIssue(12);
+
+    expect(String(fetcher.mock.calls[0][0])).toBe(
+      "https://ghe.example/api/v3/repos/mydx-dev/example/issues/12",
+    );
+  });
+
   it("provides generic PR, check, review and workflow resource access", async () => {
     const fetcher = vi.fn(
       async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
