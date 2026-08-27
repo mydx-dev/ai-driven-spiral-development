@@ -1,4 +1,5 @@
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -85,9 +86,17 @@ describe("portable init", () => {
       expect(readFileSync(join(cwd, "spiral.config.mjs"), "utf8")).toContain(
         '"binding": "@mydx-dev/spiral-standard-github"',
       );
+      expect(readFileSync(join(cwd, "spiral.config.mjs"), "utf8")).toContain(
+        '"executionChannel": "./scripts/spiral/execution-channel.mjs"',
+      );
       expect(
-        readFileSync(join(cwd, "src/spiral/execution-channel.mjs"), "utf8"),
+        readFileSync(
+          join(cwd, "scripts/spiral/execution-channel.mjs"),
+          "utf8",
+        ),
       ).toContain("TODO: project固有Execution Channel");
+      expect(existsSync(join(cwd, "scripts/spiral/main.mjs"))).toBe(true);
+      expect(existsSync(join(cwd, "src/spiral"))).toBe(false);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
@@ -178,6 +187,32 @@ describe("portable init", () => {
     }
   });
 
+  it("does not move or delete legacy src/spiral files automatically", () => {
+    const cwd = temporaryRepository();
+    try {
+      writeFileSync(join(cwd, "package.json"), '{"name":"existing"}\n');
+      mkdirSync(join(cwd, "src/spiral"), { recursive: true });
+      writeFileSync(
+        join(cwd, "src/spiral/execution-channel.mjs"),
+        "export const execute = async () => {};\n",
+      );
+      const legacy = readFileSync(
+        join(cwd, "src/spiral/execution-channel.mjs"),
+        "utf8",
+      );
+
+      expect(() =>
+        initRepository({ cwd, artifact: "github", process: "standard" }),
+      ).toThrow("legacy Spiral files detected under src/spiral/**");
+      expect(
+        readFileSync(join(cwd, "src/spiral/execution-channel.mjs"), "utf8"),
+      ).toBe(legacy);
+      expect(existsSync(join(cwd, "scripts/spiral"))).toBe(false);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("rejects an existing dependency with a different requested version", () => {
     const cwd = temporaryRepository();
     try {
@@ -243,6 +278,7 @@ describe("portable init", () => {
       );
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("safe create: spiral.config.mjs");
+      expect(result.stdout).toContain("safe create: scripts/spiral/main.mjs");
       expect(
         readJson(join(cwd, "package.json")).devDependencies,
       ).toHaveProperty("@mydx-dev/spiral-quality");
