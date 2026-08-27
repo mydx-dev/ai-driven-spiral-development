@@ -196,9 +196,11 @@ describe("Structure metrics", () => {
     expect(findings.some((finding) => finding.kind === "high-coupling")).toBe(
       true,
     );
-    expect(
-      findings.some((finding) => finding.kind === "god-class-candidate"),
-    ).toBe(true);
+    const godClassFinding = findings.find(
+      (finding) => finding.kind === "god-class-candidate",
+    );
+    expect(godClassFinding).toBeDefined();
+    expect(godClassFinding?.detail).toContain("WMC=");
     expect(
       findings.some(
         (finding) => finding.kind === "single-use-trivial-boundary",
@@ -222,6 +224,30 @@ describe("Suppression and method policy", () => {
       .join("\n");
     expect(messages).toContain("private method is prohibited");
     expect(messages).toContain("protected method is prohibited");
+  });
+
+  it("rejects configured cyclomatic and cognitive complexity", async () => {
+    const eslint = new ESLint({
+      overrideConfigFile: true,
+      overrideConfig: createEslintConfig(
+        mergeQualityConfig({
+          complexity: { cyclomatic: 1, cognitive: 1 },
+        }),
+      ),
+    });
+    const [result] = await eslint.lintText(
+      `export const decide = (a: boolean, b: boolean) => { if (a) return 1; if (b) return 2; return 0; };`,
+      { filePath: "example.ts" },
+    );
+    expect(result.errorCount).toBeGreaterThan(0);
+    expect(result.messages.some((message) => message.ruleId === "complexity")).toBe(
+      true,
+    );
+    expect(
+      result.messages.some(
+        (message) => message.ruleId === "sonarjs/cognitive-complexity",
+      ),
+    ).toBe(true);
   });
 
   it("rejects inline eslint suppression", async () => {
@@ -293,6 +319,62 @@ describe("Quality Guard integration", () => {
         report.results.find((result) => result.sensor === "duplication")
           ?.passed,
       ).toBe(false);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("detects configured forbidden layer dependencies", async () => {
+    const cwd = temporaryProject();
+    try {
+      mkdirSync(join(cwd, "src", "domain"), { recursive: true });
+      mkdirSync(join(cwd, "src", "presentation"), { recursive: true });
+      writeFileSync(
+        join(cwd, "src", "presentation", "view.ts"),
+        `export const view = "presentation";\n`,
+      );
+      writeFileSync(
+        join(cwd, "src", "domain", "model.ts"),
+        `import { view } from "../presentation/view";\nexport const model = view;\n`,
+      );
+
+      const report = await runQualityGuard({
+        cwd,
+        quality: mergeQualityConfig({
+          paths: { source: "src" },
+          architecture: {
+            forbiddenLayers: [
+              {
+                name: "no-domain-to-presentation",
+                from: "^src/domain",
+                to: "^src/presentation",
+              },
+            ],
+          },
+          responsibilityBoundary: {
+            default: {
+              statelessInstanceMethod: "off",
+              internalOnlyPublicMethod: "off",
+              staticMethod: "off",
+              staticOnlyClass: "off",
+              topLevelFunction: "off",
+              localHelper: "off",
+            },
+          },
+          structure: {
+            singleUseTrivialBoundary: { failOnDetection: false },
+            cohesion: { failOnViolation: false },
+            coupling: { failOnViolation: false },
+            godClass: { failOnDetection: false },
+          },
+        }),
+      });
+
+      const architecture = report.results.find(
+        (result) => result.sensor === "architecture",
+      );
+      expect(architecture?.passed).toBe(false);
+      expect(architecture?.output).toContain("no-domain-to-presentation");
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
