@@ -63,6 +63,32 @@ const generatedFiles = (composition) => {
   return files;
 };
 
+const addDependency = ({
+  next,
+  conflicts,
+  section,
+  otherSection,
+  name,
+  version,
+}) => {
+  if (next[otherSection][name] !== undefined) {
+    conflicts.push(
+      `manual decision required: ${name} already exists in ${otherSection} as ${next[otherSection][name]}`,
+    );
+    return;
+  }
+
+  const existingVersion = next[section][name];
+  if (existingVersion !== undefined && existingVersion !== version) {
+    conflicts.push(
+      `manual decision required: ${name} requires ${version} but ${section} has ${existingVersion}`,
+    );
+    return;
+  }
+
+  if (existingVersion === undefined) next[section][name] = version;
+};
+
 const mergePackageJson = (current, composition) => {
   const next = { ...current };
   const conflicts = [];
@@ -71,16 +97,25 @@ const mergePackageJson = (current, composition) => {
   next.scripts = { ...(current.scripts ?? {}) };
 
   for (const [name, version] of Object.entries(composition.dependencies)) {
-    if (next.devDependencies[name] && !next.dependencies[name]) {
-      conflicts.push(`dependency ${name} already exists in devDependencies`);
-      continue;
-    }
-    if (!next.dependencies[name]) next.dependencies[name] = version;
+    addDependency({
+      next,
+      conflicts,
+      section: "dependencies",
+      otherSection: "devDependencies",
+      name,
+      version,
+    });
   }
 
   for (const [name, version] of Object.entries(composition.devDependencies)) {
-    if (next.dependencies[name] && !next.devDependencies[name]) continue;
-    if (!next.devDependencies[name]) next.devDependencies[name] = version;
+    addDependency({
+      next,
+      conflicts,
+      section: "devDependencies",
+      otherSection: "dependencies",
+      name,
+      version,
+    });
   }
 
   if (composition.quality) {
