@@ -1,5 +1,5 @@
 {
-  "name": "@mydx/spiral-standard",
+  "name": "@mydx-dev/spiral-standard",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -19,11 +19,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "peerDependencies": {
-    "ai-driven-spiral-development": ">=1.0.1 <3"
+    "@mydx-dev/ai-driven-spiral-development": ">=2 <3"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
-    "ai-driven-spiral-development": "1.0.1",
+    "@mydx-dev/ai-driven-spiral-development": "file:../..",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
   },
