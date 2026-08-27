@@ -182,25 +182,74 @@ export class GitHubClient {
     );
   }
 
-  listPullRequestReviewThreads<T = unknown>(
+  async listPullRequestReviewThreads<T = unknown>(
     pullRequestNumber: number,
   ): Promise<T> {
-    return this.graphql<T>(
-      `query ReviewThreads($owner: String!, $repo: String!, $number: Int!) {
-        repository(owner: $owner, name: $repo) {
-          pullRequest(number: $number) {
-            reviewThreads(first: 100) {
-              nodes { isResolved }
+    type ReviewThreadPage = {
+      repository: {
+        pullRequest: {
+          reviewThreads: {
+            nodes: Array<{ isResolved: boolean }>;
+            pageInfo: {
+              hasNextPage: boolean;
+              endCursor: string | null;
+            };
+          };
+        } | null;
+      } | null;
+    };
+
+    const nodes: Array<{ isResolved: boolean }> = [];
+    let after: string | null = null;
+
+    while (true) {
+      const page = await this.graphql<ReviewThreadPage>(
+        `query ReviewThreads($owner: String!, $repo: String!, $number: Int!, $after: String) {
+          repository(owner: $owner, name: $repo) {
+            pullRequest(number: $number) {
+              reviewThreads(first: 100, after: $after) {
+                nodes { isResolved }
+                pageInfo { hasNextPage endCursor }
+              }
             }
           }
-        }
-      }`,
-      {
-        owner: this.owner,
-        repo: this.repo,
-        number: pullRequestNumber,
-      },
-    );
+        }`,
+        {
+          owner: this.owner,
+          repo: this.repo,
+          number: pullRequestNumber,
+          after,
+        },
+      );
+      const reviewThreads = page.repository?.pullRequest?.reviewThreads;
+
+      if (!reviewThreads) {
+        return page as T;
+      }
+
+      nodes.push(...reviewThreads.nodes);
+
+      if (!reviewThreads.pageInfo.hasNextPage) {
+        return {
+          repository: {
+            pullRequest: {
+              reviewThreads: {
+                nodes,
+                pageInfo: reviewThreads.pageInfo,
+              },
+            },
+          },
+        } as T;
+      }
+
+      if (!reviewThreads.pageInfo.endCursor) {
+        throw new Error(
+          "GitHub review thread pagination reported another page without a cursor.",
+        );
+      }
+
+      after = reviewThreads.pageInfo.endCursor;
+    }
   }
 
   resolveGraphqlBaseUrl(apiBaseUrl: string): string {
