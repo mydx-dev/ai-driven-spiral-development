@@ -5,7 +5,7 @@ import {
   type Artifact,
   type ArtifactRepository,
   type ProcessGate,
-} from "ai-driven-spiral-development";
+} from "@mydx-dev/ai-driven-spiral-development";
 import { StandardCycle } from "./StandardCycle.js";
 
 class TestArtifact implements Artifact {

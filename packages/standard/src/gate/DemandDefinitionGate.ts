@@ -1,4 +1,7 @@
-import type { GatePass, ProcessGate } from "ai-driven-spiral-development";
+import type {
+  GatePass,
+  ProcessGate,
+} from "@mydx-dev/ai-driven-spiral-development";
 import type { Demand } from "../artifact/Demand.js";
 
 export class DemandDefinitionGate implements ProcessGate<Demand> {

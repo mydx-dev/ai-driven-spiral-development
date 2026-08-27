@@ -1,5 +1,5 @@
 {
-  "name": "@mydx/spiral-quality",
+  "name": "@mydx-dev/spiral-quality",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.mjs",

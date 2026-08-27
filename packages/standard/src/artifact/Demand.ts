@@ -1,4 +1,4 @@
-import type { Artifact } from "ai-driven-spiral-development";
+import type { Artifact } from "@mydx-dev/ai-driven-spiral-development";
 import type { Requirement } from "./Requirement.js";
 
 export class Demand implements Artifact {

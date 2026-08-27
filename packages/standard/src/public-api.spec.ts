@@ -22,7 +22,7 @@ import {
   StandardCycle,
 } from "./index.js";
 
-describe("@mydx/spiral-standard public API", () => {
+describe("@mydx-dev/spiral-standard public API", () => {
   it("旧standard-process subpathのpublic symbolをpackage rootから公開する", () => {
     expect([
       StandardCycle,

@@ -23,20 +23,40 @@ Cycle / Spiral
 ## Installation
 
 ```bash
-npm install ai-driven-spiral-development
+npm install @mydx-dev/ai-driven-spiral-development
 ```
 
 pnpm:
 
 ```bash
-pnpm add ai-driven-spiral-development
+pnpm add @mydx-dev/ai-driven-spiral-development
 ```
 
 yarn:
 
 ```bash
-yarn add ai-driven-spiral-development
+yarn add @mydx-dev/ai-driven-spiral-development
 ```
+
+Standard Processを利用する場合は、CoreとStandard Process packageを導入します。
+
+```bash
+pnpm add @mydx-dev/ai-driven-spiral-development @mydx-dev/spiral-standard
+```
+
+### npm package migration
+
+旧Core package `ai-driven-spiral-development` は、Portable Distributionへの移行に伴い `@mydx-dev/ai-driven-spiral-development` へ移行します。
+
+```text
+ai-driven-spiral-development
+→ @mydx-dev/ai-driven-spiral-development
+
+ai-driven-spiral-development/standard-process
+→ @mydx-dev/spiral-standard
+```
+
+既存のunscoped packageは直ちにunpublishせず、新しいscoped packageの公開と動作確認後にdeprecatedとして案内します。新規導入では `@mydx-dev/*` packageを使用してください。
 
 ## Concepts
 
@@ -162,7 +182,7 @@ import {
   type ProcessGate,
   SemanticCompletionEvent,
   Spiral,
-} from "ai-driven-spiral-development";
+} from "@mydx-dev/ai-driven-spiral-development";
 
 class RequirementArtifact implements Artifact {
   constructor(
@@ -376,7 +396,7 @@ import {
   CycleRepository,
   Spiral,
   SemanticCompletionEvent,
-} from "ai-driven-spiral-development";
+} from "@mydx-dev/ai-driven-spiral-development";
 ```
 
 Coreは開発Processそのものを固定しません。
@@ -385,7 +405,7 @@ Coreは開発Processそのものを固定しません。
 
 ## Standard Process
 
-このライブラリには、AI駆動スパイラル開発の理論で定義した標準Processモデルも含まれています。
+AI駆動スパイラル開発の理論で定義した標準Processモデルは、独立した `@mydx-dev/spiral-standard` packageとして提供します。
 
 ```ts
 import {
@@ -404,7 +424,7 @@ import {
   QAGate,
   ReleaseGate,
   AcceptanceGate,
-} from "ai-driven-spiral-development/standard-process";
+} from "@mydx-dev/spiral-standard";
 ```
 
 標準Processは以下の順序を想定しています。
@@ -455,7 +475,7 @@ Databaseや別の開発基盤を利用する場合は、その環境に合わせ
 `StandardCycle` は標準的なCycle feedbackモデルを提供します。
 
 ```ts
-import { StandardCycle } from "ai-driven-spiral-development/standard-process";
+import { StandardCycle } from "@mydx-dev/spiral-standard";
 ```
 
 ```ts
@@ -501,7 +521,7 @@ import {
   Process,
   ProcessExecutor,
   type ProcessGate,
-} from "ai-driven-spiral-development";
+} from "@mydx-dev/ai-driven-spiral-development";
 
 class SecurityReview implements Artifact {
   constructor(
@@ -655,21 +675,22 @@ AI駆動スパイラル開発の背景や理論については `docs/theory` を
 - [QA / Release / Acceptance](docs/theory/5.process-model.md)
 - [Change Locality / Context Locality](docs/theory/6.change-context-locality.md)
 
-## Package
+Portable Distributionのpackage責務と依存方向は [docs/portable-distribution.md](docs/portable-distribution.md) を参照してください。
 
-npm:
+## Packages
 
-https://www.npmjs.com/package/ai-driven-spiral-development
+```text
+@mydx-dev/ai-driven-spiral-development
+@mydx-dev/spiral-standard
+@mydx-dev/spiral-github
+@mydx-dev/spiral-standard-github
+@mydx-dev/spiral-quality
+@mydx-dev/spiral
+```
 
 GitHub:
 
 https://github.com/mydx-dev/ai-driven-spiral-development
-
-Current package version:
-
-```text
-1.0.1
-```
 
 ## License
 

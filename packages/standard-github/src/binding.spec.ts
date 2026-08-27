@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import type { GitHubClient } from "@mydx/spiral-github";
+import type { GitHubClient } from "@mydx-dev/spiral-github";
 import {
   DemandRepository,
   EngineeringChecks,
@@ -123,13 +123,13 @@ describe("Standard × GitHub Binding", () => {
     );
 
     expect(Object.keys(packageJson.peerDependencies).sort()).toEqual([
-      "@mydx/spiral-github",
-      "@mydx/spiral-standard",
-      "ai-driven-spiral-development",
+      "@mydx-dev/ai-driven-spiral-development",
+      "@mydx-dev/spiral-github",
+      "@mydx-dev/spiral-standard",
     ]);
-    expect(packageJson.peerDependencies["@mydx/spiral"]).toBeUndefined();
+    expect(packageJson.peerDependencies["@mydx-dev/spiral"]).toBeUndefined();
     expect(
-      packageJson.peerDependencies["@mydx/spiral-quality"],
+      packageJson.peerDependencies["@mydx-dev/spiral-quality"],
     ).toBeUndefined();
   });
 });

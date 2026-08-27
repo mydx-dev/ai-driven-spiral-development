@@ -1,4 +1,7 @@
-import type { GatePass, ProcessGate } from "ai-driven-spiral-development";
+import type {
+  GatePass,
+  ProcessGate,
+} from "@mydx-dev/ai-driven-spiral-development";
 import type { ExternalSpec } from "../artifact/ExternalSpec.js";
 
 export class ExternalDesignGate implements ProcessGate<ExternalSpec> {
