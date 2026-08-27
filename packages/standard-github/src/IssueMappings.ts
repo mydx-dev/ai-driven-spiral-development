@@ -25,7 +25,9 @@ export class DemandIssue {
 
   requirements(): Requirement[] {
     if (!this.issueNumber) {
-      throw new Error("Demand Issue number is required to restore Requirements.");
+      throw new Error(
+        "Demand Issue number is required to restore Requirements.",
+      );
     }
 
     const section = new GitHubIssue(this.body).readSection("## 要件", true);
@@ -136,7 +138,8 @@ export class AcceptanceCycleIssue {
       if (acceptance.length > 1 || seen.has(id)) {
         throw new Error(`Duplicate Acceptance result: ${id}`);
       }
-      if (!expected.has(id)) throw new Error(`Unexpected Acceptance result: ${id}`);
+      if (!expected.has(id))
+        throw new Error(`Unexpected Acceptance result: ${id}`);
       const evaluations = block
         .map((line) => line.match(/^\s+-\s+評価[：:]\s*(.*)$/))
         .filter((match): match is RegExpMatchArray => match !== null);
@@ -157,7 +160,9 @@ export class AcceptanceCycleIssue {
   }
 
   feedback(): AcceptanceFeedback {
-    const feedback = new GitHubIssue(this.body).readSection("## フィードバック");
+    const feedback = new GitHubIssue(this.body).readSection(
+      "## フィードバック",
+    );
     const issue = new GitHubIssue(feedback);
     return new AcceptanceFeedback(
       issue.isChecked("現Cycleの不備"),
@@ -178,7 +183,10 @@ export class StandardCycleIssue {
   }
 
   withReference(heading: string, issueNumber: number): string {
-    return new GitHubIssue(this.body).writeSection(heading, `- #${issueNumber}`);
+    return new GitHubIssue(this.body).writeSection(
+      heading,
+      `- #${issueNumber}`,
+    );
   }
 }
 
@@ -201,6 +209,9 @@ export class EngineeringChecks {
   passed(pattern: RegExp): boolean {
     const matched = this.checkRuns.filter(({ name }) => pattern.test(name));
     pattern.lastIndex = 0;
-    return matched.length > 0 && matched.every(({ conclusion }) => conclusion === "success");
+    return (
+      matched.length > 0 &&
+      matched.every(({ conclusion }) => conclusion === "success")
+    );
   }
 }

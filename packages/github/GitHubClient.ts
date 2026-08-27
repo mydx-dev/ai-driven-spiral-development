@@ -70,7 +70,10 @@ export class GitHubClient {
     return (await response.json()) as T;
   }
 
-  async graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+  async graphql<T>(
+    query: string,
+    variables: Record<string, unknown>,
+  ): Promise<T> {
     const response = await this.fetcher(this.graphqlBaseUrl, {
       method: "POST",
       headers: {
@@ -179,7 +182,9 @@ export class GitHubClient {
     );
   }
 
-  listPullRequestReviewThreads<T = unknown>(pullRequestNumber: number): Promise<T> {
+  listPullRequestReviewThreads<T = unknown>(
+    pullRequestNumber: number,
+  ): Promise<T> {
     return this.graphql<T>(
       `query ReviewThreads($owner: String!, $repo: String!, $number: Int!) {
         repository(owner: $owner, name: $repo) {

@@ -128,6 +128,8 @@ describe("Standard × GitHub Binding", () => {
       "ai-driven-spiral-development",
     ]);
     expect(packageJson.peerDependencies["@mydx/spiral"]).toBeUndefined();
-    expect(packageJson.peerDependencies["@mydx/spiral-quality"]).toBeUndefined();
+    expect(
+      packageJson.peerDependencies["@mydx/spiral-quality"],
+    ).toBeUndefined();
   });
 });

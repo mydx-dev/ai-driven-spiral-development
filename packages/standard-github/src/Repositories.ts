@@ -46,7 +46,9 @@ type PullRequest = {
 type Review = { state: string; user: { login?: string } | null };
 type ReviewThreads = {
   repository: {
-    pullRequest: { reviewThreads: { nodes: Array<{ isResolved: boolean }> } } | null;
+    pullRequest: {
+      reviewThreads: { nodes: Array<{ isResolved: boolean }> };
+    } | null;
   } | null;
 };
 
@@ -160,7 +162,11 @@ export class ExternalSpecRepository implements ArtifactRepository<ExternalSpec> 
         .map((number) => this.restoreFeature(number)),
     );
     return [
-      new ExternalSpec(`#${cycleNumber}-external-spec`, requirementIds, features),
+      new ExternalSpec(
+        `#${cycleNumber}-external-spec`,
+        requirementIds,
+        features,
+      ),
     ];
   }
 
@@ -192,14 +198,11 @@ export class ExternalSpecRepository implements ArtifactRepository<ExternalSpec> 
   }
 }
 
-export class ImplementationRepository
-  implements ArtifactRepository<Implementation>
-{
+export class ImplementationRepository implements ArtifactRepository<Implementation> {
   constructor(
     public readonly client: GitHubClient,
     public readonly externalSpecRepository: ArtifactRepository<ExternalSpec>,
-    public readonly checkPatterns: EngineeringCheckPatterns =
-      defaultEngineeringCheckPatterns,
+    public readonly checkPatterns: EngineeringCheckPatterns = defaultEngineeringCheckPatterns,
   ) {}
 
   async find(id: string): Promise<Implementation | undefined> {
@@ -255,7 +258,9 @@ export class ImplementationRepository
     );
   }
 
-  async findLinkedPullRequest(featureId: string): Promise<PullRequest | undefined> {
+  async findLinkedPullRequest(
+    featureId: string,
+  ): Promise<PullRequest | undefined> {
     const featureNumber = new GitHubIssueId(featureId, "Feature").toNumber();
     const response = await this.client.searchPullRequests<SearchIssues>(
       `\"#${featureNumber}\" in:body`,
@@ -290,12 +295,14 @@ export class ImplementationRepository
     const states = new Map<string, string>();
     for (const review of reviews) {
       const login = review.user?.login;
-      if (login && review.state !== "COMMENTED") states.set(login, review.state);
+      if (login && review.state !== "COMMENTED")
+        states.set(login, review.state);
     }
     const latest = [...states.values()];
-    const threads = await this.client.listPullRequestReviewThreads<ReviewThreads>(
-      pullRequestNumber,
-    );
+    const threads =
+      await this.client.listPullRequestReviewThreads<ReviewThreads>(
+        pullRequestNumber,
+      );
     const unresolved =
       threads.repository?.pullRequest?.reviewThreads.nodes.some(
         ({ isResolved }) => !isResolved,
@@ -404,9 +411,7 @@ export class ReleaseRepository implements ArtifactRepository<Release> {
   }
 }
 
-export class AcceptanceReportRepository
-  implements ArtifactRepository<AcceptanceReport>
-{
+export class AcceptanceReportRepository implements ArtifactRepository<AcceptanceReport> {
   constructor(
     public readonly client: GitHubClient,
     public readonly demandRepository: ArtifactRepository<Demand>,
@@ -451,9 +456,7 @@ export class AcceptanceReportRepository
   }
 }
 
-export class StandardCycleRepository
-  implements CycleRepository<StandardCycle>
-{
+export class StandardCycleRepository implements CycleRepository<StandardCycle> {
   constructor(
     public readonly client: GitHubClient,
     public readonly acceptanceReportRepository: {
@@ -470,7 +473,8 @@ export class StandardCycleRepository
     try {
       await this.client.getIssue<Issue>(issueNumber);
     } catch (error) {
-      if (error instanceof GitHubApiError && error.status === 404) return undefined;
+      if (error instanceof GitHubApiError && error.status === 404)
+        return undefined;
       throw error;
     }
     const reports = await this.acceptanceReportRepository.findByCycle(
@@ -565,10 +569,10 @@ export class StandardCycleRepository
   }
 }
 
-export const createStandardCycleFactory = (
-  repository: StandardCycleRepository,
-): CycleFactory<StandardCycle> =>
-  async (previousCycle) => repository.createNext(previousCycle);
+export const createStandardCycleFactory =
+  (repository: StandardCycleRepository): CycleFactory<StandardCycle> =>
+  async (previousCycle) =>
+    repository.createNext(previousCycle);
 
 export type StandardGitHubRepositories = ReturnType<
   typeof createStandardGitHubRepositories
