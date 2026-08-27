@@ -261,7 +261,7 @@ export class GitHubClient {
 
     const pathname = url.pathname.replace(/\/+$/, "");
     url.pathname = pathname.endsWith("/api/v3")
-      ? `${pathname.slice(0, -3)}graphql`
+      ? `${pathname.slice(0, -3)}/graphql`
       : `${pathname}/graphql`;
     url.search = "";
     url.hash = "";
