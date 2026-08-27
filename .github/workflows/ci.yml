@@ -76,6 +76,13 @@ jobs:
       - name: Build CLI package
         run: pnpm --dir packages/cli build
 
+      - name: Verify CLI publish manifest
+        run: |
+          cd packages/cli
+          npm pkg fix
+          git diff --exit-code -- package.json
+          npm publish --dry-run --access public
+
       - name: Verify Standard package standalone
         run: |
           CORE_TARBALL_DIR="$(mktemp -d)"
