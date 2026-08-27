@@ -335,10 +335,7 @@ import {
 ### GitHub foundation
 
 ```ts
-import {
-  GitHubIssue,
-  GitHubIssueId,
-} from "@mydx-dev/spiral-github";
+import { GitHubIssue, GitHubIssueId } from "@mydx-dev/spiral-github";
 ```
 
 ### Standard Process × GitHub
