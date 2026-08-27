@@ -278,7 +278,9 @@ describe("portable init", () => {
       );
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("safe create: spiral.config.mjs");
-      expect(result.stdout).toContain("safe create: scripts/spiral/main.mjs");
+      expect(result.stdout).toContain(
+        "safe create: scripts/spiral/main.mjs",
+      );
       expect(
         readJson(join(cwd, "package.json")).devDependencies,
       ).toHaveProperty("@mydx-dev/spiral-quality");
