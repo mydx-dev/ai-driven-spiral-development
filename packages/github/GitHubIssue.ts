@@ -75,7 +75,11 @@ export class GitHubIssue {
         normalizedContent.length > 0,
     );
 
-    return [...lines.slice(0, startIndex), ...replacement, ...lines.slice(endIndex)]
+    return [
+      ...lines.slice(0, startIndex),
+      ...replacement,
+      ...lines.slice(endIndex),
+    ]
       .join("\n")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
