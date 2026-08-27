@@ -35,19 +35,19 @@ const createProcess = <const TName extends string>(name: TName) => {
 describe("StandardCycle", () => {
   describe("feedback", () => {
     it("新しいDemandが存在する場合は次Cycleを必要とする", () => {
-      expect(
-        new StandardCycle("cycle-1", "exists", "none").feedback(),
-      ).toEqual({
-        needNextCycle: true,
-      });
+      expect(new StandardCycle("cycle-1", "exists", "none").feedback()).toEqual(
+        {
+          needNextCycle: true,
+        },
+      );
     });
 
     it("変更されたDemandが存在する場合は次Cycleを必要とする", () => {
-      expect(
-        new StandardCycle("cycle-1", "none", "exists").feedback(),
-      ).toEqual({
-        needNextCycle: true,
-      });
+      expect(new StandardCycle("cycle-1", "none", "exists").feedback()).toEqual(
+        {
+          needNextCycle: true,
+        },
+      );
     });
 
     it("新規Demandと変更Demandの両方が存在する場合は次Cycleを必要とする", () => {
@@ -59,9 +59,7 @@ describe("StandardCycle", () => {
     });
 
     it("新規Demandも変更Demandも存在しない場合は次Cycleを必要としない", () => {
-      expect(
-        new StandardCycle("cycle-1", "none", "none").feedback(),
-      ).toEqual({
+      expect(new StandardCycle("cycle-1", "none", "none").feedback()).toEqual({
         needNextCycle: false,
       });
     });
