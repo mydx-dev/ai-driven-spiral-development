@@ -46,43 +46,41 @@ export class GitHubIssue {
   }
 
   writeSection(heading: string, content: string): string {
-    const lines = this.body.split(/\r?\n/);
-    const startIndex = lines.findIndex((line) => line.trim() === heading);
+    const newline = this.body.includes("\r\n") ? "\r\n" : "\n";
+    const lines = Array.from(
+      this.body.matchAll(/[^\r\n]*(?:\r\n|\n|$)/g),
+    ).filter((match) => match[0].length > 0);
+    const startLineIndex = lines.findIndex(
+      (match) => match[0].replace(/\r?\n$/, "").trim() === heading,
+    );
     const normalizedContent = content.trim();
 
-    if (startIndex === -1) {
-      return [this.body.trimEnd(), heading, normalizedContent]
-        .filter((part) => part.length > 0)
-        .join("\n\n");
+    if (startLineIndex === -1) {
+      const separator =
+        this.body.length === 0 || this.body.endsWith(newline)
+          ? newline
+          : `${newline}${newline}`;
+      return `${this.body}${separator}${heading}${newline}${newline}${normalizedContent}`;
     }
 
     const headingLevel = heading.match(/^#+/)?.[0].length ?? 0;
-    let endIndex = lines.length;
+    const headingLine = lines[startLineIndex];
+    const headingStart = headingLine.index ?? 0;
+    let sectionEnd = this.body.length;
 
-    for (let index = startIndex + 1; index < lines.length; index += 1) {
-      const nextHeading = lines[index].match(/^(#+)\s+/);
+    for (const line of lines.slice(startLineIndex + 1)) {
+      const lineText = line[0].replace(/\r?\n$/, "");
+      const nextHeading = lineText.match(/^(#+)\s+/);
 
       if (nextHeading && nextHeading[1].length <= headingLevel) {
-        endIndex = index;
+        sectionEnd = line.index ?? this.body.length;
         break;
       }
     }
 
-    const replacement = [heading, "", normalizedContent, ""].filter(
-      (line, index, values) =>
-        line.length > 0 ||
-        (index > 0 && index < values.length - 1) ||
-        normalizedContent.length > 0,
-    );
+    const replacement = `${heading}${newline}${newline}${normalizedContent}${newline}${newline}`;
 
-    return [
-      ...lines.slice(0, startIndex),
-      ...replacement,
-      ...lines.slice(endIndex),
-    ]
-      .join("\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
+    return `${this.body.slice(0, headingStart)}${replacement}${this.body.slice(sectionEnd)}`;
   }
 }
 
