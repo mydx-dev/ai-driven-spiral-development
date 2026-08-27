@@ -169,7 +169,7 @@ const runUnused = (cwd) =>
     "unused",
     "knip",
     "knip",
-    ["--include", "files,exports,types,enumMembers,classMembers,duplicates"],
+    ["--include", "files,exports,types,enumMembers,namespaceMembers,duplicates"],
     cwd,
   );
 
