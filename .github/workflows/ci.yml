@@ -37,18 +37,6 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Apply Standard formatting
-        run: |
-          git fetch origin feature/28-standard-package
-          git checkout -B feature/28-standard-package FETCH_HEAD
-          pnpm prettier packages/standard/src/StandardCycle.spec.ts --write
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add packages/standard/src/StandardCycle.spec.ts
-          git commit -m "style: StandardCycle specをPrettierで整形する"
-          git push origin HEAD:feature/28-standard-package
-          exit 1
-
       - name: Format check
         run: pnpm format:check
 
