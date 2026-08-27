@@ -51,3 +51,15 @@ jobs:
 
       - name: Build GitHub package
         run: pnpm --dir packages/github build
+
+      - name: Install Quality package dependencies
+        run: pnpm --dir packages/quality install --no-frozen-lockfile
+
+      - name: Test Quality package
+        run: pnpm --dir packages/quality test
+
+      - name: Type check Quality package
+        run: pnpm --dir packages/quality typecheck
+
+      - name: Build Quality package
+        run: pnpm --dir packages/quality build

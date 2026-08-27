@@ -1,0 +1,38 @@
+{
+  "name": "@mydx/spiral-quality",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "exports": {
+    ".": "./dist/index.mjs"
+  },
+  "bin": {
+    "spiral-quality": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "dependency-cruiser": "^18.2.0",
+    "eslint": "^10.9.0",
+    "eslint-plugin-sonarjs": "^4.2.0",
+    "jscpd": "^5.0.16",
+    "knip": "6.32.2",
+    "ts-morph": "^28.0.0",
+    "typescript-eslint": "^8.67.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  },
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  }
+}
