@@ -12,105 +12,90 @@
 - Quality Guard
 - CLI
 
-Repository を分割すること自体を目的とはしない。重要なのは、同一 Repository 内であっても各 module の責務と依存方向を明確にし、Core を外部技術へ依存させないことである。
+重要なのは Repository 数そのものではなく、source-level dependency と install-time dependency の両方で責務境界を維持することである。
 
 ## 2. 採用する package 戦略
 
-Portable Distribution では、次の 2 つの npm package を publish する。
+Portable Distribution では、責務ごとに npm package を分割する。
 
 ```text
 ai-driven-spiral-development
+  = Core
+
+@mydx/spiral-standard
+  = Standard Process
+
+@mydx/spiral-github
+  = GitHub Artifact Adapter
+
+@mydx/spiral-quality
+  = Quality Guard
+
 @mydx/spiral
-```
-
-役割は次の通りとする。
-
-```text
-ai-driven-spiral-development
-├─ Core
-├─ Standard Process
-├─ GitHub Adapter
-└─ Quality Guard
-
-@mydx/spiral
-└─ CLI
-```
-
-ライブラリ機能については複数 npm package へ分割せず、`ai-driven-spiral-development` の subpath export として公開する。
-
-```text
-ai-driven-spiral-development
-ai-driven-spiral-development/standard-process
-ai-driven-spiral-development/github
-ai-driven-spiral-development/quality
-```
-
-CLI のみ独立した package とする。
-
-```bash
-pnpm dlx @mydx/spiral init
+  = CLI / Composition Tool
 ```
 
 ### 採用理由
 
-Core、Standard Process、GitHub Adapter は同じスパイラル実行モデルを構成するライブラリであり、互いの version 互換性を独立して管理する必要性が現時点では低い。
+module 境界だけでは dependency 境界として不十分である。
 
-複数 package へ分割すると、例えば以下の version 組み合わせを管理する必要が発生する。
+例えば GitHub Adapter と Quality Guard を Core と同じ npm package に同梱し、Octokit、ESLint、ts-morph、Knip、dependency-cruiser、jscpd 等を通常の `dependencies` に含めると、Core のみを利用する Repository にも外部 Adapter / tooling dependency が install される。
+
+これは次の原則に反する。
 
 ```text
-ai-driven-spiral-development@x
-@mydx/spiral-github@y
-@mydx/spiral-quality@z
+Core は GitHub を知らない
+Core は Quality Guard を知らない
+Quality Guard は runtime graph から独立する
 ```
 
-Portable Distribution の初期段階では、この複雑性を導入する利益よりも、単一 package として互換性を保証する利益の方が大きい。
+したがって Portable Distribution では source dependency だけでなく install-time dependency も責務境界に従わせる。
 
-一方 CLI は、`pnpm dlx` から直接実行され、ファイル生成・package 導入を担当し、runtime library とは異なる release lifecycle を持ち得る。また CLI 固有 dependency を library 利用者へ持ち込みたくない。そのため `@mydx/spiral` として独立 publish する。
+```text
+Core 利用者
+→ Core dependency のみ
 
-## 3. module 構成
+Standard Process 利用者
+→ Core + Standard Process
 
-Repository 内では次の責務境界を採用する。
+GitHub Adapter 利用者
+→ Core + Standard Process + GitHub dependency
+
+Quality Guard 利用者
+→ Quality tooling dependency
+```
+
+CLI は各 package を選択的に導入する最外層 Composition Tool とする。
+
+## 3. Repository 内構成
+
+同一 GitHub Repository 内で monorepo として管理してよいが、npm publish 単位は分離する。
+
+概念構成:
 
 ```text
 packages/
 ├─ core/
-├─ standard-cycle/
-├─ index.ts
-├─ standard-process.ts
+│  └─ package.json
+├─ standard/
+│  └─ package.json
 ├─ github/
-│  └─ index.ts
-└─ quality/
-   └─ index.ts
-
-cli/
-└─ ...
+│  └─ package.json
+├─ quality/
+│  └─ package.json
+└─ cli/
+   └─ package.json
 ```
 
-現在の以下の構造は維持する。
+現在の `packages/core` / `packages/standard-cycle` / `packages/standard-process.ts` は後続実装で package 境界へ整理する。
 
-```text
-packages/core/
-packages/standard-cycle/
-packages/index.ts
-packages/standard-process.ts
-```
+Repository を分ける必要はない。workspace により同一 Repository で開発・test・release できる。
 
-`standard-cycle` は Standard Process の内部実装であり、直接の public entry point にはしない。
+## 4. package 責務
 
-public API は必ず次の entry point を経由させる。
+### 4.1 `ai-driven-spiral-development`
 
-```text
-packages/index.ts
-packages/standard-process.ts
-packages/github/index.ts
-packages/quality/index.ts
-```
-
-内部ファイルパスを package 利用者へ公開しない。
-
-## 4. 責務一覧
-
-### 4.1 Core
+Core package。
 
 #### 責務
 
@@ -130,30 +115,33 @@ SemanticCompletionEvent
 Spiral
 ```
 
-Core は特定の Artifact 保存先、Process 構成、CI、GitHub、CLI 等を知らない。
+Core は特定の Artifact 保存先、Process preset、GitHub、Quality Guard、CLI を知らない。
 
 #### 許可する依存
 
 ```text
 Core
-└─ JavaScript / TypeScript 標準機能
+└─ JavaScript / TypeScript 標準機能および Core 自身に必要な最小 dependency
 ```
 
 #### 禁止する依存
 
 ```text
 Core
--X-> Standard Process
--X-> GitHub Adapter
--X-> Quality Guard
--X-> CLI
+-X-> @mydx/spiral-standard
+-X-> @mydx/spiral-github
+-X-> @mydx/spiral-quality
+-X-> @mydx/spiral
 -X-> Octokit
--X-> GitHub
+-X-> GitHub tooling
+-X-> Quality tooling
 ```
 
 Core は Portable Distribution における最も内側の dependency boundary である。
 
-### 4.2 Standard Process
+### 4.2 `@mydx/spiral-standard`
+
+Standard Process package。
 
 #### 責務
 
@@ -181,7 +169,7 @@ ReleaseGate
 AcceptanceGate
 ```
 
-Standard Process は次の標準 Process model を表現する。
+標準 Process model:
 
 ```text
 要求定義
@@ -199,31 +187,33 @@ Release
 Acceptance
 ```
 
-#### 許可する依存
+#### dependency
 
 ```text
-Standard Process
-↓
-Core
+@mydx/spiral-standard
+        ↓
+ai-driven-spiral-development
 ```
 
 #### 禁止する依存
 
 ```text
-Standard Process
--X-> GitHub Adapter
--X-> Quality Guard
--X-> CLI
+@mydx/spiral-standard
+-X-> @mydx/spiral-github
+-X-> @mydx/spiral-quality
+-X-> @mydx/spiral
 -X-> Octokit
 ```
 
-Standard Process は Artifact の意味を定義するが、`Demand を GitHub Issue へ保存する` といった永続化方式は定義しない。
+Standard Process は Artifact の意味を定義するが、永続化方式を定義しない。
 
-### 4.3 GitHub Adapter
+### 4.3 `@mydx/spiral-github`
+
+GitHub Artifact Adapter package。
 
 #### 責務
 
-Core および Standard Process の Artifact を GitHub 上の resource へ mapping する。
+Core / Standard Process の Artifact を GitHub resource へ mapping する。
 
 主な対象:
 
@@ -246,34 +236,45 @@ GitHub 上の Artifact 検索
 GitHub Issue と Artifact 間の mapping
 ```
 
-GitHub Adapter は GitHub Issue 等を Artifact persistence として利用するための Adapter である。
-
-#### 許可する依存
+#### dependency
 
 ```text
-GitHub Adapter
-├─→ Standard Process
-│    └─→ Core
-└─→ Core
+@mydx/spiral-github
+        ↓
+@mydx/spiral-standard
+        ↓
+ai-driven-spiral-development
 ```
 
-外部 dependency として GitHub client を利用してよい。例: `Octokit`。
+必要に応じて Core を直接 import してよい。
+
+```text
+@mydx/spiral-github → ai-driven-spiral-development
+```
+
+GitHub API client はこの package 内に隔離する。
+
+例:
+
+```text
+Octokit
+```
+
+したがって Core / Standard Process のみを利用する Repository に Octokit は install されない。
 
 #### 禁止する依存
 
 ```text
-GitHub Adapter
--X-> Quality Guard
--X-> CLI
+@mydx/spiral-github
+-X-> @mydx/spiral-quality
+-X-> @mydx/spiral
 ```
 
-#### 重要な境界
+GitHub Adapter は persistence adapter であり、Process 進行を担当しない。
 
-GitHub Adapter は Standard Process を実行しない。
+### 4.4 `@mydx/spiral-quality`
 
-例えば `DemandRepository` は Demand を GitHub Issue から復元する責務を持つが、`DemandDefinitionGate` を通過させる、次の Process を開始する、といった進行制御は担当しない。それらは Core / Standard Process 側の責務である。
-
-### 4.4 Quality Guard
+Quality Guard package。
 
 #### 責務
 
@@ -292,118 +293,180 @@ static member policy
 architecture constraint
 ```
 
-Quality Guard はスパイラルを進行させる runtime component ではない。`Spiral`、`Cycle`、`Process` の実行責務へ組み込まない。
+Quality Guard は `Spiral` / `Cycle` / `Process` の runtime execution graph へ組み込まない。
 
-#### 依存方向
+#### dependency
 
-原則として独立した tooling module とする。
-
-```text
-Quality Guard
-```
-
-Core への runtime 依存は持たない。
-
-Core の型を検査対象として利用する必要が将来発生した場合でも `Quality Guard → Core` のみを許可し、`Core → Quality Guard` は許可しない。
-
-#### 実行場所
-
-Quality Guard は主に次の場所から呼び出される。
+原則として runtime package graph から独立する。
 
 ```text
-package script
-pre-commit hook
-CI
-CLI
+@mydx/spiral-quality
 ```
 
-### 4.5 CLI
+必要な tooling dependency はこの package に隔離する。
+
+例:
+
+```text
+ESLint
+ts-morph
+Knip
+dependency-cruiser
+jscpd
+```
+
+Core の型や source structure を検査対象として扱う必要が将来発生した場合でも、許可する方向は次のみとする。
+
+```text
+@mydx/spiral-quality
+        ↓
+ai-driven-spiral-development
+```
+
+逆方向は許可しない。
+
+```text
+ai-driven-spiral-development
+-X-> @mydx/spiral-quality
+```
+
+### 4.5 `@mydx/spiral`
+
+CLI / Composition Tool package。
 
 #### 責務
 
-Portable Distribution の各 component を利用 Repository へ Composition する。
+Portable Distribution の component を利用 Repository へ選択的に導入する。
 
-CLI 自身は Core model や GitHub persistence の business logic を再実装しない。
+CLI 自身は Core model、Standard Process、GitHub persistence、Quality analysis logic を再実装しない。
 
-`@mydx/spiral` は installer / composition tool として扱う。
+#### dependency / composition
 
-#### 依存方向
+CLI は最外層に位置する。
 
 ```text
-CLI
+@mydx/spiral
 ├─→ ai-driven-spiral-development
-├─→ Standard Process
-├─→ GitHub Adapter
-└─→ Quality Guard
+├─→ @mydx/spiral-standard
+├─→ @mydx/spiral-github
+└─→ @mydx/spiral-quality
 ```
 
-概念的には次の構造になる。
+ただし `init` 時にすべての component を利用 Repository へ強制導入しない。
+
+CLI option と package composition を対応させる。
 
 ```text
-CLI ───────────────────────┐
-                           ↓
-GitHub Adapter → Standard Process → Core
+--process standard
+→ @mydx/spiral-standard
 
-Quality Guard
+--artifact github
+→ @mydx/spiral-github
+
+--quality
+→ @mydx/spiral-quality
 ```
 
-CLI は最も外側の Composition Root である。
+例:
+
+```bash
+pnpm dlx @mydx/spiral init \
+  --artifact github \
+  --process standard \
+  --quality
+```
 
 ## 5. package 間依存方向
 
-依存関係は次の方向だけを許可する。
+許可する依存方向:
 
 ```text
-                    Core
-                     ↑
-                     │
-              Standard Process
-                     ↑
-                     │
-               GitHub Adapter
-                     ↑
-                     │
-                    CLI
+@mydx/spiral-standard
+        ↓
+ai-driven-spiral-development
 
-Quality Guard
-     ↑
-     │
-    CLI
+@mydx/spiral-github
+        ↓
+@mydx/spiral-standard
+        ↓
+ai-driven-spiral-development
+
+@mydx/spiral-quality
+  = runtime graph から独立
+
+@mydx/spiral
+  = 最外層 Composition Tool
 ```
 
-より正確には、以下を許可する。
+より正確には次を許可する。
 
 ```text
-Standard Process → Core
+@mydx/spiral-standard → ai-driven-spiral-development
 
-GitHub Adapter → Standard Process
-GitHub Adapter → Core
+@mydx/spiral-github → @mydx/spiral-standard
+@mydx/spiral-github → ai-driven-spiral-development
 
-CLI → Core
-CLI → Standard Process
-CLI → GitHub Adapter
-CLI → Quality Guard
+@mydx/spiral-quality → ai-driven-spiral-development
+  ※必要な場合のみ
+
+@mydx/spiral → 各 component
 ```
-
-Quality Guard は runtime dependency graph とは独立させる。
 
 禁止する代表例:
 
 ```text
-Core → GitHub Adapter
-Core → Standard Process
-Core → Quality Guard
-Core → CLI
+ai-driven-spiral-development → @mydx/spiral-standard
+ai-driven-spiral-development → @mydx/spiral-github
+ai-driven-spiral-development → @mydx/spiral-quality
+ai-driven-spiral-development → @mydx/spiral
 
-Standard Process → GitHub Adapter
-Standard Process → CLI
+@mydx/spiral-standard → @mydx/spiral-github
+@mydx/spiral-standard → @mydx/spiral-quality
+@mydx/spiral-standard → @mydx/spiral
 
-GitHub Adapter → CLI
-
-Quality Guard → GitHub Adapter
+@mydx/spiral-github → @mydx/spiral-quality
+@mydx/spiral-github → @mydx/spiral
 ```
 
-## 6. public API
+## 6. install-time dependency boundary
+
+package 分割は source の見通しのためだけではなく、利用 Repository に install される dependency を責務単位に制御するために行う。
+
+### Core のみ
+
+```bash
+pnpm add ai-driven-spiral-development
+```
+
+GitHub / Quality tooling dependency は入らない。
+
+### Standard Process
+
+```bash
+pnpm add ai-driven-spiral-development @mydx/spiral-standard
+```
+
+GitHub / Quality tooling dependency は入らない。
+
+### GitHub Adapter
+
+```bash
+pnpm add ai-driven-spiral-development @mydx/spiral-standard @mydx/spiral-github
+```
+
+ここで初めて GitHub client dependency が導入される。
+
+### Quality Guard
+
+```bash
+pnpm add -D @mydx/spiral-quality
+```
+
+Quality tooling dependency は Quality Guard を選択した Repository にのみ導入される。
+
+これにより `optionalDependencies` / `peerDependencies` による疑似的な境界ではなく、npm package boundary 自体で dependency isolation を保証する。
+
+## 7. public API
 
 ### Core
 
@@ -420,9 +483,7 @@ import {
 } from "ai-driven-spiral-development";
 ```
 
-package root は Core 専用 entry point とする。GitHub Adapter や Standard Process を root から re-export しない。
-
-これにより、`import { DemandRepository } from "ai-driven-spiral-development";` のような外部技術の Core API への混入を防止する。
+package root は Core 専用 public API とする。
 
 ### Standard Process
 
@@ -436,10 +497,16 @@ import {
   QAReport,
   Release,
   AcceptanceReport,
-} from "ai-driven-spiral-development/standard-process";
+} from "@mydx/spiral-standard";
 ```
 
-既存の subpath export を維持する。
+現在の
+
+```ts
+import { Demand } from "ai-driven-spiral-development/standard-process";
+```
+
+は移行期間を経て `@mydx/spiral-standard` へ置き換える。
 
 ### GitHub Adapter
 
@@ -453,97 +520,59 @@ import {
   ReleaseRepository,
   AcceptanceReportRepository,
   StandardCycleRepository,
-} from "ai-driven-spiral-development/github";
+} from "@mydx/spiral-github";
 ```
 
-GitHub Adapter 内部の parser 等は、利用 Repository が直接使用する合理的な理由がない限り public export しない。
-
-例えば `GitHubIssue`、`DemandIssue`、`ExternalSpecIssue` 等が Repository 実装の内部 detail に留まるのであれば export しない。
+内部 parser は利用側が直接必要としない限り public API に含めない。
 
 ### Quality Guard
 
-Quality Guard は JavaScript API を必要最小限公開する。
-
 ```ts
-import { runQualityGuard } from "ai-driven-spiral-development/quality";
+import { runQualityGuard } from "@mydx/spiral-quality";
 ```
 
-利用 Repository が `scripts/quality/metrics.mjs`、`scripts/quality/duplication.mjs` 等をコピーする設計にはしない。package 内実装を script または CLI から実行する。
+必要なら package 自身に executable entry point を持たせてもよい。
 
-## 7. package.json exports
+利用 Repository が `scripts/quality/metrics.mjs` 等を保持する設計にはしない。
 
-最終的な library package は概念的に次の export を持つ。
-
-```json
-{
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./standard-process": {
-      "types": "./dist/standard-process.d.ts",
-      "import": "./dist/standard-process.js"
-    },
-    "./github": {
-      "types": "./dist/github/index.d.ts",
-      "import": "./dist/github/index.js"
-    },
-    "./quality": {
-      "types": "./dist/quality/index.d.ts",
-      "import": "./dist/quality/index.js"
-    }
-  }
-}
-```
-
-ただし存在しない entry point を先行して exports へ追加しない。
-
-各 module の実装 Issue で `packages/github/index.ts`、`packages/quality/index.ts` が実際に生成された時点で対応する subpath export を追加する。
-
-## 8. publish 単位
-
-### ai-driven-spiral-development
-
-以下を同一 version として publish する。
-
-```text
-Core
-Standard Process
-GitHub Adapter
-Quality Guard
-```
-
-これらの内部互換性は package 自身が保証する。
-
-### @mydx/spiral
-
-CLI のみ別 package として publish する。
-
-```text
-@mydx/spiral
-```
-
-主な command:
+### CLI
 
 ```bash
 pnpm dlx @mydx/spiral init
 ```
 
-将来的に必要なら以下を追加する。
+CLI の TypeScript API を public contract とする必要はない。
 
-```bash
-pnpm dlx @mydx/spiral check
-pnpm dlx @mydx/spiral upgrade
-```
+## 8. publish 単位
 
-CLI package は必要とする `ai-driven-spiral-development` version を dependency として宣言する。
+Portable Distribution の publish 単位は以下の 5 package とする。
 
-## 9. `spiral-template` から移植する実装
+| package | publish responsibility |
+| --- | --- |
+| `ai-driven-spiral-development` | Core |
+| `@mydx/spiral-standard` | Standard Process |
+| `@mydx/spiral-github` | GitHub Artifact Adapter |
+| `@mydx/spiral-quality` | Quality Guard |
+| `@mydx/spiral` | CLI / Composition Tool |
 
-### GitHub Adapter へ移植
+同一 Repository の workspace として管理し、CI では package 間 dependency direction と互換性を検証する。
 
-`spiral-template` の GitHub Issue を Artifact persistence として扱う実装は GitHub Adapter へ移植する。
+### version compatibility
+
+package を分離しても version compatibility を利用者へ丸投げしない。
+
+次を基本方針とする。
+
+- workspace 上で package 間を統合 test する
+- Adapter / Standard Process が対応する Core version range を `dependencies` / `peerDependencies` の適切な方で明示する
+- CLI が互換性のある package combination を選択して install する
+- breaking change 時は関連 package の compatibility matrix を更新する
+
+初期段階では release version を揃える運用を採用してもよいが、package identity 自体は独立させる。
+
+## 9. `spiral-template` から GitHub Adapter へ移植する実装
+
+`spiral-template` の GitHub Issue を Artifact persistence として扱う共通実装は `@mydx/spiral-github` へ移植する。
 
 対象:
 
@@ -563,13 +592,13 @@ StandardCycle を GitHub から復元する Repository
 CycleFactory 等の GitHub 依存実装
 ```
 
-これらの unit test も GitHub Adapter 側へ移す。
+これらの unit test も GitHub Adapter package 側へ移す。
 
-GitHub persistence の正しさは Portable Distribution 自身が保証する。利用 Repository へ Repository 実装をコピーしない。
+利用 Repository へ Repository 実装をコピーしない。
 
-## 10. Quality Guard へ移植
+## 10. Quality Guard へ移植する実装
 
-共通 quality analysis logic は Quality Guard へ移す。
+共通 quality analysis logic は `@mydx/spiral-quality` へ移す。
 
 対象:
 
@@ -582,13 +611,7 @@ dependency analysis
 responsibility boundary analysis
 ```
 
-必要に応じて `dependency-cruiser`、`jscpd`、`knip`、`ts-morph`、`eslint` 等を内部実装として利用してよい。
-
-ただし利用 Repository はそれらの実装 detail を直接意識しないことを目標とする。
-
-## 11. package 自身の test へ移すもの
-
-Quality Guard 自身の正しさを確認する fixture は利用 Repository へ生成しない。
+Quality Guard 自身の fixture / regression test も package 側へ移す。
 
 対象:
 
@@ -597,29 +620,11 @@ scripts/quality/fixture-checks.mjs
 test/quality-fixtures/**
 ```
 
-これらは `ai-driven-spiral-development` Repository 内の Quality Guard test へ移す。
+利用 Repository が Quality Guard 自体の検出能力を test する必要はない。
 
-例えば次を package 自身の CI で保証する。
+## 11. CLI resource へ移すもの
 
-```text
-違反コード
-↓
-Quality Guard
-↓
-違反を検出
-
-正常コード
-↓
-Quality Guard
-↓
-通過
-```
-
-利用 Repository が Quality Guard 自体を test する必要はない。
-
-## 12. CLI resource へ移すもの
-
-利用 Repository ごとの差分を持たず、CLI が生成可能な template resource は CLI package 側で管理する。
+利用 Repository ごとの差分を持たず CLI が生成可能な template resource は `@mydx/spiral` 側で管理する。
 
 対象:
 
@@ -629,13 +634,13 @@ Quality Guard
 .github/workflows/**
 ```
 
-これらは npm package の runtime API ではなく、CLI が利用 Repository へ materialize する resource として扱う。
+これらは library runtime API ではなく、CLI が利用 Repository へ materialize する resource とする。
 
-## 13. 利用 Repository へ残すもの
+## 12. 利用 Repository へ残すもの
 
-Portable Distribution 導入後も、project 固有の policy または Composition は利用 Repository へ存在する。
+Portable Distribution 導入後も project 固有の policy / Composition は利用 Repository へ存在する。
 
-### spiral.config.*
+### `spiral.config.*`
 
 スパイラル実行構成。
 
@@ -648,7 +653,7 @@ Execution Channel
 Repository 固有設定
 ```
 
-### quality.config.*
+### `quality.config.*`
 
 project 固有の quality policy。
 
@@ -662,19 +667,21 @@ architecture rule
 責務境界
 ```
 
-Quality Guard の実装は package へ置くが、policy は利用 Repository へ置く。
+Quality Guard の実装は package に置き、policy は利用 Repository に置く。
 
-### .github/ISSUE_TEMPLATE/**
+### `.github/ISSUE_TEMPLATE/**`
 
-GitHub Artifact を利用する Repository では生成する。これは GitHub 上の human / agent interface であり、Repository に存在する必要がある。
+GitHub Artifact を利用する場合に生成する。
 
-### .github/pull_request_template.md
+### `.github/pull_request_template.md`
 
-Repository 上の開発 operation に必要なため生成対象とする。
+Repository 上の開発 operation に必要な場合に生成する。
 
-### .github/workflows/**
+### `.github/workflows/**`
 
-CI は利用 Repository 内で GitHub Actions から実行されるため生成対象とする。ただし Workflow 内から共通 quality implementation を呼び出し、Quality Guard 本体を Workflow へコピーしない。
+CI は利用 Repository 内で実行されるため生成する。
+
+Workflow から package 化された共通 Quality Guard を呼び、Quality Guard 本体をコピーしない。
 
 ### project 固有 Execution Channel
 
@@ -689,11 +696,13 @@ GitHub Actions
 独自 Agent
 ```
 
-Standard Process は Execution Channel の具体実装を知らない。CLI は必要な contract または stub だけを生成可能とする。
+Standard Process は Execution Channel の具体実装を知らない。
 
-## 14. 最終的な利用 Repository
+CLI は contract / stub / configuration point のみ生成可能とする。
 
-Portable Distribution 導入後の利用 Repository は概念的に次の状態となる。
+## 13. 利用 Repository の最終形
+
+概念例:
 
 ```text
 application-repository/
@@ -717,9 +726,9 @@ scripts/quality/duplication.mjs
 test/quality-fixtures/**
 ```
 
-これらは npm package から利用する。
+これらは package から利用する。
 
-## 15. `spiral-template` の位置付け
+## 14. `spiral-template` の位置付け
 
 Portable Distribution 完成後、`spiral-template` は distribution source ではない。
 
@@ -732,95 +741,99 @@ CLI 生成結果の sample
 integration test target
 ```
 
-Portable Distribution 利用のために `spiral-template` を fork または template 生成する必要はない。
+Portable Distribution 利用のために `spiral-template` を fork / template generation する必要はない。
 
-## 16. CLI による Composition
+## 15. CLI による Composition
 
-最終的な導入 UX は次を基本とする。
+最終的な導入 UX:
 
 ```bash
 pnpm dlx @mydx/spiral init \
   --artifact github \
-  --process standard
+  --process standard \
+  --quality
 ```
 
-CLI は選択された component を Composition する。
+選択と package の対応:
 
 ```text
---artifact github
-        ↓
-GitHub Adapter
-
 --process standard
-        ↓
-Standard Process
+→ @mydx/spiral-standard
+
+--artifact github
+→ @mydx/spiral-github
+
+--quality
+→ @mydx/spiral-quality
 ```
 
-Quality Guard を選択した場合は Quality Guard を追加する。
+CLI は選択された package のみ導入する。
 
-CLI は GitHub Adapter、Standard Process、Quality Guard、Core の実装を利用 Repository へコピーしない。必要 package を install し、project 固有 config と GitHub resource だけを生成する。
+例えば Core のみ必要な利用者へ GitHub Adapter や Quality Guard dependency を持ち込まない。
 
-## 17. 拡張方針
+## 16. 拡張方針
 
-この境界により、将来別 Adapter を追加できる。
+将来別 Adapter を追加する場合も独立 package とする。
 
 例:
 
 ```text
-ai-driven-spiral-development/github
-ai-driven-spiral-development/filesystem
-ai-driven-spiral-development/jira
+@mydx/spiral-filesystem
+@mydx/spiral-jira
 ```
 
-同様に Process model も交換可能とする。
+Process preset も同様に追加可能とする。
 
 ```text
-standard process
-custom process
+@mydx/spiral-standard
+@mydx/spiral-<custom-process>
 ```
 
-CLI は特定の組み合わせへ固定せず、`Artifact Adapter × Process × Quality Guard` を Composition する位置付けを維持する。
+CLI は特定 combination に固定せず、Artifact Adapter × Process × Quality Guard を Composition する位置付けを維持する。
 
-## 18. 境界ルール
+## 17. 境界ルール
 
 Portable Distribution では以下を不変条件とする。
 
 1. Core は外部 Adapter を参照しない。
 2. Core は Standard Process を参照しない。
-3. Standard Process は GitHub を知らない。
-4. GitHub Adapter は Artifact persistence のみを担当し、Process 進行を担当しない。
-5. Quality Guard は Core の runtime execution へ混在しない。
-6. CLI は各 component を Composition する最外層である。
-7. 共通実装は利用 Repository へコピーしない。
-8. project 固有 policy と Composition のみ利用 Repository へ残す。
-9. public API は entry point 経由で公開し、内部 directory を API 化しない。
-10. 存在しない subpath export を先行公開しない。
+3. Core 利用者へ GitHub / Quality tooling dependency を install させない。
+4. Standard Process は GitHub を知らない。
+5. GitHub Adapter は Artifact persistence を担当し、Process 進行を担当しない。
+6. GitHub dependency は `@mydx/spiral-github` に隔離する。
+7. Quality Guard は runtime execution graph へ混在しない。
+8. Quality tooling dependency は `@mydx/spiral-quality` に隔離する。
+9. CLI は各 component を Composition する最外層である。
+10. 共通実装は利用 Repository へコピーしない。
+11. project 固有 policy と Composition のみ利用 Repository へ残す。
+12. public API は各 npm package の entry point 経由で公開する。
 
-## 19. 後続 Issue での実装順序
+## 18. 後続 Issue での実装順序
 
-この boundary を前提として、Portable Distribution は次の順に実装する。
-
-```text
-1. GitHub Adapter module を追加
-2. spiral-template の GitHub Repository 実装を移植
-3. GitHub Adapter subpath export を公開
-4. Quality Guard module を追加
-5. Quality Guard 共通ロジックを移植
-6. fixture test を package 側へ移植
-7. Quality Guard subpath export を公開
-8. @mydx/spiral CLI を実装
-9. init resource 生成を実装
-10. Portable Distribution integration test を追加
-```
-
-各段階で依存方向を検証し、次の逆方向依存を発生させない。
+この boundary を前提として次の順に実装する。
 
 ```text
-CLI
-↓
-GitHub Adapter
-↓
-Standard Process
-↓
-Core
+1. monorepo / workspace publish structure を整備
+2. Standard Process を @mydx/spiral-standard へ分離
+3. GitHub Adapter を @mydx/spiral-github として追加
+4. spiral-template の GitHub Repository 実装を移植
+5. Quality Guard を @mydx/spiral-quality として追加
+6. Quality Guard 共通ロジック / fixture test を移植
+7. @mydx/spiral CLI を実装
+8. init resource 生成を実装
+9. package compatibility / integration test を追加
 ```
+
+各段階で以下を検証する。
+
+```text
+@mydx/spiral-github
+        ↓
+@mydx/spiral-standard
+        ↓
+ai-driven-spiral-development
+```
+
+逆方向依存を許可しない。
+
+また、Core の package install だけでは GitHub / Quality tooling dependency が導入されないことを integration test で保証する。
