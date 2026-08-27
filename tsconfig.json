@@ -14,6 +14,7 @@
     "packages/github/**",
     "packages/quality/**",
     "packages/standard/**",
+    "packages/standard-github/**",
     "**/*.spec.ts",
     "**/*.test.ts"
   ],
