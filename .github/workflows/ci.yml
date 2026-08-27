@@ -82,11 +82,13 @@ jobs:
           pnpm pack --pack-destination "$CORE_TARBALL_DIR"
           CORE_TARBALL="$(find "$CORE_TARBALL_DIR" -maxdepth 1 -name '*.tgz' -print -quit)"
 
-          STANDARD_DIR="$(mktemp -d)"
-          cp -R packages/standard/. "$STANDARD_DIR/"
-          rm -rf "$STANDARD_DIR/node_modules" "$STANDARD_DIR/dist"
-          cd "$STANDARD_DIR"
-          pnpm pkg set "devDependencies.@mydx-dev/ai-driven-spiral-development=file:$CORE_TARBALL"
+          VERIFY_ROOT="$(mktemp -d)"
+          tar -xzf "$CORE_TARBALL" -C "$VERIFY_ROOT" --strip-components=1
+          mkdir -p "$VERIFY_ROOT/packages/standard"
+          cp -R packages/standard/. "$VERIFY_ROOT/packages/standard/"
+          rm -rf "$VERIFY_ROOT/packages/standard/node_modules" "$VERIFY_ROOT/packages/standard/dist"
+
+          cd "$VERIFY_ROOT/packages/standard"
           pnpm install --no-frozen-lockfile
           pnpm test
           pnpm typecheck
