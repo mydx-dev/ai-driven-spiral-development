@@ -1,9 +1,4 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { resolveComposition } from "./registry.mjs";
 
@@ -82,14 +77,17 @@ const mergePackageJson = (current, composition) => {
 
   if (composition.quality) {
     if (next.scripts.quality && next.scripts.quality !== "spiral-quality") {
-      conflicts.push(`script quality already exists as: ${next.scripts.quality}`);
+      conflicts.push(
+        `script quality already exists as: ${next.scripts.quality}`,
+      );
     } else {
       next.scripts.quality = "spiral-quality";
     }
   }
 
   if (Object.keys(next.dependencies).length === 0) delete next.dependencies;
-  if (Object.keys(next.devDependencies).length === 0) delete next.devDependencies;
+  if (Object.keys(next.devDependencies).length === 0)
+    delete next.devDependencies;
   if (Object.keys(next.scripts).length === 0) delete next.scripts;
 
   return { next, conflicts };
@@ -135,7 +133,8 @@ export const planInit = ({
     changes.push({
       path: "package.json",
       content: nextPackageText,
-      classification: currentPackageText === null ? "safe create" : "safe merge",
+      classification:
+        currentPackageText === null ? "safe create" : "safe merge",
     });
   }
 

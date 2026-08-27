@@ -5,7 +5,9 @@
   "bin": {
     "spiral": "./src/cli.mjs"
   },
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "exports": {
     ".": "./src/init.mjs",
     "./registry": "./src/registry.mjs"

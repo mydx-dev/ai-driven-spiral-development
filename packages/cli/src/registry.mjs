@@ -42,9 +42,7 @@ export const resolveComposition = ({
     ...processEntry.dependencies,
     ...(binding ? { [binding.dependency]: "latest" } : {}),
   };
-  const devDependencies = quality
-    ? { "@mydx/spiral-quality": "latest" }
-    : {};
+  const devDependencies = quality ? { "@mydx/spiral-quality": "latest" } : {};
 
   return {
     artifact,
