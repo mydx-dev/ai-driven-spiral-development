@@ -1,5 +1,5 @@
-import type { GatePass, ProcessGate } from "../../core/ProcessGate";
-import type { ExternalSpec } from "../artifact/ExternalSpec";
+import type { GatePass, ProcessGate } from "ai-driven-spiral-development";
+import type { ExternalSpec } from "../artifact/ExternalSpec.js";
 
 export class ExternalDesignGate implements ProcessGate<ExternalSpec> {
   verifyStructuralComplete(externalSpecs: ExternalSpec[]): GatePass {
@@ -23,7 +23,6 @@ export class ExternalDesignGate implements ProcessGate<ExternalSpec> {
     }
 
     const targetRequirementIds = new Set(externalSpec.requirementIds);
-
     const designedRequirementIds = new Set<string>();
 
     for (const feature of externalSpec.features) {

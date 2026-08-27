@@ -1,4 +1,4 @@
-import type { Artifact } from "../../core/Artifact";
+import type { Artifact } from "ai-driven-spiral-development";
 
 export class ExternalSpec implements Artifact {
   constructor(

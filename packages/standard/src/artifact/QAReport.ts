@@ -1,4 +1,4 @@
-import type { Artifact } from "../../core/Artifact";
+import type { Artifact } from "ai-driven-spiral-development";
 
 export class QAReport implements Artifact {
   constructor(
@@ -7,6 +7,7 @@ export class QAReport implements Artifact {
     public readonly results: RequirementVerification[],
   ) {}
 }
+
 export class RequirementVerification {
   constructor(
     public readonly requirementId: string,

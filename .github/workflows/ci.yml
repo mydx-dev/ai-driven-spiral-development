@@ -72,3 +72,14 @@ jobs:
 
       - name: Build CLI package
         run: pnpm --dir packages/cli build
+
+      - name: Verify Standard package standalone
+        run: |
+          STANDARD_DIR="$(mktemp -d)"
+          cp -R packages/standard/. "$STANDARD_DIR/"
+          rm -rf "$STANDARD_DIR/node_modules" "$STANDARD_DIR/dist"
+          cd "$STANDARD_DIR"
+          pnpm install --no-frozen-lockfile
+          pnpm test
+          pnpm typecheck
+          pnpm build

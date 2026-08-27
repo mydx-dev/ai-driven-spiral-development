@@ -1,6 +1,6 @@
 {
   "name": "ai-driven-spiral-development",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -15,10 +15,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./standard-process": {
-      "types": "./dist/standard-process.d.ts",
-      "import": "./dist/standard-process.js"
     }
   },
   "scripts": {
