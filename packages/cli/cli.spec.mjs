@@ -49,9 +49,9 @@ describe("composition resolution", () => {
   });
 
   it("adds Quality Guard only when requested", () => {
-    expect(resolveComposition({ quality: true }).devDependencies).toHaveProperty(
-      "@mydx-dev/spiral-quality",
-    );
+    expect(
+      resolveComposition({ quality: true }).devDependencies,
+    ).toHaveProperty("@mydx-dev/spiral-quality");
     expect(
       resolveComposition({ quality: false }).devDependencies,
     ).not.toHaveProperty("@mydx-dev/spiral-quality");
