@@ -172,6 +172,51 @@ describe("portable init", () => {
     }
   });
 
+  it("rejects an existing dependency with a different requested version", () => {
+    const cwd = temporaryRepository();
+    try {
+      writeFileSync(
+        join(cwd, "package.json"),
+        `${JSON.stringify({ dependencies: { "@mydx/spiral-github": "0.1.0" } }, null, 2)}\n`,
+      );
+      const before = readFileSync(join(cwd, "package.json"), "utf8");
+
+      expect(() =>
+        initRepository({ cwd, artifact: "github", process: "custom" }),
+      ).toThrow(
+        "manual decision required: @mydx/spiral-github requires latest but dependencies has 0.1.0",
+      );
+      expect(readFileSync(join(cwd, "package.json"), "utf8")).toBe(before);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects Quality Guard when it already exists in dependencies", () => {
+    const cwd = temporaryRepository();
+    try {
+      writeFileSync(
+        join(cwd, "package.json"),
+        `${JSON.stringify({ dependencies: { "@mydx/spiral-quality": "latest" } }, null, 2)}\n`,
+      );
+      const before = readFileSync(join(cwd, "package.json"), "utf8");
+
+      expect(() =>
+        initRepository({
+          cwd,
+          artifact: "github",
+          process: "custom",
+          quality: true,
+        }),
+      ).toThrow(
+        "manual decision required: @mydx/spiral-quality already exists in dependencies as latest",
+      );
+      expect(readFileSync(join(cwd, "package.json"), "utf8")).toBe(before);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("runs fully specified init without prompting", () => {
     const cwd = temporaryRepository();
     try {
