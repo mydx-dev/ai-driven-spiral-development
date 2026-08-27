@@ -1,8 +1,8 @@
 import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join, resolve } from "node:path";
-import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { ESLint } from "eslint";
 import { loadQualityConfig } from "./config.mjs";
 import { createEslintConfig } from "./eslint.mjs";
@@ -11,14 +11,17 @@ import { runMetrics } from "./metrics.mjs";
 const require = createRequire(import.meta.url);
 
 export class QualityViolationError extends Error {
-  constructor(public readonly violations) {
+  constructor(violations) {
     super("Quality Guard found violations.");
+    this.violations = violations;
   }
 }
 
 export class QualityToolError extends Error {
-  constructor(public readonly sensor, public readonly cause) {
+  constructor(sensor, cause) {
     super(`Quality Guard sensor failed unexpectedly: ${sensor}`);
+    this.sensor = sensor;
+    this.cause = cause;
   }
 }
 
@@ -83,7 +86,10 @@ const runEslint = async (quality, cwd, root) => {
     const results = await eslint.lintFiles([root]);
     const formatter = await eslint.loadFormatter("stylish");
     const output = formatter.format(results);
-    const errorCount = results.reduce((sum, result) => sum + result.errorCount, 0);
+    const errorCount = results.reduce(
+      (sum, result) => sum + result.errorCount,
+      0,
+    );
     return {
       sensor: "eslint",
       passed: errorCount === 0,
@@ -172,7 +178,8 @@ const runDuplication = (quality, cwd, root) =>
 
 export const runQualityGuard = async (options = {}) => {
   const cwd = resolve(options.cwd ?? process.cwd());
-  const quality = options.quality ?? (await loadQualityConfig(options.configPath));
+  const quality =
+    options.quality ?? (await loadQualityConfig(options.configPath));
   const root = options.root ?? quality.paths.source;
   const results = [];
 
