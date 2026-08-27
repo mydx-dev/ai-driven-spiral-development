@@ -72,7 +72,9 @@ const runExecutable = (sensor, packageName, binName, args, cwd) => {
     if (result.error) throw result.error;
     const output = `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
     if ((result.status ?? 2) > 1 || toolFailureOutput(output)) {
-      throw new Error(output || `${binName} exited with status ${result.status}`);
+      throw new Error(
+        output || `${binName} exited with status ${result.status}`,
+      );
     }
     return {
       sensor,
@@ -95,7 +97,10 @@ const runEslint = async (quality, cwd, root) => {
     const results = await eslint.lintFiles([root]);
     const formatter = await eslint.loadFormatter("stylish");
     const output = formatter.format(results);
-    const errorCount = results.reduce((sum, result) => sum + result.errorCount, 0);
+    const errorCount = results.reduce(
+      (sum, result) => sum + result.errorCount,
+      0,
+    );
     return {
       sensor: "eslint",
       passed: errorCount === 0,

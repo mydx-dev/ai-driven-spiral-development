@@ -17,7 +17,11 @@ import {
 const quality = mergeQualityConfig();
 const packageRoot = dirname(fileURLToPath(import.meta.url));
 
-const analyze = (source, configuredQuality = quality, filePath = "src/example.ts") => {
+const analyze = (
+  source,
+  configuredQuality = quality,
+  filePath = "src/example.ts",
+) => {
   const project = new Project({ useInMemoryFileSystem: true });
   const file = project.createSourceFile(filePath, source);
   return analyzeSourceFiles([file], configuredQuality, "/");
@@ -59,7 +63,9 @@ describe("Responsibility Boundary Guard", () => {
       `class Example { value = 1; calculate() { return this.value + 1; } } new Example();`,
     );
     expect(
-      findings.some((finding) => finding.kind === "internal-only-public-method"),
+      findings.some(
+        (finding) => finding.kind === "internal-only-public-method",
+      ),
     ).toBe(true);
   });
 
@@ -85,7 +91,8 @@ describe("Responsibility Boundary Guard", () => {
   it.each(["any", "unknown", "never"])(
     "does not allow %s typed factory escapes",
     (returnType) => {
-      const body = returnType === "never" ? `throw new Error("x")` : "return 1 as any";
+      const body =
+        returnType === "never" ? `throw new Error("x")` : "return 1 as any";
       const findings = analyze(
         `class Example { static create(): ${returnType} { ${body}; } }`,
       );
@@ -234,8 +241,14 @@ describe("Quality Guard integration", () => {
   it("keeps architecture, unused and duplication sensors effective", async () => {
     const cwd = temporaryProject();
     try {
-      writeFileSync(join(cwd, "src", "a.ts"), `import { b } from "./b";\nexport const a = () => b();\n`);
-      writeFileSync(join(cwd, "src", "b.ts"), `import { a } from "./a";\nexport const b = () => a();\n`);
+      writeFileSync(
+        join(cwd, "src", "a.ts"),
+        `import { b } from "./b";\nexport const a = () => b();\n`,
+      );
+      writeFileSync(
+        join(cwd, "src", "b.ts"),
+        `import { a } from "./a";\nexport const b = () => a();\n`,
+      );
       writeFileSync(
         join(cwd, "src", "duplicate-one.ts"),
         `export const duplicateOne = (value: number) => {\n  const doubled = value * 2;\n  const tripled = value * 3;\n  return doubled + tripled;\n};\n`,
@@ -269,9 +282,17 @@ describe("Quality Guard integration", () => {
         }),
       });
 
-      expect(report.results.find((result) => result.sensor === "architecture")?.passed).toBe(false);
-      expect(report.results.find((result) => result.sensor === "unused")?.passed).toBe(false);
-      expect(report.results.find((result) => result.sensor === "duplication")?.passed).toBe(false);
+      expect(
+        report.results.find((result) => result.sensor === "architecture")
+          ?.passed,
+      ).toBe(false);
+      expect(
+        report.results.find((result) => result.sensor === "unused")?.passed,
+      ).toBe(false);
+      expect(
+        report.results.find((result) => result.sensor === "duplication")
+          ?.passed,
+      ).toBe(false);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
