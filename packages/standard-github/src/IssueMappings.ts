@@ -3,8 +3,8 @@ import {
   DemandAcceptance,
   Requirement,
   RequirementVerification,
-} from "@mydx/spiral-standard";
-import { GitHubIssue } from "@mydx/spiral-github";
+} from "@mydx-dev/spiral-standard";
+import { GitHubIssue } from "@mydx-dev/spiral-github";
 
 export class DemandIssue {
   constructor(
