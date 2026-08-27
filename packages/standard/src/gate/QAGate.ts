@@ -1,4 +1,4 @@
-import type { GatePass, ProcessGate } from "ai-driven-spiral-development";
+import type { GatePass, ProcessGate } from "@mydx-dev/ai-driven-spiral-development";
 import type { QAReport } from "../artifact/QAReport.js";
 
 export class QAGate implements ProcessGate<QAReport> {

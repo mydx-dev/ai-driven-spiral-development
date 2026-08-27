@@ -1,21 +1,23 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-describe("@mydx/spiral-standard package boundary", () => {
+describe("@mydx-dev/spiral-standard package boundary", () => {
   it("runtime boundaryはCoreだけである", () => {
     const packageJson = JSON.parse(
       readFileSync(new URL("../package.json", import.meta.url), "utf8"),
     );
 
     expect(packageJson.peerDependencies).toEqual({
-      "ai-driven-spiral-development": ">=1.0.1 <3",
+      "@mydx-dev/ai-driven-spiral-development": ">=2 <3",
     });
     expect(packageJson.dependencies).toBeUndefined();
-    expect(packageJson.peerDependencies["@mydx/spiral-github"]).toBeUndefined();
     expect(
-      packageJson.peerDependencies["@mydx/spiral-standard-github"],
+      packageJson.peerDependencies["@mydx-dev/spiral-github"],
     ).toBeUndefined();
-    expect(packageJson.peerDependencies["@mydx/spiral"]).toBeUndefined();
+    expect(
+      packageJson.peerDependencies["@mydx-dev/spiral-standard-github"],
+    ).toBeUndefined();
+    expect(packageJson.peerDependencies["@mydx-dev/spiral"]).toBeUndefined();
   });
 
   it("package自身のtoolchainをdevDependenciesとして宣言する", () => {
@@ -25,7 +27,7 @@ describe("@mydx/spiral-standard package boundary", () => {
 
     expect(packageJson.devDependencies).toMatchObject({
       "@types/node": expect.any(String),
-      "ai-driven-spiral-development": "1.0.1",
+      "@mydx-dev/ai-driven-spiral-development": "file:../..",
       typescript: expect.any(String),
       vitest: expect.any(String),
     });

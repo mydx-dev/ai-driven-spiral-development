@@ -1,4 +1,4 @@
-import type { Artifact } from "ai-driven-spiral-development";
+import type { Artifact } from "@mydx-dev/ai-driven-spiral-development";
 
 export class Release implements Artifact {
   constructor(
