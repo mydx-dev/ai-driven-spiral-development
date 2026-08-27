@@ -27,10 +27,10 @@ describe("composition resolution", () => {
       process: "standard",
     });
     expect(Object.keys(composition.dependencies)).toEqual([
-      "ai-driven-spiral-development",
-      "@mydx/spiral-github",
-      "@mydx/spiral-standard",
-      "@mydx/spiral-standard-github",
+      "@mydx-dev/ai-driven-spiral-development",
+      "@mydx-dev/spiral-github",
+      "@mydx-dev/spiral-standard",
+      "@mydx-dev/spiral-standard-github",
     ]);
   });
 
@@ -39,20 +39,22 @@ describe("composition resolution", () => {
       artifact: "github",
       process: "custom",
     });
-    expect(composition.dependencies["@mydx/spiral-standard"]).toBeUndefined();
     expect(
-      composition.dependencies["@mydx/spiral-standard-github"],
+      composition.dependencies["@mydx-dev/spiral-standard"],
+    ).toBeUndefined();
+    expect(
+      composition.dependencies["@mydx-dev/spiral-standard-github"],
     ).toBeUndefined();
     expect(composition.requiresProjectBinding).toBe(true);
   });
 
   it("adds Quality Guard only when requested", () => {
-    expect(
-      resolveComposition({ quality: true }).devDependencies,
-    ).toHaveProperty("@mydx/spiral-quality");
+    expect(resolveComposition({ quality: true }).devDependencies).toHaveProperty(
+      "@mydx-dev/spiral-quality",
+    );
     expect(
       resolveComposition({ quality: false }).devDependencies,
-    ).not.toHaveProperty("@mydx/spiral-quality");
+    ).not.toHaveProperty("@mydx-dev/spiral-quality");
   });
 });
 
@@ -67,17 +69,21 @@ describe("portable init", () => {
         quality: true,
       });
       const packageJson = readJson(join(cwd, "package.json"));
-      expect(packageJson.dependencies).toHaveProperty("@mydx/spiral-github");
-      expect(packageJson.dependencies).toHaveProperty("@mydx/spiral-standard");
       expect(packageJson.dependencies).toHaveProperty(
-        "@mydx/spiral-standard-github",
+        "@mydx-dev/spiral-github",
+      );
+      expect(packageJson.dependencies).toHaveProperty(
+        "@mydx-dev/spiral-standard",
+      );
+      expect(packageJson.dependencies).toHaveProperty(
+        "@mydx-dev/spiral-standard-github",
       );
       expect(packageJson.devDependencies).toHaveProperty(
-        "@mydx/spiral-quality",
+        "@mydx-dev/spiral-quality",
       );
       expect(packageJson.scripts.quality).toBe("spiral-quality");
       expect(readFileSync(join(cwd, "spiral.config.mjs"), "utf8")).toContain(
-        '"binding": "@mydx/spiral-standard-github"',
+        '"binding": "@mydx-dev/spiral-standard-github"',
       );
       expect(
         readFileSync(join(cwd, "src/spiral/execution-channel.mjs"), "utf8"),
@@ -177,14 +183,14 @@ describe("portable init", () => {
     try {
       writeFileSync(
         join(cwd, "package.json"),
-        `${JSON.stringify({ dependencies: { "@mydx/spiral-github": "0.1.0" } }, null, 2)}\n`,
+        `${JSON.stringify({ dependencies: { "@mydx-dev/spiral-github": "0.1.0" } }, null, 2)}\n`,
       );
       const before = readFileSync(join(cwd, "package.json"), "utf8");
 
       expect(() =>
         initRepository({ cwd, artifact: "github", process: "custom" }),
       ).toThrow(
-        "manual decision required: @mydx/spiral-github requires latest but dependencies has 0.1.0",
+        "manual decision required: @mydx-dev/spiral-github requires latest but dependencies has 0.1.0",
       );
       expect(readFileSync(join(cwd, "package.json"), "utf8")).toBe(before);
     } finally {
@@ -197,7 +203,7 @@ describe("portable init", () => {
     try {
       writeFileSync(
         join(cwd, "package.json"),
-        `${JSON.stringify({ dependencies: { "@mydx/spiral-quality": "latest" } }, null, 2)}\n`,
+        `${JSON.stringify({ dependencies: { "@mydx-dev/spiral-quality": "latest" } }, null, 2)}\n`,
       );
       const before = readFileSync(join(cwd, "package.json"), "utf8");
 
@@ -209,7 +215,7 @@ describe("portable init", () => {
           quality: true,
         }),
       ).toThrow(
-        "manual decision required: @mydx/spiral-quality already exists in dependencies as latest",
+        "manual decision required: @mydx-dev/spiral-quality already exists in dependencies as latest",
       );
       expect(readFileSync(join(cwd, "package.json"), "utf8")).toBe(before);
     } finally {
@@ -239,7 +245,7 @@ describe("portable init", () => {
       expect(result.stdout).toContain("safe create: spiral.config.mjs");
       expect(
         readJson(join(cwd, "package.json")).devDependencies,
-      ).toHaveProperty("@mydx/spiral-quality");
+      ).toHaveProperty("@mydx-dev/spiral-quality");
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
