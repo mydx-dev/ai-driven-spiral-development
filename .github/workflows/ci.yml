@@ -37,6 +37,12 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Diagnose Quality formatting
+        run: |
+          pnpm prettier packages/quality/src/eslint.mjs packages/quality/src/metrics.mjs --write
+          git diff -- packages/quality/src/eslint.mjs packages/quality/src/metrics.mjs
+          exit 1
+
       - name: Format check
         run: pnpm format:check
 
