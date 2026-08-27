@@ -36,7 +36,9 @@ export class GitHubClient {
     body?: unknown,
     query?: Record<string, string>,
   ): Promise<T> {
-    const url = new URL(path, this.apiBaseUrl);
+    const baseUrl = `${this.apiBaseUrl.replace(/\/+$/, "")}/`;
+    const relativePath = path.replace(/^\/+/, "");
+    const url = new URL(relativePath, baseUrl);
 
     for (const [key, value] of Object.entries(query ?? {})) {
       url.searchParams.set(key, value);
@@ -65,7 +67,7 @@ export class GitHubClient {
   }
 
   repositoryPath(path: string): string {
-    return `/repos/${encodeURIComponent(this.owner)}/${encodeURIComponent(this.repo)}${path}`;
+    return `repos/${encodeURIComponent(this.owner)}/${encodeURIComponent(this.repo)}${path}`;
   }
 
   getIssue<T = unknown>(issueNumber: number): Promise<T> {
@@ -94,7 +96,7 @@ export class GitHubClient {
   }
 
   searchIssues<T = unknown>(query: string): Promise<T> {
-    return this.request<T>("GET", "/search/issues", undefined, {
+    return this.request<T>("GET", "search/issues", undefined, {
       q: `repo:${this.owner}/${this.repo} ${query}`,
     });
   }
