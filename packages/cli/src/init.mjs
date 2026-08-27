@@ -24,7 +24,7 @@ const generatedFiles = (composition) => {
         dependencies: Object.keys(composition.dependencies),
         devDependencies: Object.keys(composition.devDependencies),
       },
-      executionChannel: "./src/spiral/execution-channel.mjs",
+      executionChannel: "./scripts/spiral/execution-channel.mjs",
       ...(composition.github
         ? {
             github: {
@@ -41,9 +41,9 @@ const generatedFiles = (composition) => {
   /** @type {Record<string, string>} */
   const files = {
     "spiral.config.mjs": config,
-    "src/spiral/index.mjs":
+    "scripts/spiral/main.mjs":
       'import config from "../../spiral.config.mjs";\nimport { execute } from "./execution-channel.mjs";\n\nexport const spiralComposition = { config, execute };\n',
-    "src/spiral/execution-channel.mjs":
+    "scripts/spiral/execution-channel.mjs":
       'export const execute = async (message) => {\n  void message;\n  throw new Error("TODO: project固有Execution Channelを接続してください。");\n};\n',
   };
 
@@ -172,6 +172,16 @@ export const planInit = (options = {}) => {
     currentPackage,
     composition,
   );
+  const legacyFiles = [
+    "src/spiral/index.mjs",
+    "src/spiral/execution-channel.mjs",
+  ].filter((path) => existsSync(resolve(root, path)));
+  if (legacyFiles.length > 0) {
+    conflicts.push(
+      `manual decision required: legacy Spiral files detected under src/spiral/** (${legacyFiles.join(", ")}); move or remove them explicitly before re-running init`,
+    );
+  }
+
   const changes = [];
   const nextPackageText = `${JSON.stringify(nextPackage, null, 2)}\n`;
   if (currentPackageText !== nextPackageText) {

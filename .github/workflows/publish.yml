@@ -229,6 +229,11 @@ jobs:
             --quality \
             --cwd "$TARGET_DIR"
 
+          test -f "$TARGET_DIR/scripts/spiral/main.mjs"
+          test -f "$TARGET_DIR/scripts/spiral/execution-channel.mjs"
+          test ! -e "$TARGET_DIR/src/spiral"
+          grep -F '"executionChannel": "./scripts/spiral/execution-channel.mjs"' "$TARGET_DIR/spiral.config.mjs"
+
           node - "$TARGET_DIR/package.json" <<'NODE'
           const fs = require('node:fs');
           const packageJson = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
