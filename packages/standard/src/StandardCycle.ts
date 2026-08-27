@@ -1,4 +1,7 @@
-import { Cycle, type CycleFeedbackResult } from "@mydx-dev/ai-driven-spiral-development";
+import {
+  Cycle,
+  type CycleFeedbackResult,
+} from "@mydx-dev/ai-driven-spiral-development";
 
 export type DemandChangeState = "unconfirmed" | "exists" | "none";
 
