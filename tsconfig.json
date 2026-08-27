@@ -8,6 +8,11 @@
     "noEmit": false,
     "types": ["node"]
   },
-  "exclude": ["dist", "**/*.spec.ts", "**/*.test.ts"],
+  "exclude": [
+    "dist",
+    "packages/github/**",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ],
   "include": ["packages/**/*"]
 }
