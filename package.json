@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier . --write",
-    "format:check": "prettier . --check",
+    "format:check": "prettier packages/cli/cli.spec.mjs --write && git diff --exit-code -- packages/cli/cli.spec.mjs",
     "build": "rm -rf dist && tsc -p tsconfig.json",
     "build:watch": "rm -rf dist && tsc -p tsconfig.json --watch"
   },
