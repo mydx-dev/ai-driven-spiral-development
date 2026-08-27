@@ -1,5 +1,5 @@
-import type { Artifact } from "../../core/Artifact";
-import type { Requirement } from "./Requirement";
+import type { Artifact } from "ai-driven-spiral-development";
+import type { Requirement } from "./Requirement.js";
 
 export class Demand implements Artifact {
   constructor(

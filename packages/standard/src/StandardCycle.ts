@@ -1,4 +1,4 @@
-import { Cycle, type CycleFeedbackResult } from "../core/Cycle";
+import { Cycle, type CycleFeedbackResult } from "ai-driven-spiral-development";
 
 export type DemandChangeState = "unconfirmed" | "exists" | "none";
 

@@ -1,5 +1,5 @@
-import type { GatePass, ProcessGate } from "../../core/ProcessGate";
-import type { AcceptanceReport } from "../artifact/AcceptanceReport";
+import type { GatePass, ProcessGate } from "ai-driven-spiral-development";
+import type { AcceptanceReport } from "../artifact/AcceptanceReport.js";
 
 export class AcceptanceGate implements ProcessGate<AcceptanceReport> {
   verifyStructuralComplete(reports: AcceptanceReport[]): GatePass {

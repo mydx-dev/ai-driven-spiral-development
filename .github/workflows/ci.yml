@@ -72,3 +72,15 @@ jobs:
 
       - name: Build CLI package
         run: pnpm --dir packages/cli build
+
+      - name: Install Standard package dependencies
+        run: pnpm --dir packages/standard install --no-frozen-lockfile
+
+      - name: Test Standard package
+        run: pnpm --dir packages/standard test
+
+      - name: Type check Standard package
+        run: pnpm --dir packages/standard typecheck
+
+      - name: Build Standard package
+        run: pnpm --dir packages/standard build

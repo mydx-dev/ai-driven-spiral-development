@@ -1,5 +1,5 @@
-import type { GatePass, ProcessGate } from "../../core/ProcessGate";
-import type { Demand } from "../artifact/Demand";
+import type { GatePass, ProcessGate } from "ai-driven-spiral-development";
+import type { Demand } from "../artifact/Demand.js";
 
 export class RequirementDefinitionGate implements ProcessGate<Demand> {
   verifyStructuralComplete(demands: Demand[]): GatePass {

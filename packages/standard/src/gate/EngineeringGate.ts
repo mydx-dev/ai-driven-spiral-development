@@ -1,5 +1,5 @@
-import type { GatePass, ProcessGate } from "../../core/ProcessGate";
-import type { Implementation } from "../artifact/Implementation";
+import type { GatePass, ProcessGate } from "ai-driven-spiral-development";
+import type { Implementation } from "../artifact/Implementation.js";
 
 export class EngineeringGate implements ProcessGate<Implementation> {
   verifyStructuralComplete(implementations: Implementation[]): GatePass {
@@ -13,7 +13,6 @@ export class EngineeringGate implements ProcessGate<Implementation> {
     }
 
     const implementation = implementations[0];
-
     const implementedFeatureIds = new Set(
       implementation.features.map((feature) => feature.featureId),
     );
