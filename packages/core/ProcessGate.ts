@@ -1,4 +1,4 @@
-import type { Artifact } from "./Artifact";
+import type { Artifact } from "./Artifact.js";
 
 export type GatePassFailed = {
   readonly passed: false;

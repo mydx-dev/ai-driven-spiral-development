@@ -47,6 +47,7 @@ describe("GitHubClient", () => {
     expect(String(fetcher.mock.calls[0][0])).toBe(
       "https://ghe.example/api/v3/repos/mydx-dev/example/issues/12",
     );
+    expect(client.graphqlBaseUrl).toBe("https://ghe.example/api/graphql");
   });
 
   it("provides generic PR, check, review and workflow resource access", async () => {
@@ -69,6 +70,63 @@ describe("GitHubClient", () => {
       "https://api.github.com/repos/mydx-dev/example/pulls/3/comments",
       "https://api.github.com/repos/mydx-dev/example/actions/runs?branch=main",
     ]);
+  });
+
+  it("paginates review threads through the generic GraphQL endpoint", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              repository: {
+                pullRequest: {
+                  reviewThreads: {
+                    nodes: [{ isResolved: true }],
+                    pageInfo: { hasNextPage: true, endCursor: "cursor-1" },
+                  },
+                },
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              repository: {
+                pullRequest: {
+                  reviewThreads: {
+                    nodes: [{ isResolved: false }],
+                    pageInfo: { hasNextPage: false, endCursor: null },
+                  },
+                },
+              },
+            },
+          }),
+          { status: 200 },
+        ),
+      ) as unknown as typeof globalThis.fetch;
+    const client = createGitHubClient(createConnection(fetcher));
+
+    const result = await client.listPullRequestReviewThreads<{
+      repository: {
+        pullRequest: {
+          reviewThreads: { nodes: Array<{ isResolved: boolean }> };
+        };
+      };
+    }>(3);
+
+    expect(result.repository.pullRequest.reviewThreads.nodes).toEqual([
+      { isResolved: true },
+      { isResolved: false },
+    ]);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(
+      JSON.parse(String(fetcher.mock.calls[1][1]?.body)).variables.after,
+    ).toBe("cursor-1");
   });
 
   it("scopes issue and pull request searches to the configured repository", async () => {

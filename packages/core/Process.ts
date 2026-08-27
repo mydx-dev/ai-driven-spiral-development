@@ -1,6 +1,6 @@
-import type { Artifact, ArtifactRepository } from "./Artifact";
-import type { ProcessExecutor } from "./ProcessExecutor";
-import type { GatePass, ProcessGate } from "./ProcessGate";
+import type { Artifact, ArtifactRepository } from "./Artifact.js";
+import type { ProcessExecutor } from "./ProcessExecutor.js";
+import type { GatePass, ProcessGate } from "./ProcessGate.js";
 
 export class Process<
   const TName extends string,

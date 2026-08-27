@@ -7,6 +7,7 @@ export default defineConfig({
       "node_modules/**",
       "packages/quality/**",
       "packages/standard/**",
+      "packages/standard-github/**",
     ],
   },
 });

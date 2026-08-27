@@ -1,5 +1,5 @@
 {
-  "name": "@mydx/spiral-github",
+  "name": "@mydx/spiral-standard-github",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,11 +15,19 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.json",
-    "test": "vitest run",
+    "test": "vitest run src",
     "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "ai-driven-spiral-development": ">=2 <3",
+    "@mydx/spiral-github": ">=0.1.0 <1",
+    "@mydx/spiral-standard": ">=0.1.0 <1"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
+    "ai-driven-spiral-development": "file:../..",
+    "@mydx/spiral-github": "file:../github",
+    "@mydx/spiral-standard": "file:../standard",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
   },

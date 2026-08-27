@@ -31,6 +31,13 @@ export default tseslint.config(
   },
 
   {
+    files: ["packages/standard-github/src/Repositories.ts"],
+    rules: {
+      "no-useless-escape": "off",
+    },
+  },
+
+  {
     files: ["**/*.spec.ts", "**/*.test.ts"],
     rules: {
       "@typescript-eslint/no-unused-vars": "off",

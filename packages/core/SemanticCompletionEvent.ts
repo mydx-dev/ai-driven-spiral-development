@@ -1,4 +1,4 @@
-import type { Cycle, CycleClass, InferProcessNames } from "./Cycle";
+import type { Cycle, CycleClass, InferProcessNames } from "./Cycle.js";
 
 const semanticCompletionEventBrand: unique symbol = Symbol(
   "SemanticCompletionEvent",

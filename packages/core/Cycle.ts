@@ -1,6 +1,6 @@
-import type { Artifact } from "./Artifact";
-import type { Process } from "./Process";
-import type { GatePass } from "./ProcessGate";
+import type { Artifact } from "./Artifact.js";
+import type { Process } from "./Process.js";
+import type { GatePass } from "./ProcessGate.js";
 
 export type CycleFeedbackResult = {
   readonly needNextCycle: boolean;

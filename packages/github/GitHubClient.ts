@@ -3,6 +3,7 @@ export type GitHubConnection = {
   repo: string;
   token?: string;
   apiBaseUrl?: string;
+  graphqlBaseUrl?: string;
   fetch?: typeof globalThis.fetch;
 };
 
@@ -20,6 +21,7 @@ export class GitHubClient {
   public readonly repo: string;
   public readonly token?: string;
   public readonly apiBaseUrl: string;
+  public readonly graphqlBaseUrl: string;
   public readonly fetcher: typeof globalThis.fetch;
 
   constructor(connection: GitHubConnection) {
@@ -27,6 +29,8 @@ export class GitHubClient {
     this.repo = connection.repo;
     this.token = connection.token;
     this.apiBaseUrl = connection.apiBaseUrl ?? "https://api.github.com";
+    this.graphqlBaseUrl =
+      connection.graphqlBaseUrl ?? this.resolveGraphqlBaseUrl(this.apiBaseUrl);
     this.fetcher = connection.fetch ?? globalThis.fetch;
   }
 
@@ -64,6 +68,40 @@ export class GitHubClient {
     }
 
     return (await response.json()) as T;
+  }
+
+  async graphql<T>(
+    query: string,
+    variables: Record<string, unknown>,
+  ): Promise<T> {
+    const response = await this.fetcher(this.graphqlBaseUrl, {
+      method: "POST",
+      headers: {
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+
+    if (!response.ok) {
+      throw new GitHubApiError(response.status, await response.text());
+    }
+
+    const payload = (await response.json()) as {
+      data?: T;
+      errors?: Array<{ message: string }>;
+    };
+
+    if (payload.errors?.length) {
+      throw new Error(payload.errors.map(({ message }) => message).join("; "));
+    }
+
+    if (!payload.data) {
+      throw new Error("GitHub GraphQL response did not contain data.");
+    }
+
+    return payload.data;
   }
 
   repositoryPath(path: string): string {
@@ -142,6 +180,95 @@ export class GitHubClient {
       "GET",
       this.repositoryPath(`/pulls/${pullRequestNumber}/comments`),
     );
+  }
+
+  async listPullRequestReviewThreads<T = unknown>(
+    pullRequestNumber: number,
+  ): Promise<T> {
+    type ReviewThreads = {
+      nodes: Array<{ isResolved: boolean }>;
+      pageInfo: {
+        hasNextPage: boolean;
+        endCursor: string | null;
+      };
+    };
+    type ReviewThreadPage = {
+      repository: {
+        pullRequest: {
+          reviewThreads: ReviewThreads;
+        } | null;
+      } | null;
+    };
+
+    const nodes: Array<{ isResolved: boolean }> = [];
+    let after: string | null = null;
+
+    while (true) {
+      const page: ReviewThreadPage = await this.graphql<ReviewThreadPage>(
+        `query ReviewThreads($owner: String!, $repo: String!, $number: Int!, $after: String) {
+          repository(owner: $owner, name: $repo) {
+            pullRequest(number: $number) {
+              reviewThreads(first: 100, after: $after) {
+                nodes { isResolved }
+                pageInfo { hasNextPage endCursor }
+              }
+            }
+          }
+        }`,
+        {
+          owner: this.owner,
+          repo: this.repo,
+          number: pullRequestNumber,
+          after,
+        },
+      );
+      const reviewThreads: ReviewThreads | undefined =
+        page.repository?.pullRequest?.reviewThreads;
+
+      if (!reviewThreads) {
+        return page as T;
+      }
+
+      nodes.push(...reviewThreads.nodes);
+
+      if (!reviewThreads.pageInfo.hasNextPage) {
+        return {
+          repository: {
+            pullRequest: {
+              reviewThreads: {
+                nodes,
+                pageInfo: reviewThreads.pageInfo,
+              },
+            },
+          },
+        } as T;
+      }
+
+      if (!reviewThreads.pageInfo.endCursor) {
+        throw new Error(
+          "GitHub review thread pagination reported another page without a cursor.",
+        );
+      }
+
+      after = reviewThreads.pageInfo.endCursor;
+    }
+  }
+
+  resolveGraphqlBaseUrl(apiBaseUrl: string): string {
+    const url = new URL(apiBaseUrl);
+
+    if (url.hostname === "api.github.com") {
+      return "https://api.github.com/graphql";
+    }
+
+    const pathname = url.pathname.replace(/\/+$/, "");
+    url.pathname = pathname.endsWith("/api/v3")
+      ? `${pathname.slice(0, -3)}/graphql`
+      : `${pathname}/graphql`;
+    url.search = "";
+    url.hash = "";
+
+    return url.toString();
   }
 }
 

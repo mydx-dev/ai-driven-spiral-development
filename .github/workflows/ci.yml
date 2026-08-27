@@ -43,6 +43,9 @@ jobs:
       - name: Build Core
         run: pnpm build
 
+      - name: Install GitHub package dependencies
+        run: pnpm --dir packages/github install --no-frozen-lockfile
+
       - name: Test GitHub package
         run: pnpm --dir packages/github test
 
@@ -83,3 +86,20 @@ jobs:
           pnpm test
           pnpm typecheck
           pnpm build
+
+      - name: Build Standard package for Binding
+        run: |
+          pnpm --dir packages/standard install --no-frozen-lockfile
+          pnpm --dir packages/standard build
+
+      - name: Install Standard GitHub package dependencies
+        run: pnpm --dir packages/standard-github install --no-frozen-lockfile
+
+      - name: Test Standard GitHub package
+        run: pnpm --dir packages/standard-github test
+
+      - name: Type check Standard GitHub package
+        run: pnpm --dir packages/standard-github typecheck
+
+      - name: Build Standard GitHub package
+        run: pnpm --dir packages/standard-github build

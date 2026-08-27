@@ -1,4 +1,4 @@
-import type { Artifact } from "./Artifact";
+import type { Artifact } from "./Artifact.js";
 
 export interface ExecutionChannel<TMessage> {
   send(message: TMessage): Promise<void>;

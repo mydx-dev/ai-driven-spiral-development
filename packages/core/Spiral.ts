@@ -4,8 +4,8 @@ import type {
   CycleFactory,
   CycleProceedResult,
   CycleRepository,
-} from "./Cycle";
-import type { SemanticCompletionEvent } from "./SemanticCompletionEvent";
+} from "./Cycle.js";
+import type { SemanticCompletionEvent } from "./SemanticCompletionEvent.js";
 
 export class Spiral<TCycleClass extends CycleClass<Cycle, string, never[]>> {
   constructor({
