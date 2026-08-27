@@ -21,7 +21,7 @@ export default tseslint.config(
   },
 
   {
-    files: ["packages/quality/**/*.mjs"],
+    files: ["packages/cli/**/*.mjs", "packages/quality/**/*.mjs"],
     languageOptions: {
       globals: {
         console: "readonly",
