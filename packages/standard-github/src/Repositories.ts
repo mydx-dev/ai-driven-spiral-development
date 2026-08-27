@@ -197,6 +197,7 @@ export class ExternalSpecRepository implements ArtifactRepository<ExternalSpec> 
     );
   }
 }
+
 export class ImplementationRepository implements ArtifactRepository<Implementation> {
   constructor(
     public readonly client: GitHubClient,
