@@ -1,7 +1,8 @@
 import { relative, resolve } from "node:path";
 import { Node, Project, SyntaxKind } from "ts-morph";
 
-const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegExp = (value) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const globRegExp = (glob) => {
   const escaped = glob
@@ -48,11 +49,13 @@ const referenceNodes = (nameNode) => {
 
 const approximateComplexity = (text) => {
   const decisions =
-    text.match(/\b(?:if|for|while|case|catch)\b|&&|\|\||\?\?|\?(?![.?])/g) ?? [];
+    text.match(/\b(?:if|for|while|case|catch)\b|&&|\|\||\?\?|\?(?![.?])/g) ??
+    [];
   return 1 + decisions.length;
 };
 
-const countLoc = (node) => node.getEndLineNumber() - node.getStartLineNumber() + 1;
+const countLoc = (node) =>
+  node.getEndLineNumber() - node.getStartLineNumber() + 1;
 
 const fieldNames = (classDeclaration) => {
   const names = new Set(
@@ -98,7 +101,9 @@ const importedIdentifiers = (sourceFile) => {
     const namespaceImport = declaration.getNamespaceImport();
     if (namespaceImport) identifiers.add(namespaceImport.getText());
     for (const namedImport of declaration.getNamedImports()) {
-      identifiers.add(namedImport.getAliasNode()?.getText() ?? namedImport.getName());
+      identifiers.add(
+        namedImport.getAliasNode()?.getText() ?? namedImport.getName(),
+      );
     }
   }
   return [...identifiers];
@@ -106,15 +111,18 @@ const importedIdentifiers = (sourceFile) => {
 
 const calculateCbo = (classDeclaration) => {
   const text = classDeclaration.getText();
-  return importedIdentifiers(classDeclaration.getSourceFile()).filter((identifier) =>
-    new RegExp(`\\b${escapeRegExp(identifier)}\\b`).test(text),
+  return importedIdentifiers(classDeclaration.getSourceFile()).filter(
+    (identifier) =>
+      new RegExp(`\\b${escapeRegExp(identifier)}\\b`).test(text),
   ).length;
 };
 
 const implementedMethodNames = (classDeclaration) => {
   const names = new Set();
   for (const implementation of classDeclaration.getImplements()) {
-    for (const property of implementation.getType().getProperties()) names.add(property.getName());
+    for (const property of implementation.getType().getProperties()) {
+      names.add(property.getName());
+    }
   }
   return names;
 };
@@ -133,7 +141,8 @@ const topLevelFunctions = (sourceFile) => {
     if (
       statement?.getParent() === sourceFile &&
       initializer &&
-      (Node.isArrowFunction(initializer) || Node.isFunctionExpression(initializer)) &&
+      (Node.isArrowFunction(initializer) ||
+        Node.isFunctionExpression(initializer)) &&
       Node.isIdentifier(nameNode)
     ) {
       candidates.push({
@@ -149,7 +158,9 @@ const topLevelFunctions = (sourceFile) => {
 
 const localHelpers = (sourceFile) => {
   const candidates = [];
-  for (const declaration of sourceFile.getDescendantsOfKind(SyntaxKind.FunctionDeclaration)) {
+  for (const declaration of sourceFile.getDescendantsOfKind(
+    SyntaxKind.FunctionDeclaration,
+  )) {
     if (declaration.getParent() !== sourceFile) {
       candidates.push({
         declaration,
@@ -158,18 +169,27 @@ const localHelpers = (sourceFile) => {
       });
     }
   }
-  for (const variable of sourceFile.getDescendantsOfKind(SyntaxKind.VariableDeclaration)) {
+  for (const variable of sourceFile.getDescendantsOfKind(
+    SyntaxKind.VariableDeclaration,
+  )) {
     const initializer = variable.getInitializer();
-    const statement = variable.getFirstAncestorByKind(SyntaxKind.VariableStatement);
+    const statement = variable.getFirstAncestorByKind(
+      SyntaxKind.VariableStatement,
+    );
     const nameNode = variable.getNameNode();
     if (
       statement &&
       statement.getParent() !== sourceFile &&
       initializer &&
-      (Node.isArrowFunction(initializer) || Node.isFunctionExpression(initializer)) &&
+      (Node.isArrowFunction(initializer) ||
+        Node.isFunctionExpression(initializer)) &&
       Node.isIdentifier(nameNode)
     ) {
-      candidates.push({ declaration: initializer, name: variable.getName(), nameNode });
+      candidates.push({
+        declaration: initializer,
+        name: variable.getName(),
+        nameNode,
+      });
     }
   }
   return candidates;
@@ -214,7 +234,9 @@ const addFinding = (findings, finding, severity = "error", exception) => {
   findings.push({
     ...finding,
     kind: exception ? `${finding.kind}-exception` : finding.kind,
-    detail: exception ? `explicit exception: ${exception.reason}` : finding.detail,
+    detail: exception
+      ? `explicit exception: ${exception.reason}`
+      : finding.detail,
     fatal: !exception && severity === "error",
   });
 };
@@ -225,7 +247,11 @@ const addSingleUse = (findings, quality, sourceFile, candidate, localOnly) => {
   const fanIn = referenceNodes(candidate.nameNode).length;
   const loc = countLoc(candidate.declaration);
   const complexity = approximateComplexity(candidate.declaration.getText());
-  if (fanIn <= rule.maxFanIn && loc <= rule.maxLoc && complexity <= rule.maxComplexity) {
+  if (
+    fanIn <= rule.maxFanIn &&
+    loc <= rule.maxLoc &&
+    complexity <= rule.maxComplexity
+  ) {
     findings.push({
       kind: "single-use-trivial-boundary",
       file: sourceFile.getFilePath(),
@@ -236,13 +262,21 @@ const addSingleUse = (findings, quality, sourceFile, candidate, localOnly) => {
   }
 };
 
-export const analyzeSourceFiles = (sourceFiles, quality, cwd = process.cwd()) => {
+export const analyzeSourceFiles = (
+  sourceFiles,
+  quality,
+  cwd = process.cwd(),
+) => {
   const findings = [];
   for (const sourceFile of sourceFiles) {
     if (/\.(?:spec|test)\.[jt]sx?$/.test(sourceFile.getFilePath())) continue;
     const policy = policyForFile(quality, sourceFile, cwd);
     for (const candidate of topLevelFunctions(sourceFile)) {
-      const exception = exceptionFor(quality, "topLevelFunctions", candidate.name);
+      const exception = exceptionFor(
+        quality,
+        "topLevelFunctions",
+        candidate.name,
+      );
       addFinding(
         findings,
         {
@@ -254,10 +288,17 @@ export const analyzeSourceFiles = (sourceFiles, quality, cwd = process.cwd()) =>
         policy.topLevelFunction,
         exception,
       );
-      const references = candidate.nameNode ? referenceNodes(candidate.nameNode) : [];
+      const references = candidate.nameNode
+        ? referenceNodes(candidate.nameNode)
+        : [];
       const localOnly =
-        !candidate.exported && references.every((reference) => reference.getSourceFile() === sourceFile);
-      if (!exception) addSingleUse(findings, quality, sourceFile, candidate, localOnly);
+        !candidate.exported &&
+        references.every(
+          (reference) => reference.getSourceFile() === sourceFile,
+        );
+      if (!exception) {
+        addSingleUse(findings, quality, sourceFile, candidate, localOnly);
+      }
     }
     for (const helper of localHelpers(sourceFile)) {
       addFinding(
@@ -274,14 +315,25 @@ export const analyzeSourceFiles = (sourceFiles, quality, cwd = process.cwd()) =>
     }
     for (const classDeclaration of sourceFile.getClasses()) {
       const className = classDeclaration.getName() ?? "<anonymous>";
-      const methods = classDeclaration.getMethods().filter((method) => !method.isStatic());
-      const staticMethods = classDeclaration.getMethods().filter((method) => method.isStatic());
+      const methods = classDeclaration
+        .getMethods()
+        .filter((method) => !method.isStatic());
+      const staticMethods = classDeclaration
+        .getMethods()
+        .filter((method) => method.isStatic());
       const fields = fieldNames(classDeclaration);
       const { tcc, lcom } = cohesion(methods, fields);
       const cbo = calculateCbo(classDeclaration);
-      const wmc = methods.reduce((sum, method) => sum + approximateComplexity(method.getText()), 0);
+      const wmc = methods.reduce(
+        (sum, method) => sum + approximateComplexity(method.getText()),
+        0,
+      );
       const implemented = implementedMethodNames(classDeclaration);
-      if (fields.length === 0 && methods.length === 0 && staticMethods.length > 0) {
+      if (
+        fields.length === 0 &&
+        methods.length === 0 &&
+        staticMethods.length > 0
+      ) {
         addFinding(
           findings,
           {
@@ -312,7 +364,12 @@ export const analyzeSourceFiles = (sourceFiles, quality, cwd = process.cwd()) =>
         );
       }
       for (const method of methods) {
-        if (method.hasModifier(SyntaxKind.PrivateKeyword) || method.hasModifier(SyntaxKind.ProtectedKeyword)) continue;
+        if (
+          method.hasModifier(SyntaxKind.PrivateKeyword) ||
+          method.hasModifier(SyntaxKind.ProtectedKeyword)
+        ) {
+          continue;
+        }
         const symbol = `${className}.${method.getName()}`;
         const contract = implemented.has(method.getName());
         if (!contract && !/\bthis\b/.test(method.getBodyText() ?? "")) {
@@ -322,7 +379,8 @@ export const analyzeSourceFiles = (sourceFiles, quality, cwd = process.cwd()) =>
               kind: "stateless-instance-method",
               file: sourceFile.getFilePath(),
               symbol,
-              detail: "method does not use this and is not declared by an implemented interface",
+              detail:
+                "method does not use this and is not declared by an implemented interface",
             },
             policy.statelessInstanceMethod,
           );
@@ -330,9 +388,14 @@ export const analyzeSourceFiles = (sourceFiles, quality, cwd = process.cwd()) =>
         if (!contract) {
           const external = referenceNodes(method.getNameNode()).filter(
             (reference) =>
-              reference.getFirstAncestorByKind(SyntaxKind.ClassDeclaration) !== classDeclaration,
+              reference.getFirstAncestorByKind(SyntaxKind.ClassDeclaration) !==
+              classDeclaration,
           );
-          const exception = exceptionFor(quality, "internalOnlyPublicMethods", symbol);
+          const exception = exceptionFor(
+            quality,
+            "internalOnlyPublicMethods",
+            symbol,
+          );
           if (external.length === 0) {
             addFinding(
               findings,
@@ -350,7 +413,11 @@ export const analyzeSourceFiles = (sourceFiles, quality, cwd = process.cwd()) =>
                 findings,
                 quality,
                 sourceFile,
-                { declaration: method, name: symbol, nameNode: method.getNameNode() },
+                {
+                  declaration: method,
+                  name: symbol,
+                  nameNode: method.getNameNode(),
+                },
                 true,
               );
             }
@@ -360,7 +427,8 @@ export const analyzeSourceFiles = (sourceFiles, quality, cwd = process.cwd()) =>
       if (
         fields.length > 0 &&
         methods.length > 1 &&
-        (lcom > quality.structure.cohesion.lcomMax || tcc < quality.structure.cohesion.tccMin)
+        (lcom > quality.structure.cohesion.lcomMax ||
+          tcc < quality.structure.cohesion.tccMin)
       ) {
         findings.push({
           kind: "low-cohesion",
