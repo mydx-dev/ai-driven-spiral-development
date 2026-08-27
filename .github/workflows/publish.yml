@@ -190,3 +190,70 @@ jobs:
         if: ${{ needs.check-versions.outputs.publish-cli == 'true' }}
         working-directory: packages/cli
         run: npm publish --provenance --access public
+
+  verify-published-cli:
+    needs:
+      - check-versions
+      - publish
+    if: ${{ always() && needs.check-versions.result == 'success' && (needs.publish.result == 'success' || needs.publish.result == 'skipped') }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Verify published CLI against npm registry
+        run: |
+          CLI_VERSION=$(node -p "require('./packages/cli/package.json').version")
+          TARGET_DIR="$(mktemp -d)"
+
+          pnpm dlx "@mydx-dev/spiral@${CLI_VERSION}" init \
+            --artifact github \
+            --process standard \
+            --quality \
+            --cwd "$TARGET_DIR"
+
+          node - "$TARGET_DIR/package.json" <<'NODE'
+          const fs = require('node:fs');
+          const packageJson = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const expectedDependencies = [
+            '@mydx-dev/ai-driven-spiral-development',
+            '@mydx-dev/spiral-github',
+            '@mydx-dev/spiral-standard',
+            '@mydx-dev/spiral-standard-github',
+          ];
+          for (const name of expectedDependencies) {
+            if (!packageJson.dependencies?.[name]) {
+              throw new Error(`missing dependency: ${name}`);
+            }
+          }
+          if (!packageJson.devDependencies?.['@mydx-dev/spiral-quality']) {
+            throw new Error('missing devDependency: @mydx-dev/spiral-quality');
+          }
+          NODE
+
+          pnpm --dir "$TARGET_DIR" install --no-frozen-lockfile
+
+          SECOND_RUN=$(pnpm dlx "@mydx-dev/spiral@${CLI_VERSION}" init \
+            --artifact github \
+            --process standard \
+            --quality \
+            --cwd "$TARGET_DIR")
+          echo "$SECOND_RUN"
+          echo "$SECOND_RUN" | grep -F "Portable Distribution is already satisfied."
