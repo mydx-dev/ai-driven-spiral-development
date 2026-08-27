@@ -37,18 +37,6 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Apply Binding formatting
-        run: |
-          git fetch origin feature/29-standard-github-package
-          git checkout -B feature/29-standard-github-package FETCH_HEAD
-          pnpm prettier packages/github/GitHubClient.ts packages/github/package.json packages/standard-github/package.json packages/standard-github/src/binding.spec.ts packages/standard-github/src/IssueMappings.ts packages/standard-github/src/Repositories.ts --write
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add packages/github/GitHubClient.ts packages/github/package.json packages/standard-github/package.json packages/standard-github/src/binding.spec.ts packages/standard-github/src/IssueMappings.ts packages/standard-github/src/Repositories.ts
-          git commit -m "style: Standard GitHub packageをPrettierで整形する"
-          git push origin HEAD:feature/29-standard-github-package
-          exit 1
-
       - name: Format check
         run: pnpm format:check
 
