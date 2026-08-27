@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
-    "ai-driven-spiral-development": "2.0.0",
+    "ai-driven-spiral-development": "file:../..",
     "@mydx/spiral-github": "file:../github",
     "@mydx/spiral-standard": "file:../standard",
     "typescript": "^6.0.3",
