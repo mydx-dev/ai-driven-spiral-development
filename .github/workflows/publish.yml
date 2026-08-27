@@ -22,6 +22,8 @@ jobs:
       publish-github: ${{ steps.versions.outputs.publish-github }}
       publish-standard: ${{ steps.versions.outputs.publish-standard }}
       publish-standard-github: ${{ steps.versions.outputs.publish-standard-github }}
+      publish-quality: ${{ steps.versions.outputs.publish-quality }}
+      publish-cli: ${{ steps.versions.outputs.publish-cli }}
 
     steps:
       - name: Checkout
@@ -57,10 +59,12 @@ jobs:
           check_package publish-github packages/github/package.json
           check_package publish-standard packages/standard/package.json
           check_package publish-standard-github packages/standard-github/package.json
+          check_package publish-quality packages/quality/package.json
+          check_package publish-cli packages/cli/package.json
 
   publish:
     needs: check-versions
-    if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-github == 'true' || needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
+    if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-github == 'true' || needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' || needs.check-versions.outputs.publish-quality == 'true' || needs.check-versions.outputs.publish-cli == 'true' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -85,8 +89,8 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: pnpm
 
-      - name: Install Core dependencies
-        if: ${{ needs.check-versions.outputs.publish-core == 'true' }}
+      - name: Install root dependencies
+        if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-cli == 'true' }}
         run: pnpm install --frozen-lockfile
 
       - name: Build Core
@@ -153,4 +157,36 @@ jobs:
       - name: Publish Standard GitHub
         if: ${{ needs.check-versions.outputs.publish-standard-github == 'true' }}
         working-directory: packages/standard-github
+        run: npm publish --provenance --access public
+
+      - name: Install Quality dependencies
+        if: ${{ needs.check-versions.outputs.publish-quality == 'true' }}
+        run: pnpm --dir packages/quality install --no-frozen-lockfile
+
+      - name: Build Quality
+        if: ${{ needs.check-versions.outputs.publish-quality == 'true' }}
+        run: pnpm --dir packages/quality build
+
+      - name: Verify Quality package contents
+        if: ${{ needs.check-versions.outputs.publish-quality == 'true' }}
+        working-directory: packages/quality
+        run: npm pack --dry-run
+
+      - name: Publish Quality
+        if: ${{ needs.check-versions.outputs.publish-quality == 'true' }}
+        working-directory: packages/quality
+        run: npm publish --provenance --access public
+
+      - name: Build CLI
+        if: ${{ needs.check-versions.outputs.publish-cli == 'true' }}
+        run: pnpm --dir packages/cli build
+
+      - name: Verify CLI package contents
+        if: ${{ needs.check-versions.outputs.publish-cli == 'true' }}
+        working-directory: packages/cli
+        run: npm pack --dry-run
+
+      - name: Publish CLI
+        if: ${{ needs.check-versions.outputs.publish-cli == 'true' }}
+        working-directory: packages/cli
         run: npm publish --provenance --access public
