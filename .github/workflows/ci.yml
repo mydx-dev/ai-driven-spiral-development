@@ -78,10 +78,15 @@ jobs:
 
       - name: Verify Standard package standalone
         run: |
+          CORE_TARBALL_DIR="$(mktemp -d)"
+          pnpm pack --pack-destination "$CORE_TARBALL_DIR"
+          CORE_TARBALL="$(find "$CORE_TARBALL_DIR" -maxdepth 1 -name '*.tgz' -print -quit)"
+
           STANDARD_DIR="$(mktemp -d)"
           cp -R packages/standard/. "$STANDARD_DIR/"
           rm -rf "$STANDARD_DIR/node_modules" "$STANDARD_DIR/dist"
           cd "$STANDARD_DIR"
+          pnpm pkg set "devDependencies.@mydx-dev/ai-driven-spiral-development=file:$CORE_TARBALL"
           pnpm install --no-frozen-lockfile
           pnpm test
           pnpm typecheck
