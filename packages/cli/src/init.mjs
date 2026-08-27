@@ -2,6 +2,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { resolveComposition } from "./registry.mjs";
 
+/**
+ * @typedef {object} InitOptions
+ * @property {string} [cwd]
+ * @property {string} [artifact]
+ * @property {string} [process]
+ * @property {boolean} [quality]
+ */
+
 const readText = (path) =>
   existsSync(path) ? readFileSync(path, "utf8") : null;
 
@@ -93,12 +101,14 @@ const mergePackageJson = (current, composition) => {
   return { next, conflicts };
 };
 
-export const planInit = ({
-  cwd = globalThis.process.cwd(),
-  artifact,
-  process: processPreset,
-  quality,
-} = {}) => {
+/** @param {InitOptions} [options] */
+export const planInit = (options = {}) => {
+  const {
+    cwd = process.cwd(),
+    artifact,
+    process: processPreset,
+    quality,
+  } = options;
   const root = resolve(cwd);
   const composition = resolveComposition({
     artifact,
@@ -151,6 +161,7 @@ export const planInit = ({
   return { root, composition, changes, conflicts };
 };
 
+/** @param {InitOptions} [options] */
 export const initRepository = (options = {}) => {
   const plan = planInit(options);
   if (plan.conflicts.length > 0) {
