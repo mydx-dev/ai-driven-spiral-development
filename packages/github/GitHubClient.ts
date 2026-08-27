@@ -185,16 +185,17 @@ export class GitHubClient {
   async listPullRequestReviewThreads<T = unknown>(
     pullRequestNumber: number,
   ): Promise<T> {
+    type ReviewThreads = {
+      nodes: Array<{ isResolved: boolean }>;
+      pageInfo: {
+        hasNextPage: boolean;
+        endCursor: string | null;
+      };
+    };
     type ReviewThreadPage = {
       repository: {
         pullRequest: {
-          reviewThreads: {
-            nodes: Array<{ isResolved: boolean }>;
-            pageInfo: {
-              hasNextPage: boolean;
-              endCursor: string | null;
-            };
-          };
+          reviewThreads: ReviewThreads;
         } | null;
       } | null;
     };
@@ -203,7 +204,7 @@ export class GitHubClient {
     let after: string | null = null;
 
     while (true) {
-      const page = await this.graphql<ReviewThreadPage>(
+      const page: ReviewThreadPage = await this.graphql<ReviewThreadPage>(
         `query ReviewThreads($owner: String!, $repo: String!, $number: Int!, $after: String) {
           repository(owner: $owner, name: $repo) {
             pullRequest(number: $number) {
@@ -221,7 +222,8 @@ export class GitHubClient {
           after,
         },
       );
-      const reviewThreads = page.repository?.pullRequest?.reviewThreads;
+      const reviewThreads: ReviewThreads | undefined =
+        page.repository?.pullRequest?.reviewThreads;
 
       if (!reviewThreads) {
         return page as T;
