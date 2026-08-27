@@ -96,11 +96,11 @@ const runEslint = async (quality, cwd, root) => {
     const eslint = new ESLint({
       cwd,
       overrideConfigFile: true,
-      overrideConfig: createEslintConfig(quality),
+      overrideConfig: /** @type {any} */ (createEslintConfig(quality)),
     });
     const results = await eslint.lintFiles([root]);
     const formatter = await eslint.loadFormatter("stylish");
-    const output = formatter.format(results);
+    const output = await formatter.format(results);
     const errorCount = results.reduce(
       (sum, result) => sum + result.errorCount,
       0,
