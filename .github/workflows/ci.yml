@@ -63,3 +63,12 @@ jobs:
 
       - name: Build Quality package
         run: pnpm --dir packages/quality build
+
+      - name: Test CLI package
+        run: pnpm --dir packages/cli test
+
+      - name: Type check CLI package
+        run: pnpm --dir packages/cli typecheck
+
+      - name: Build CLI package
+        run: pnpm --dir packages/cli build
