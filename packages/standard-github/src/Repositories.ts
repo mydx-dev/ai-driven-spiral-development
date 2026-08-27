@@ -2,7 +2,7 @@ import type {
   ArtifactRepository,
   CycleFactory,
   CycleRepository,
-} from "ai-driven-spiral-development";
+} from "@mydx-dev/ai-driven-spiral-development";
 import {
   AcceptanceGate,
   AcceptanceReport,
@@ -18,13 +18,13 @@ import {
   ReleaseGate,
   Requirement,
   StandardCycle,
-} from "@mydx/spiral-standard";
+} from "@mydx-dev/spiral-standard";
 import {
   GitHubApiError,
   GitHubIssue,
   GitHubIssueId,
   type GitHubClient,
-} from "@mydx/spiral-github";
+} from "@mydx-dev/spiral-github";
 import {
   AcceptanceCycleIssue,
   DemandIssue,
@@ -197,7 +197,6 @@ export class ExternalSpecRepository implements ArtifactRepository<ExternalSpec> 
     );
   }
 }
-
 export class ImplementationRepository implements ArtifactRepository<Implementation> {
   constructor(
     public readonly client: GitHubClient,
