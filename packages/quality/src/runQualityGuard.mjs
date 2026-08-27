@@ -1,8 +1,8 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { ESLint } from "eslint";
 import { loadQualityConfig } from "./config.mjs";
 import { createEslintConfig } from "./eslint.mjs";
@@ -55,6 +55,11 @@ const packageBin = (packageName, binName) => {
   return resolve(directory, bin);
 };
 
+const toolFailureOutput = (output) =>
+  /(?:syntaxerror|typeerror|referenceerror|enoent|cannot find|failed to load|configuration error|invalid configuration|could not resolve)/i.test(
+    output,
+  );
+
 const runExecutable = (sensor, packageName, binName, args, cwd) => {
   try {
     const executable = packageBin(packageName, binName);
@@ -65,11 +70,15 @@ const runExecutable = (sensor, packageName, binName, args, cwd) => {
       shell: process.platform === "win32",
     });
     if (result.error) throw result.error;
+    const output = `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
+    if ((result.status ?? 2) > 1 || toolFailureOutput(output)) {
+      throw new Error(output || `${binName} exited with status ${result.status}`);
+    }
     return {
       sensor,
       passed: result.status === 0,
       status: result.status ?? 2,
-      output: `${result.stdout ?? ""}${result.stderr ?? ""}`.trim(),
+      output,
     };
   } catch (error) {
     throw new QualityToolError(sensor, error);
@@ -86,10 +95,7 @@ const runEslint = async (quality, cwd, root) => {
     const results = await eslint.lintFiles([root]);
     const formatter = await eslint.loadFormatter("stylish");
     const output = formatter.format(results);
-    const errorCount = results.reduce(
-      (sum, result) => sum + result.errorCount,
-      0,
-    );
+    const errorCount = results.reduce((sum, result) => sum + result.errorCount, 0);
     return {
       sensor: "eslint",
       passed: errorCount === 0,
@@ -102,45 +108,50 @@ const runEslint = async (quality, cwd, root) => {
 };
 
 const runArchitecture = (quality, cwd, root) => {
-  const directory = mkdtempSync(join(tmpdir(), "spiral-quality-"));
-  const configPath = join(directory, "dependency-cruiser.mjs");
-  const forbidden = [
-    {
-      name: "no-circular",
-      comment: "Circular dependencies make change impact harder to analyse.",
-      severity: "error",
-      from: {},
-      to: { circular: true },
-    },
-    ...(quality.architecture.forbiddenLayers ?? []).map((rule) => ({
-      name: rule.name,
-      comment: rule.comment ?? "Forbidden layer dependency",
-      severity: "error",
-      from: { path: rule.from },
-      to: { path: rule.to },
-    })),
-  ];
-  writeFileSync(
-    configPath,
-    `export default ${JSON.stringify({
-      forbidden,
-      options: {
-        doNotFollow: { path: "node_modules" },
-        exclude: { path: "\\.spec\\.ts$" },
-        tsConfig: { fileName: "tsconfig.json" },
-      },
-    })};\n`,
-  );
   try {
-    return runExecutable(
-      "architecture",
-      "dependency-cruiser",
-      "dependency-cruise",
-      ["--config", configPath, "--", root],
-      cwd,
+    const directory = mkdtempSync(join(tmpdir(), "spiral-quality-"));
+    const configPath = join(directory, "dependency-cruiser.mjs");
+    const forbidden = [
+      {
+        name: "no-circular",
+        comment: "Circular dependencies make change impact harder to analyse.",
+        severity: "error",
+        from: {},
+        to: { circular: true },
+      },
+      ...(quality.architecture.forbiddenLayers ?? []).map((rule) => ({
+        name: rule.name,
+        comment: rule.comment ?? "Forbidden layer dependency",
+        severity: "error",
+        from: { path: rule.from },
+        to: { path: rule.to },
+      })),
+    ];
+    writeFileSync(
+      configPath,
+      `export default ${JSON.stringify({
+        forbidden,
+        options: {
+          doNotFollow: { path: "node_modules" },
+          exclude: { path: "\\.spec\\.ts$" },
+          tsConfig: { fileName: "tsconfig.json" },
+        },
+      })};\n`,
     );
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
+    try {
+      return runExecutable(
+        "architecture",
+        "dependency-cruiser",
+        "dependency-cruise",
+        ["--config", configPath, "--", root],
+        cwd,
+      );
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  } catch (error) {
+    if (error instanceof QualityToolError) throw error;
+    throw new QualityToolError("architecture", error);
   }
 };
 
@@ -176,16 +187,25 @@ const runDuplication = (quality, cwd, root) =>
     cwd,
   );
 
-export const runQualityGuard = async (options = {}) => {
+const executeQualityGuard = async (options) => {
   const cwd = resolve(options.cwd ?? process.cwd());
-  const quality =
-    options.quality ?? (await loadQualityConfig(options.configPath));
+  let quality;
+  try {
+    quality = options.quality ?? (await loadQualityConfig(options.configPath));
+  } catch (error) {
+    throw new QualityToolError("config", error);
+  }
   const root = options.root ?? quality.paths.source;
   const results = [];
 
   results.push(await runEslint(quality, cwd, root));
 
-  const metricFindings = runMetrics(quality, { cwd, root });
+  let metricFindings;
+  try {
+    metricFindings = runMetrics(quality, { cwd, root });
+  } catch (error) {
+    throw new QualityToolError("responsibility-metrics", error);
+  }
   results.push({
     sensor: "responsibility-metrics",
     passed: !metricFindings.some((finding) => finding.fatal),
@@ -208,6 +228,15 @@ export const runQualityGuard = async (options = {}) => {
     results,
     violations,
   };
+};
+
+export const runQualityGuard = async (options = {}) => {
+  try {
+    return await executeQualityGuard(options);
+  } catch (error) {
+    if (error instanceof QualityToolError) throw error;
+    throw new QualityToolError("guard", error);
+  }
 };
 
 export const assertQuality = async (options = {}) => {
