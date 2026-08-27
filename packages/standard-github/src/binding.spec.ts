@@ -121,62 +121,65 @@ describe("Standard × GitHub Binding", () => {
     });
   });
 
-  it("PR / checks / review / merge stateからImplementationを復元する", async () => {
-    const client = fakeClient({
-      searchPullRequests: vi.fn().mockResolvedValue({
-        items: [{ number: 41, body: "Closes #31", pull_request: {} }],
-      }),
-      getPullRequest: vi.fn().mockResolvedValue({
-        number: 41,
-        state: "closed",
-        merged_at: "2026-08-27T00:00:00Z",
-        head: { sha: "abc" },
-      }),
-      listCheckRuns: vi.fn().mockResolvedValue({
-        check_runs: [
-          { name: "test", conclusion: "success" },
-          { name: "lint", conclusion: "success" },
-          { name: "build", conclusion: "success" },
-        ],
-      }),
-      listPullRequestReviews: vi.fn().mockResolvedValue([
-        { state: "APPROVED", user: { login: "reviewer" } },
-      ]),
-      listPullRequestReviewThreads: vi.fn().mockResolvedValue({
-        repository: {
-          pullRequest: {
-            reviewThreads: { nodes: [{ isResolved: true }] },
+  it(
+    "PR / checks / review / merge stateからImplementationを復元する",
+    async () => {
+      const client = fakeClient({
+        searchPullRequests: vi.fn().mockResolvedValue({
+          items: [{ number: 41, body: "Closes #31", pull_request: {} }],
+        }),
+        getPullRequest: vi.fn().mockResolvedValue({
+          number: 41,
+          state: "closed",
+          merged_at: "2026-08-27T00:00:00Z",
+          head: { sha: "abc" },
+        }),
+        listCheckRuns: vi.fn().mockResolvedValue({
+          check_runs: [
+            { name: "test", conclusion: "success" },
+            { name: "lint", conclusion: "success" },
+            { name: "build", conclusion: "success" },
+          ],
+        }),
+        listPullRequestReviews: vi.fn().mockResolvedValue([
+          { state: "APPROVED", user: { login: "reviewer" } },
+        ]),
+        listPullRequestReviewThreads: vi.fn().mockResolvedValue({
+          repository: {
+            pullRequest: {
+              reviewThreads: { nodes: [{ isResolved: true }] },
+            },
           },
-        },
-      }),
-    });
-    const externalSpecRepository = {
-      find: vi.fn(),
-      findByCycle: vi.fn().mockResolvedValue([
-        {
-          id: "#10-external-spec",
-          features: [{ id: "#31" }],
-        },
-      ]),
-      save: vi.fn(),
-    };
-    const repository = new ImplementationRepository(
-      client,
-      externalSpecRepository as never,
-    );
+        }),
+      });
+      const externalSpecRepository = {
+        find: vi.fn(),
+        findByCycle: vi.fn().mockResolvedValue([
+          {
+            id: "#10-external-spec",
+            features: [{ id: "#31" }],
+          },
+        ]),
+        save: vi.fn(),
+      };
+      const repository = new ImplementationRepository(
+        client,
+        externalSpecRepository as never,
+      );
 
-    const [implementation] = await repository.findByCycle("#10");
+      const [implementation] = await repository.findByCycle("#10");
 
-    expect(implementation.featureIds).toEqual(["#31"]);
-    expect(implementation.features[0]).toMatchObject({
-      featureId: "#31",
-      testPassed: true,
-      staticAnalysisPassed: true,
-      buildPassed: true,
-      reviewResolved: true,
-      integrated: true,
-    });
-  });
+      expect(implementation.featureIds).toEqual(["#31"]);
+      expect(implementation.features[0]).toMatchObject({
+        featureId: "#31",
+        testPassed: true,
+        staticAnalysisPassed: true,
+        buildPassed: true,
+        reviewResolved: true,
+        integrated: true,
+      });
+    },
+  );
 
   it("次CycleをGitHub Issueとして作成し前Cycleへ双方向linkを保存する", async () => {
     const updateIssue = vi.fn().mockResolvedValue({});
