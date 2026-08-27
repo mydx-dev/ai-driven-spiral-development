@@ -18,24 +18,40 @@ const analyze = (source) => {
 describe("Responsibility Boundary Guard", () => {
   it("detects stateless instance methods", () => {
     const findings = analyze(`class Example { run() { return 1; } }`);
-    expect(findings.some((finding) => finding.kind === "stateless-instance-method")).toBe(true);
+    expect(
+      findings.some((finding) => finding.kind === "stateless-instance-method"),
+    ).toBe(true);
   });
 
   it("detects static-only classes and static methods", () => {
     const findings = analyze(`class Example { static run() { return 1; } }`);
-    expect(findings.some((finding) => finding.kind === "static-only-class")).toBe(true);
-    expect(findings.some((finding) => finding.kind === "static-method")).toBe(true);
+    expect(
+      findings.some((finding) => finding.kind === "static-only-class"),
+    ).toBe(true);
+    expect(findings.some((finding) => finding.kind === "static-method")).toBe(
+      true,
+    );
   });
 
   it("allows structural named constructors", () => {
-    const findings = analyze(`class Example { private constructor() {} static create(): Example { return new Example(); } }`);
-    expect(findings.some((finding) => finding.kind === "static-method")).toBe(false);
+    const findings = analyze(
+      `class Example { private constructor() {} static create(): Example { return new Example(); } }`,
+    );
+    expect(findings.some((finding) => finding.kind === "static-method")).toBe(
+      false,
+    );
   });
 
   it("detects top-level and local helpers", () => {
-    const findings = analyze(`function top() { const local = () => 1; return local(); } top();`);
-    expect(findings.some((finding) => finding.kind === "top-level-free-function")).toBe(true);
-    expect(findings.some((finding) => finding.kind === "local-helper")).toBe(true);
+    const findings = analyze(
+      `function top() { const local = () => 1; return local(); } top();`,
+    );
+    expect(
+      findings.some((finding) => finding.kind === "top-level-free-function"),
+    ).toBe(true);
+    expect(findings.some((finding) => finding.kind === "local-helper")).toBe(
+      true,
+    );
   });
 });
 
@@ -49,7 +65,9 @@ describe("Suppression and method policy", () => {
       `class Example { #value = 1; private hidden() {} protected inherited() {} #secret() {} read() { return this.#value; } }`,
       { filePath: "example.ts" },
     );
-    const messages = result.messages.map((message) => message.message).join("\n");
+    const messages = result.messages
+      .map((message) => message.message)
+      .join("\n");
     expect(messages).toContain("private method is prohibited");
     expect(messages).toContain("protected method is prohibited");
   });
