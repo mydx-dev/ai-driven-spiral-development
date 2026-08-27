@@ -26,9 +26,13 @@ const packageRoot = (packageName) => {
   let directory = dirname(require.resolve(packageName));
   while (directory !== dirname(directory)) {
     try {
-      const packageJson = JSON.parse(readFileSync(join(directory, "package.json"), "utf8"));
+      const packageJson = JSON.parse(
+        readFileSync(join(directory, "package.json"), "utf8"),
+      );
       if (packageJson.name === packageName) return { directory, packageJson };
-    } catch {}
+    } catch {
+      // Continue walking upward until the owning package.json is found.
+    }
     directory = dirname(directory);
   }
   throw new Error(`Unable to locate package root: ${packageName}`);
@@ -40,7 +44,11 @@ const packageBin = (packageName, binName) => {
     typeof packageJson.bin === "string"
       ? packageJson.bin
       : packageJson.bin?.[binName];
-  if (!bin) throw new Error(`Unable to resolve executable ${binName} from ${packageName}`);
+  if (!bin) {
+    throw new Error(
+      `Unable to resolve executable ${binName} from ${packageName}`,
+    );
+  }
   return resolve(directory, bin);
 };
 
