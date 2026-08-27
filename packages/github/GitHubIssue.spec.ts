@@ -16,6 +16,16 @@ describe("GitHubIssue", () => {
     );
   });
 
+  it("preserves content outside the updated section", () => {
+    const issue = new GitHubIssue(
+      "## A\nold\n\n## B\nfirst\n\n\nsecond\n\n## C\nthird\n",
+    );
+
+    expect(issue.writeSection("## A", "new")).toBe(
+      "## A\n\nnew\n\n## B\nfirst\n\n\nsecond\n\n## C\nthird\n",
+    );
+  });
+
   it("appends a missing section", () => {
     const issue = new GitHubIssue("## A\nvalue");
 
