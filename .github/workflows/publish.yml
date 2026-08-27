@@ -19,7 +19,9 @@ jobs:
 
     outputs:
       publish-core: ${{ steps.versions.outputs.publish-core }}
+      publish-github: ${{ steps.versions.outputs.publish-github }}
       publish-standard: ${{ steps.versions.outputs.publish-standard }}
+      publish-standard-github: ${{ steps.versions.outputs.publish-standard-github }}
 
     steps:
       - name: Checkout
@@ -36,29 +38,29 @@ jobs:
       - name: Check package versions
         id: versions
         run: |
-          CORE_NAME=$(node -p "require('./package.json').name")
-          CORE_VERSION=$(node -p "require('./package.json').version")
-          STANDARD_NAME=$(node -p "require('./packages/standard/package.json').name")
-          STANDARD_VERSION=$(node -p "require('./packages/standard/package.json').version")
+          check_package() {
+            local output="$1"
+            local manifest="$2"
+            local name
+            local version
+            name=$(node -p "require('./${manifest}').name")
+            version=$(node -p "require('./${manifest}').version")
+            echo "${name}@${version}"
+            if npm view "${name}@${version}" version > /dev/null 2>&1; then
+              echo "${output}=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "${output}=true" >> "$GITHUB_OUTPUT"
+            fi
+          }
 
-          echo "Core: ${CORE_NAME}@${CORE_VERSION}"
-          echo "Standard: ${STANDARD_NAME}@${STANDARD_VERSION}"
-
-          if npm view "${CORE_NAME}@${CORE_VERSION}" version > /dev/null 2>&1; then
-            echo "publish-core=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "publish-core=true" >> "$GITHUB_OUTPUT"
-          fi
-
-          if npm view "${STANDARD_NAME}@${STANDARD_VERSION}" version > /dev/null 2>&1; then
-            echo "publish-standard=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "publish-standard=true" >> "$GITHUB_OUTPUT"
-          fi
+          check_package publish-core package.json
+          check_package publish-github packages/github/package.json
+          check_package publish-standard packages/standard/package.json
+          check_package publish-standard-github packages/standard-github/package.json
 
   publish:
     needs: check-versions
-    if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-standard == 'true' }}
+    if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-github == 'true' || needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -99,12 +101,30 @@ jobs:
         if: ${{ needs.check-versions.outputs.publish-core == 'true' }}
         run: npm publish --provenance --access public
 
+      - name: Install GitHub dependencies
+        if: ${{ needs.check-versions.outputs.publish-github == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
+        run: pnpm --dir packages/github install --no-frozen-lockfile
+
+      - name: Build GitHub
+        if: ${{ needs.check-versions.outputs.publish-github == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
+        run: pnpm --dir packages/github build
+
+      - name: Verify GitHub package contents
+        if: ${{ needs.check-versions.outputs.publish-github == 'true' }}
+        working-directory: packages/github
+        run: npm pack --dry-run
+
+      - name: Publish GitHub
+        if: ${{ needs.check-versions.outputs.publish-github == 'true' }}
+        working-directory: packages/github
+        run: npm publish --provenance --access public
+
       - name: Install Standard dependencies
-        if: ${{ needs.check-versions.outputs.publish-standard == 'true' }}
+        if: ${{ needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
         run: pnpm --dir packages/standard install --no-frozen-lockfile
 
       - name: Build Standard
-        if: ${{ needs.check-versions.outputs.publish-standard == 'true' }}
+        if: ${{ needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
         run: pnpm --dir packages/standard build
 
       - name: Verify Standard package contents
@@ -115,4 +135,22 @@ jobs:
       - name: Publish Standard
         if: ${{ needs.check-versions.outputs.publish-standard == 'true' }}
         working-directory: packages/standard
+        run: npm publish --provenance --access public
+
+      - name: Install Standard GitHub dependencies
+        if: ${{ needs.check-versions.outputs.publish-standard-github == 'true' }}
+        run: pnpm --dir packages/standard-github install --no-frozen-lockfile
+
+      - name: Build Standard GitHub
+        if: ${{ needs.check-versions.outputs.publish-standard-github == 'true' }}
+        run: pnpm --dir packages/standard-github build
+
+      - name: Verify Standard GitHub package contents
+        if: ${{ needs.check-versions.outputs.publish-standard-github == 'true' }}
+        working-directory: packages/standard-github
+        run: npm pack --dry-run
+
+      - name: Publish Standard GitHub
+        if: ${{ needs.check-versions.outputs.publish-standard-github == 'true' }}
+        working-directory: packages/standard-github
         run: npm publish --provenance --access public
