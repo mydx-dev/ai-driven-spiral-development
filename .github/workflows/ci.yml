@@ -40,5 +40,14 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
-      - name: Build
+      - name: Build Core
         run: pnpm build
+
+      - name: Test GitHub package
+        run: pnpm --dir packages/github test
+
+      - name: Type check GitHub package
+        run: pnpm --dir packages/github typecheck
+
+      - name: Build GitHub package
+        run: pnpm --dir packages/github build
