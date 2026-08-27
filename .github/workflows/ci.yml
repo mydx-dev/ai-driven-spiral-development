@@ -37,18 +37,6 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Apply CLI formatting
-        run: |
-          git fetch origin feature/23-portable-cli
-          git checkout -B feature/23-portable-cli FETCH_HEAD
-          pnpm prettier packages/cli/cli.spec.mjs packages/cli/package.json packages/cli/src/init.mjs packages/cli/src/registry.mjs --write
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add packages/cli
-          git commit -m "style: CLI packageをPrettierで整形する"
-          git push origin HEAD:feature/23-portable-cli
-          exit 1
-
       - name: Format check
         run: pnpm format:check
 
