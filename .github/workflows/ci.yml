@@ -73,14 +73,13 @@ jobs:
       - name: Build CLI package
         run: pnpm --dir packages/cli build
 
-      - name: Install Standard package dependencies
-        run: pnpm --dir packages/standard install --no-frozen-lockfile
-
-      - name: Test Standard package
-        run: pnpm --dir packages/standard test
-
-      - name: Type check Standard package
-        run: pnpm --dir packages/standard typecheck
-
-      - name: Build Standard package
-        run: pnpm --dir packages/standard build
+      - name: Verify Standard package standalone
+        run: |
+          STANDARD_DIR="$(mktemp -d)"
+          cp -R packages/standard/. "$STANDARD_DIR/"
+          rm -rf "$STANDARD_DIR/node_modules" "$STANDARD_DIR/dist"
+          cd "$STANDARD_DIR"
+          pnpm install --no-frozen-lockfile
+          pnpm test
+          pnpm typecheck
+          pnpm build
