@@ -37,6 +37,18 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Apply review formatting
+        run: |
+          git fetch origin feature/22-quality-guard
+          git checkout -B feature/22-quality-guard FETCH_HEAD
+          pnpm prettier packages/quality/quality.spec.mjs packages/quality/src/runQualityGuard.mjs --write
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/quality/quality.spec.mjs packages/quality/src/runQualityGuard.mjs
+          git commit -m "style: review対応をPrettierで整形する"
+          git push origin HEAD:feature/22-quality-guard
+          exit 1
+
       - name: Format check
         run: pnpm format:check
 
