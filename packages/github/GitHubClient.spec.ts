@@ -16,8 +16,8 @@ const createConnection = (
 
 describe("GitHubClient", () => {
   it("injects repository connection information into issue requests", async () => {
-    const fetcher = vi.fn(async () =>
-      new Response(JSON.stringify({ number: 12 }), { status: 200 }),
+    const fetcher = vi.fn(
+      async () => new Response(JSON.stringify({ number: 12 }), { status: 200 }),
     ) as unknown as typeof globalThis.fetch;
     const client = createGitHubClient(createConnection(fetcher));
 
@@ -34,8 +34,8 @@ describe("GitHubClient", () => {
   });
 
   it("provides generic PR, check, review and workflow resource access", async () => {
-    const fetcher = vi.fn(async () =>
-      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    const fetcher = vi.fn(
+      async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
     ) as unknown as typeof globalThis.fetch;
     const client = createGitHubClient(createConnection(fetcher));
 
@@ -56,8 +56,8 @@ describe("GitHubClient", () => {
   });
 
   it("scopes issue and pull request searches to the configured repository", async () => {
-    const fetcher = vi.fn(async () =>
-      new Response(JSON.stringify({ items: [] }), { status: 200 }),
+    const fetcher = vi.fn(
+      async () => new Response(JSON.stringify({ items: [] }), { status: 200 }),
     ) as unknown as typeof globalThis.fetch;
     const client = createGitHubClient(createConnection(fetcher));
 
@@ -71,8 +71,8 @@ describe("GitHubClient", () => {
   });
 
   it("wraps GitHub API failures in a stable error", async () => {
-    const fetcher = vi.fn(async () =>
-      new Response("not found", { status: 404 }),
+    const fetcher = vi.fn(
+      async () => new Response("not found", { status: 404 }),
     ) as unknown as typeof globalThis.fetch;
     const client = createGitHubClient(createConnection(fetcher));
 
@@ -82,8 +82,8 @@ describe("GitHubClient", () => {
   });
 
   it("creates and updates issues through process-independent primitives", async () => {
-    const fetcher = vi.fn(async () =>
-      new Response(JSON.stringify({ number: 1 }), { status: 200 }),
+    const fetcher = vi.fn(
+      async () => new Response(JSON.stringify({ number: 1 }), { status: 200 }),
     ) as unknown as typeof globalThis.fetch;
     const client = createGitHubClient(createConnection(fetcher));
 
