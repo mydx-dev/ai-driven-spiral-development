@@ -3,11 +3,15 @@
   "version": "0.1.1",
   "type": "module",
   "bin": {
-    "spiral": "./src/cli.mjs"
+    "spiral": "src/cli.mjs"
   },
   "files": [
     "src"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mydx-dev/ai-driven-spiral-development.git"
+  },
   "exports": {
     ".": "./src/init.mjs",
     "./registry": "./src/registry.mjs"
