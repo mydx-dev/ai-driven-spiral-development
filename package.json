@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier . --write",
-    "format:check": "prettier packages/standard-github/src/Runtime.ts packages/standard-github/src/Runtime.spec.ts --write && git diff --exit-code -- packages/standard-github/src/Runtime.ts packages/standard-github/src/Runtime.spec.ts",
+    "format:check": "prettier . --check",
     "build": "rm -rf dist && tsc -p tsconfig.json",
     "build:watch": "rm -rf dist && tsc -p tsconfig.json --watch"
   },
