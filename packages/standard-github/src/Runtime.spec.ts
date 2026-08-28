@@ -8,11 +8,16 @@ type CycleState = {
   changedDemand: StandardCycle["changedDemand"];
 };
 
+type IssueComment = {
+  body: string;
+};
+
 const state = vi.hoisted(() => ({
   demands: [] as Demand[],
   cycle: null as CycleState | null,
   nextCycle: null as CycleState | null,
   saved: [] as CycleState[],
+  comments: [] as IssueComment[],
 }));
 
 vi.mock("./Repositories.js", () => {
@@ -55,7 +60,23 @@ import {
   type StandardGitHubExecutionMessage,
 } from "./Runtime.js";
 
-const client = {} as GitHubClient;
+const client = {
+  repositoryPath: (path: string) => `repos/example/repo${path}`,
+  request: async (
+    method: string,
+    path: string,
+    body?: { body?: string },
+  ) => {
+    if (method === "GET" && path.endsWith("/comments")) {
+      return state.comments;
+    }
+    if (method === "POST" && path.endsWith("/comments")) {
+      state.comments.push({ body: body?.body ?? "" });
+      return {};
+    }
+    throw new Error(`Unexpected GitHub request: ${method} ${path}`);
+  },
+} as GitHubClient;
 
 describe("Standard GitHub Runtime", () => {
   beforeEach(() => {
@@ -63,6 +84,7 @@ describe("Standard GitHub Runtime", () => {
     state.cycle = new StandardCycle("#1", "none", "none");
     state.nextCycle = new StandardCycle("#2", "none", "none");
     state.saved = [];
+    state.comments = [];
   });
 
   it("Gate falseで同一Processをretryする", async () => {
@@ -76,7 +98,11 @@ describe("Standard GitHub Runtime", () => {
       },
     });
 
-    await runtime.circulate({ cycleId: "#1", name: "Demand Definition" });
+    await runtime.circulate({
+      cycleId: "#1",
+      name: "Demand Definition",
+      eventId: "event-1",
+    });
 
     expect(messages).toEqual([
       {
@@ -103,7 +129,11 @@ describe("Standard GitHub Runtime", () => {
       },
     });
 
-    await runtime.circulate({ cycleId: "#1", name: "Demand Definition" });
+    await runtime.circulate({
+      cycleId: "#1",
+      name: "Demand Definition",
+      eventId: "event-2",
+    });
 
     expect(messages).toEqual([
       {
@@ -126,7 +156,11 @@ describe("Standard GitHub Runtime", () => {
       },
     });
 
-    await runtime.circulate({ cycleId: "#1", name: "cycle" });
+    await runtime.circulate({
+      cycleId: "#1",
+      name: "cycle",
+      eventId: "event-3",
+    });
 
     expect(state.saved.map(({ id }) => id)).toContain("#2");
     expect(messages).toEqual([
@@ -138,6 +172,93 @@ describe("Standard GitHub Runtime", () => {
     ]);
   });
 
+  it("同一Process completion eventを再処理してもside effectを再発火しない", async () => {
+    state.demands = [
+      new Demand("#10", "#1", "予約", "未対応", "対応済み", "顧客", []),
+    ];
+    const messages: StandardGitHubExecutionMessage[] = [];
+    const runtime = createStandardGitHubRuntime({
+      client,
+      channel: {
+        send: async (message) => {
+          messages.push(message);
+        },
+      },
+    });
+
+    const first = await runtime.circulate({
+      cycleId: "#1",
+      name: "Demand Definition",
+      eventId: "same-process-event",
+    });
+    const second = await runtime.circulate({
+      cycleId: "#1",
+      name: "Demand Definition",
+      eventId: "same-process-event",
+    });
+
+    expect(first).toEqual({ status: "processed" });
+    expect(second).toEqual({ status: "duplicate" });
+    expect(messages).toHaveLength(1);
+    expect(state.comments).toHaveLength(1);
+  });
+
+  it("同一cycle completion eventを再処理しても次Cycle開始を再発火しない", async () => {
+    state.cycle = new StandardCycle("#1", "exists", "none");
+    const messages: StandardGitHubExecutionMessage[] = [];
+    const runtime = createStandardGitHubRuntime({
+      client,
+      channel: {
+        send: async (message) => {
+          messages.push(message);
+        },
+      },
+    });
+
+    const first = await runtime.circulate({
+      cycleId: "#1",
+      name: "cycle",
+      eventId: "same-cycle-event",
+    });
+    const second = await runtime.circulate({
+      cycleId: "#1",
+      name: "cycle",
+      eventId: "same-cycle-event",
+    });
+
+    expect(first).toEqual({ status: "processed" });
+    expect(second).toEqual({ status: "duplicate" });
+    expect(messages).toHaveLength(1);
+    expect(state.saved.filter(({ id }) => id === "#2")).toHaveLength(1);
+    expect(state.comments).toHaveLength(1);
+  });
+
+  it("別event idなら同一Processを再度完了通知できる", async () => {
+    const messages: StandardGitHubExecutionMessage[] = [];
+    const runtime = createStandardGitHubRuntime({
+      client,
+      channel: {
+        send: async (message) => {
+          messages.push(message);
+        },
+      },
+    });
+
+    await runtime.circulate({
+      cycleId: "#1",
+      name: "Demand Definition",
+      eventId: "retry-attempt-1",
+    });
+    await runtime.circulate({
+      cycleId: "#1",
+      name: "Demand Definition",
+      eventId: "retry-attempt-2",
+    });
+
+    expect(messages).toHaveLength(2);
+    expect(state.comments).toHaveLength(2);
+  });
+
   it("未定義Process名をSemanticCompletionEventで拒否する", async () => {
     const runtime = createStandardGitHubRuntime({
       client,
@@ -145,7 +266,11 @@ describe("Standard GitHub Runtime", () => {
     });
 
     await expect(
-      runtime.circulate({ cycleId: "#1", name: "Unknown" }),
+      runtime.circulate({
+        cycleId: "#1",
+        name: "Unknown",
+        eventId: "event-unknown",
+      }),
     ).rejects.toThrow("Invalid semantic completion event name: Unknown");
   });
 });
