@@ -73,12 +73,10 @@ const createExecutor = <TArtifact extends Artifact>(
     }),
   });
 
-const requirementArtifactRepository = (
-  repository: {
-    find(id: string): Promise<Requirement | undefined>;
-    findByCycle(cycleId: string): Promise<Requirement[]>;
-  },
-): ArtifactRepository<Requirement> => ({
+const requirementArtifactRepository = (repository: {
+  find(id: string): Promise<Requirement | undefined>;
+  findByCycle(cycleId: string): Promise<Requirement[]>;
+}): ArtifactRepository<Requirement> => ({
   find: (id) => repository.find(id),
   findByCycle: (cycleId) => repository.findByCycle(cycleId),
   save: async () => {
