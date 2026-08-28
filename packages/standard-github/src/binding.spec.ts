@@ -2,10 +2,15 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import type { GitHubClient } from "@mydx-dev/spiral-github";
 import {
+  DemandIssue,
   DemandRepository,
   EngineeringChecks,
+  ExternalSpecIssue,
   ExternalSpecRepository,
+  QARequirementIssue,
+  StandardCycleIssueTemplate,
   StandardCycleRepository,
+  standardGitHubIssueBodies,
 } from "./index.js";
 
 const fakeClient = (overrides: Partial<GitHubClient> = {}) =>
@@ -79,6 +84,34 @@ describe("Standard × GitHub Binding", () => {
       requirementIds: ["#21-R1"],
     });
     expect(spec.features[0].detail).toContain("POST /orders");
+  });
+
+  it("Issue Template本文はBinding parserが解釈するschemaを持つ", () => {
+    const demandBody = standardGitHubIssueBodies.demand.replace(
+      /<!-- Requirement ID[\s\S]*?-->/,
+      "- [R1] 受注を登録できること\n  - [x] QA: 登録成功を確認",
+    );
+    const featureBody = standardGitHubIssueBodies.feature.replace(
+      /<!-- Demand Issue番号[\s\S]*?-->/,
+      "- #21-R1",
+    );
+
+    expect(new DemandIssue(demandBody, 21).requirements()[0]).toMatchObject({
+      id: "#21-R1",
+      detail: "受注を登録できること",
+    });
+    expect(new QARequirementIssue(demandBody, 21).verifications()[0]).toMatchObject(
+      {
+        requirementId: "#21-R1",
+        passed: true,
+      },
+    );
+    expect(new ExternalSpecIssue(featureBody).requirementIds()).toEqual([
+      "#21-R1",
+    ]);
+    expect(new StandardCycleIssueTemplate().render()).toBe(
+      standardGitHubIssueBodies.cycle,
+    );
   });
 
   it("次CycleをGitHub Issueとして作成し前Cycleへ双方向linkを保存する", async () => {
