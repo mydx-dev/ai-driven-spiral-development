@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier . --write",
-    "format:check": "prettier packages/cli/semantic-idempotency.spec.mjs packages/cli/src/init.mjs packages/cli/src/semantic-equality.mjs --write && git diff --exit-code -- packages/cli/semantic-idempotency.spec.mjs packages/cli/src/init.mjs packages/cli/src/semantic-equality.mjs",
+    "format:check": "prettier . --check",
     "build": "rm -rf dist && tsc -p tsconfig.json",
     "build:watch": "rm -rf dist && tsc -p tsconfig.json --watch"
   },
