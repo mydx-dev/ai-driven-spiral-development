@@ -201,7 +201,8 @@ const normalizeJavaScriptTokens = (tokens) => {
     if (
       next?.[0] === "punctuator" &&
       next[1] === ":" &&
-      ((token[0] === "identifier" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(token[1])) ||
+      ((token[0] === "identifier" &&
+        /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(token[1])) ||
         (token[0] === "string" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(token[1])))
     ) {
       normalized.push(["property", token[1]]);
@@ -220,10 +221,7 @@ const normalizeMarkdown = (value) => {
   if (frontMatterEnd < 0) return lines.join("\n");
 
   for (let index = 1; index < frontMatterEnd; index += 1) {
-    lines[index] = lines[index].replace(
-      /^(\s*[^:]+:\s*)'([^']*)'$/,
-      '$1"$2"',
-    );
+    lines[index] = lines[index].replace(/^(\s*[^:]+:\s*)'([^']*)'$/, '$1"$2"');
   }
 
   return lines.join("\n");
