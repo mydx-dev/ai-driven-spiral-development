@@ -18,6 +18,102 @@ import {
 const readText = (path) =>
   existsSync(path) ? readFileSync(path, "utf8") : null;
 
+const standardMain = `import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
+import { createGitHubClient } from "@mydx-dev/spiral-github";
+import { createStandardGitHubRuntime } from "@mydx-dev/spiral-standard-github";
+import config from "../../spiral.config.mjs";
+import { execute } from "./execution-channel.mjs";
+
+const requiredEnvironmentVariable = (name) => {
+  const value = process.env[name];
+  if (!value) throw new Error(\`Missing required environment variable: \${name}\`);
+  return value;
+};
+
+export const circulate = async ({
+  cycleId = requiredEnvironmentVariable("SPIRAL_CYCLE_ID"),
+  name = requiredEnvironmentVariable("SPIRAL_PROCESS_NAME"),
+} = {}) => {
+  const repository = requiredEnvironmentVariable(
+    config.github.repositoryEnvironmentVariable,
+  );
+  const [owner, repo, ...rest] = repository.split("/");
+  if (!owner || !repo || rest.length > 0) {
+    throw new Error(\`Invalid GitHub repository: \${repository}\`);
+  }
+
+  const runtime = createStandardGitHubRuntime({
+    client: createGitHubClient({
+      owner,
+      repo,
+      token: process.env[config.github.tokenEnvironmentVariable],
+    }),
+    channel: { send: execute },
+  });
+
+  await runtime.circulate({ cycleId, name });
+};
+
+const entrypoint = process.argv[1]
+  ? resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  : false;
+if (entrypoint) await circulate();
+`;
+
+const genericMain =
+  'import config from "../../spiral.config.mjs";\nimport { execute } from "./execution-channel.mjs";\n\nexport const spiralComposition = { config, execute };\n';
+
+const circulateWorkflow = `name: Spiral Circulate
+
+on:
+  workflow_dispatch:
+    inputs:
+      cycle_id:
+        description: Cycle Issue number or id (for example #123)
+        required: true
+        type: string
+      process_name:
+        description: Semantic Completion target
+        required: true
+        type: choice
+        options:
+          - Demand Definition
+          - Requirement Definition
+          - External Design
+          - Engineering
+          - QA
+          - Release
+          - Acceptance
+          - cycle
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  checks: read
+  actions: read
+
+jobs:
+  circulate:
+    runs-on: ubuntu-latest
+    env:
+      SPIRAL_CYCLE_ID: \${{ inputs.cycle_id }}
+      SPIRAL_PROCESS_NAME: \${{ inputs.process_name }}
+      GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+      GITHUB_REPOSITORY: \${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: pnpm install --no-frozen-lockfile
+      - run: node scripts/spiral/main.mjs
+`;
+
 const generatedFiles = (composition) => {
   const config = `export default ${JSON.stringify(
     {
@@ -47,7 +143,9 @@ const generatedFiles = (composition) => {
   const files = {
     "spiral.config.mjs": config,
     "scripts/spiral/main.mjs":
-      'import config from "../../spiral.config.mjs";\nimport { execute } from "./execution-channel.mjs";\n\nexport const spiralComposition = { config, execute };\n',
+      composition.binding === "@mydx-dev/spiral-standard-github"
+        ? standardMain
+        : genericMain,
     "scripts/spiral/execution-channel.mjs":
       'export const execute = async (message) => {\n  void message;\n  throw new Error("TODO: project固有Execution Channelを接続してください。");\n};\n',
   };
@@ -64,6 +162,7 @@ const generatedFiles = (composition) => {
         `---\nname: Demand\nabout: Standard ProcessのDemandとRequirement / QAを管理する\ntitle: ""\nlabels: ""\nassignees: ""\n---\n\n${standardGitHubIssueBodies.demand}\n`;
       files[".github/ISSUE_TEMPLATE/feature.md"] =
         `---\nname: Feature\nabout: Standard ProcessのExternal Design / Featureを管理する\ntitle: ""\nlabels: ""\nassignees: ""\n---\n\n${standardGitHubIssueBodies.feature}\n`;
+      files[".github/workflows/spiral-circulate.yml"] = circulateWorkflow;
     } else {
       files[".github/ISSUE_TEMPLATE/spiral-artifact.md"] =
         '---\nname: Spiral Artifact\nabout: Spiral Development artifactを記録する\ntitle: ""\nlabels: ""\nassignees: ""\n---\n\n## Artifact\n\n<!-- project / process固有のArtifact情報を記載してください。 -->\n\n## Traceability\n\n- Cycle: \n- Parent Artifact: \n';
@@ -71,7 +170,7 @@ const generatedFiles = (composition) => {
     files[".github/pull_request_template.md"] =
       "## Spiral Traceability\n\n- Cycle: \n- Artifact / Issue: \n\n## Verification\n\n- [ ] 対応するArtifactとの整合を確認した\n- [ ] 必要なQuality / CIを確認した\n";
     files[".github/workflows/spiral.yml"] =
-      `name: Spiral\n\non:\n  pull_request:\n  workflow_dispatch:\n\njobs:\n  verify-composition:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: pnpm/action-setup@v4\n        with:\n          version: 10.18.0\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 24\n      - run: pnpm install --no-frozen-lockfile\n      - run: node -e "import('./spiral.config.mjs')"\n${composition.quality ? "      - run: pnpm quality\n" : ""}`;
+      `name: Spiral Verify\n\non:\n  pull_request:\n  workflow_dispatch:\n\njobs:\n  verify-composition:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: pnpm/action-setup@v4\n        with:\n          version: 10.18.0\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 24\n      - run: pnpm install --no-frozen-lockfile\n      - run: node -e "import('./spiral.config.mjs')"\n${composition.quality ? "      - run: pnpm quality\n" : ""}`;
   }
 
   return files;
