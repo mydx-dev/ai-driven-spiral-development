@@ -42,9 +42,6 @@ describe("formatter適用後のportable init", () => {
     const cwd = temporaryRepository();
     try {
       init(cwd);
-      const original = Object.fromEntries(
-        generatedPaths.map((path) => [path, readFileSync(join(cwd, path), "utf8")]),
-      );
       const formatted = spawnSync(
         prettier,
         ["--write", "--single-quote", "--tab-width", "4", ...generatedPaths],
@@ -55,11 +52,6 @@ describe("formatter適用後のportable init", () => {
       const before = Object.fromEntries(
         generatedPaths.map((path) => [path, readFileSync(join(cwd, path), "utf8")]),
       );
-      for (const path of generatedPaths) {
-        if (original[path] !== before[path]) {
-          console.error(`PRETTIER_DIFF ${path}\nBEFORE:\n${original[path]}\nAFTER:\n${before[path]}`);
-        }
-      }
       const result = init(cwd);
 
       expect(result.alreadySatisfied).toBe(true);
