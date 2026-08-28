@@ -7,6 +7,10 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mydx-dev/ai-driven-spiral-development.git"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
