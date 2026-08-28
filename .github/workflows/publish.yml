@@ -90,11 +90,11 @@ jobs:
           cache: pnpm
 
       - name: Install root dependencies
-        if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-cli == 'true' }}
+        if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' || needs.check-versions.outputs.publish-cli == 'true' }}
         run: pnpm install --frozen-lockfile
 
       - name: Build Core
-        if: ${{ needs.check-versions.outputs.publish-core == 'true' }}
+        if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
         run: pnpm build
 
       - name: Verify Core package contents
