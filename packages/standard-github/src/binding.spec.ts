@@ -100,12 +100,12 @@ describe("Standard × GitHub Binding", () => {
       id: "#21-R1",
       detail: "受注を登録できること",
     });
-    expect(new QARequirementIssue(demandBody, 21).verifications()[0]).toMatchObject(
-      {
-        requirementId: "#21-R1",
-        satisfied: true,
-      },
-    );
+    expect(
+      new QARequirementIssue(demandBody, 21).verifications()[0],
+    ).toMatchObject({
+      requirementId: "#21-R1",
+      satisfied: true,
+    });
     expect(new ExternalSpecIssue(featureBody).requirementIds()).toEqual([
       "#21-R1",
     ]);
