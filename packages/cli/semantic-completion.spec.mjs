@@ -20,7 +20,9 @@ describe("GitHub Standard Semantic Completion", () => {
       expect(entrypoint).toContain("createStandardGitHubRuntime");
       expect(entrypoint).toContain("SPIRAL_CYCLE_ID");
       expect(entrypoint).toContain("SPIRAL_PROCESS_NAME");
-      expect(entrypoint).toContain("await runtime.circulate({ cycleId, name })");
+      expect(entrypoint).toContain(
+        "await runtime.circulate({ cycleId, name })",
+      );
       expect(entrypoint).toContain("createGitHubClient");
     } finally {
       rmSync(cwd, { recursive: true, force: true });
@@ -51,9 +53,7 @@ describe("GitHub Standard Semantic Completion", () => {
       ]) {
         expect(workflow).toContain(`- ${name}`);
       }
-      expect(workflow).toContain(
-        "SPIRAL_CYCLE_ID: ${{ inputs.cycle_id }}",
-      );
+      expect(workflow).toContain("SPIRAL_CYCLE_ID: ${{ inputs.cycle_id }}");
       expect(workflow).toContain(
         "SPIRAL_PROCESS_NAME: ${{ inputs.process_name }}",
       );
