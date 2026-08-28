@@ -9,8 +9,10 @@
     "declarationMap": true,
     "sourceMap": true,
     "strict": true,
+    "allowJs": true,
+    "checkJs": true,
     "types": ["node"]
   },
   "exclude": ["dist", "**/*.spec.ts", "**/*.test.ts"],
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.mjs"]
 }
