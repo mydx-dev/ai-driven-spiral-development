@@ -2,12 +2,17 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 
 const canonical = readFileSync(
-  fileURLToPath(new URL("../../standard-github/src/IssueTemplates.mjs", import.meta.url)),
+  fileURLToPath(
+    new URL("../../standard-github/src/IssueTemplates.mjs", import.meta.url),
+  ),
   "utf8",
 );
 const generated = readFileSync(
   fileURLToPath(
-    new URL("../src/generated/standard-github-issue-templates.mjs", import.meta.url),
+    new URL(
+      "../src/generated/standard-github-issue-templates.mjs",
+      import.meta.url,
+    ),
   ),
   "utf8",
 );
