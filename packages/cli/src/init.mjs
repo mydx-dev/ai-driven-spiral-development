@@ -70,10 +70,6 @@ const circulateWorkflow = `name: Spiral Circulate
 on:
   workflow_dispatch:
     inputs:
-      event_id:
-        description: Unique Semantic Completion event id; reuse the same id when retrying the same event
-        required: true
-        type: string
       cycle_id:
         description: Cycle Issue number or id (for example #123)
         required: true
@@ -93,7 +89,7 @@ on:
           - cycle
 
 concurrency:
-  group: spiral-semantic-completion-\${{ inputs.event_id }}
+  group: spiral-semantic-completion-\${{ github.repository }}-\${{ github.run_id }}
   cancel-in-progress: false
 
 permissions:
@@ -107,7 +103,7 @@ jobs:
   circulate:
     runs-on: ubuntu-latest
     env:
-      SPIRAL_EVENT_ID: \${{ inputs.event_id }}
+      SPIRAL_EVENT_ID: \${{ github.repository }}:\${{ github.run_id }}
       SPIRAL_CYCLE_ID: \${{ inputs.cycle_id }}
       SPIRAL_PROCESS_NAME: \${{ inputs.process_name }}
       GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
