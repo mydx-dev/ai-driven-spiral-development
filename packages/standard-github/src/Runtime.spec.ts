@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
   nextCycle: null as CycleState | null,
   saved: [] as CycleState[],
   comments: [] as IssueComment[],
+  failNextCommentWrite: false,
 }));
 
 vi.mock("./Repositories.js", () => {
@@ -67,12 +68,27 @@ const client = {
       return state.comments;
     }
     if (method === "POST" && path.endsWith("/comments")) {
+      if (state.failNextCommentWrite) {
+        state.failNextCommentWrite = false;
+        throw new Error("Semantic Completion marker write failed");
+      }
       state.comments.push({ body: body?.body ?? "" });
       return {};
     }
     throw new Error(`Unexpected GitHub request: ${method} ${path}`);
   },
 } as GitHubClient;
+
+const idempotentChannel = (messages: StandardGitHubExecutionMessage[]) => {
+  const processed = new Set<string>();
+  return {
+    send: async (message: StandardGitHubExecutionMessage) => {
+      if (processed.has(message.idempotencyKey)) return;
+      processed.add(message.idempotencyKey);
+      messages.push(message);
+    },
+  };
+};
 
 describe("Standard GitHub Runtime", () => {
   beforeEach(() => {
@@ -81,17 +97,14 @@ describe("Standard GitHub Runtime", () => {
     state.nextCycle = new StandardCycle("#2", "none", "none");
     state.saved = [];
     state.comments = [];
+    state.failNextCommentWrite = false;
   });
 
   it("Gate falseで同一Processをretryする", async () => {
     const messages: StandardGitHubExecutionMessage[] = [];
     const runtime = createStandardGitHubRuntime({
       client,
-      channel: {
-        send: async (message) => {
-          messages.push(message);
-        },
-      },
+      channel: idempotentChannel(messages),
     });
 
     await runtime.circulate({
@@ -103,6 +116,7 @@ describe("Standard GitHub Runtime", () => {
     expect(messages).toEqual([
       {
         type: "retry",
+        idempotencyKey: "event-1:retry:%231:Demand%20Definition",
         cycleId: "#1",
         processName: "Demand Definition",
         errors: ["Demandが1件も存在しません"],
@@ -118,11 +132,7 @@ describe("Standard GitHub Runtime", () => {
     const messages: StandardGitHubExecutionMessage[] = [];
     const runtime = createStandardGitHubRuntime({
       client,
-      channel: {
-        send: async (message) => {
-          messages.push(message);
-        },
-      },
+      channel: idempotentChannel(messages),
     });
 
     await runtime.circulate({
@@ -134,6 +144,7 @@ describe("Standard GitHub Runtime", () => {
     expect(messages).toEqual([
       {
         type: "start",
+        idempotencyKey: "event-2:start:%231:Requirement%20Definition",
         cycleId: "#1",
         processName: "Requirement Definition",
       },
@@ -145,11 +156,7 @@ describe("Standard GitHub Runtime", () => {
     const messages: StandardGitHubExecutionMessage[] = [];
     const runtime = createStandardGitHubRuntime({
       client,
-      channel: {
-        send: async (message) => {
-          messages.push(message);
-        },
-      },
+      channel: idempotentChannel(messages),
     });
 
     await runtime.circulate({
@@ -162,6 +169,7 @@ describe("Standard GitHub Runtime", () => {
     expect(messages).toEqual([
       {
         type: "start",
+        idempotencyKey: "event-3:start:%232:Demand%20Definition",
         cycleId: "#2",
         processName: "Demand Definition",
       },
@@ -175,11 +183,7 @@ describe("Standard GitHub Runtime", () => {
     const messages: StandardGitHubExecutionMessage[] = [];
     const runtime = createStandardGitHubRuntime({
       client,
-      channel: {
-        send: async (message) => {
-          messages.push(message);
-        },
-      },
+      channel: idempotentChannel(messages),
     });
 
     const first = await runtime.circulate({
@@ -204,11 +208,7 @@ describe("Standard GitHub Runtime", () => {
     const messages: StandardGitHubExecutionMessage[] = [];
     const runtime = createStandardGitHubRuntime({
       client,
-      channel: {
-        send: async (message) => {
-          messages.push(message);
-        },
-      },
+      channel: idempotentChannel(messages),
     });
 
     const first = await runtime.circulate({
@@ -229,15 +229,69 @@ describe("Standard GitHub Runtime", () => {
     expect(state.comments).toHaveLength(1);
   });
 
+  it("side effect後にmarker保存が失敗しても同一Process eventのside effectを再発火しない", async () => {
+    state.demands = [
+      new Demand("#10", "#1", "予約", "未対応", "対応済み", "顧客", []),
+    ];
+    state.failNextCommentWrite = true;
+    const messages: StandardGitHubExecutionMessage[] = [];
+    const runtime = createStandardGitHubRuntime({
+      client,
+      channel: idempotentChannel(messages),
+    });
+
+    await expect(
+      runtime.circulate({
+        cycleId: "#1",
+        name: "Demand Definition",
+        eventId: "recover-process-event",
+      }),
+    ).rejects.toThrow("Semantic Completion marker write failed");
+
+    const retried = await runtime.circulate({
+      cycleId: "#1",
+      name: "Demand Definition",
+      eventId: "recover-process-event",
+    });
+
+    expect(retried).toEqual({ status: "processed" });
+    expect(messages).toHaveLength(1);
+    expect(state.comments).toHaveLength(1);
+  });
+
+  it("side effect後にmarker保存が失敗しても同一cycle eventの次Cycle開始を再発火しない", async () => {
+    state.cycle = new StandardCycle("#1", "exists", "none");
+    state.failNextCommentWrite = true;
+    const messages: StandardGitHubExecutionMessage[] = [];
+    const runtime = createStandardGitHubRuntime({
+      client,
+      channel: idempotentChannel(messages),
+    });
+
+    await expect(
+      runtime.circulate({
+        cycleId: "#1",
+        name: "cycle",
+        eventId: "recover-cycle-event",
+      }),
+    ).rejects.toThrow("Semantic Completion marker write failed");
+
+    const retried = await runtime.circulate({
+      cycleId: "#1",
+      name: "cycle",
+      eventId: "recover-cycle-event",
+    });
+
+    expect(retried).toEqual({ status: "processed" });
+    expect(messages).toHaveLength(1);
+    expect(state.comments).toHaveLength(1);
+  });
+
   it("別event idなら同一Processを再度完了通知できる", async () => {
     const messages: StandardGitHubExecutionMessage[] = [];
     const runtime = createStandardGitHubRuntime({
       client,
-      channel: {
-        send: async (message) => {
-          messages.push(message);
-        },
-      },
+      channel: idempotentChannel(messages),
     });
 
     await runtime.circulate({
