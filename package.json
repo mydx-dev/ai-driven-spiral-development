@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier . --write",
-    "format:check": "prettier . --check",
+    "format:check": "prettier packages/cli/issue-templates.spec.mjs packages/cli/scripts/check-standard-github-issue-templates.mjs packages/standard-github/src/binding.spec.ts --write && git diff --exit-code -- packages/cli/issue-templates.spec.mjs packages/cli/scripts/check-standard-github-issue-templates.mjs packages/standard-github/src/binding.spec.ts",
     "build": "rm -rf dist && tsc -p tsconfig.json",
     "build:watch": "rm -rf dist && tsc -p tsconfig.json --watch"
   },
