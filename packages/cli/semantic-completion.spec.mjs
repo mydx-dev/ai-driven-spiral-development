@@ -18,10 +18,11 @@ describe("GitHub Standard Semantic Completion", () => {
       );
 
       expect(entrypoint).toContain("createStandardGitHubRuntime");
+      expect(entrypoint).toContain("SPIRAL_EVENT_ID");
       expect(entrypoint).toContain("SPIRAL_CYCLE_ID");
       expect(entrypoint).toContain("SPIRAL_PROCESS_NAME");
       expect(entrypoint).toContain(
-        "await runtime.circulate({ cycleId, name })",
+        "await runtime.circulate({ cycleId, name, eventId })",
       );
       expect(entrypoint).toContain("createGitHubClient");
     } finally {
@@ -29,7 +30,7 @@ describe("GitHub Standard Semantic Completion", () => {
     }
   });
 
-  it("workflow_dispatch入力をcycleIdとSemantic Completion名へ渡す", () => {
+  it("workflow_dispatch入力をeventId・cycleId・Semantic Completion名へ渡す", () => {
     const cwd = temporaryRepository();
     try {
       initRepository({ cwd, artifact: "github", process: "standard" });
@@ -39,6 +40,7 @@ describe("GitHub Standard Semantic Completion", () => {
       );
 
       expect(workflow).toContain("workflow_dispatch:");
+      expect(workflow).toContain("event_id:");
       expect(workflow).toContain("cycle_id:");
       expect(workflow).toContain("process_name:");
       for (const name of [
@@ -53,10 +55,15 @@ describe("GitHub Standard Semantic Completion", () => {
       ]) {
         expect(workflow).toContain(`- ${name}`);
       }
+      expect(workflow).toContain("SPIRAL_EVENT_ID: ${{ inputs.event_id }}");
       expect(workflow).toContain("SPIRAL_CYCLE_ID: ${{ inputs.cycle_id }}");
       expect(workflow).toContain(
         "SPIRAL_PROCESS_NAME: ${{ inputs.process_name }}",
       );
+      expect(workflow).toContain(
+        "group: spiral-semantic-completion-${{ inputs.event_id }}",
+      );
+      expect(workflow).toContain("cancel-in-progress: false");
       expect(workflow).toContain("node scripts/spiral/main.mjs");
     } finally {
       rmSync(cwd, { recursive: true, force: true });
