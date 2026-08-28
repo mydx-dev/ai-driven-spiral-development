@@ -1,10 +1,5 @@
 import { spawnSync } from "node:child_process";
-import {
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,7 +45,10 @@ describe("formatter適用後のportable init", () => {
       expect(formatted.status).toBe(0);
 
       const before = Object.fromEntries(
-        generatedPaths.map((path) => [path, readFileSync(join(cwd, path), "utf8")]),
+        generatedPaths.map((path) => [
+          path,
+          readFileSync(join(cwd, path), "utf8"),
+        ]),
       );
       const result = init(cwd);
 
@@ -67,13 +65,18 @@ describe("formatter適用後のportable init", () => {
     const cwd = temporaryRepository();
     try {
       init(cwd);
-      const packageJson = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8"));
+      const packageJson = JSON.parse(
+        readFileSync(join(cwd, "package.json"), "utf8"),
+      );
       const reordered = {
         scripts: packageJson.scripts,
         devDependencies: packageJson.devDependencies,
         dependencies: packageJson.dependencies,
       };
-      writeFileSync(join(cwd, "package.json"), `${JSON.stringify(reordered, null, 4)}\n`);
+      writeFileSync(
+        join(cwd, "package.json"),
+        `${JSON.stringify(reordered, null, 4)}\n`,
+      );
       const before = readFileSync(join(cwd, "package.json"), "utf8");
 
       expect(init(cwd).alreadySatisfied).toBe(true);
@@ -111,7 +114,10 @@ describe("formatter適用後のportable init", () => {
       const path = join(cwd, "scripts/spiral/execution-channel.mjs");
       writeFileSync(
         path,
-        readFileSync(path, "utf8").replace("void message;", "console.log(message);"),
+        readFileSync(path, "utf8").replace(
+          "void message;",
+          "console.log(message);",
+        ),
       );
 
       expect(() => init(cwd)).toThrow(
