@@ -5,6 +5,7 @@ import {
   RequirementVerification,
 } from "@mydx-dev/spiral-standard";
 import { GitHubIssue } from "@mydx-dev/spiral-github";
+import { standardGitHubIssueBodies } from "./IssueTemplates.mjs";
 
 export class DemandIssue {
   constructor(
@@ -194,7 +195,13 @@ export class StandardCycleIssueTemplate {
   constructor(public readonly previousIssueNumber?: number) {}
 
   render(): string {
-    return `## 前Cycle\n\n${this.previousIssueNumber ? `- #${this.previousIssueNumber}` : ""}\n\n## 次Cycle\n\n\n## 要求\n\n\n## Feature\n\n\n## Release\n\n### 対象\n\n\n### Release Notes\n\n\n### Release手順\n\n\n### 検収手順\n\n\n### Version\n\n\n- [ ] Release完了\n\n## フィードバック\n\n- [ ] 現Cycleの不備\n- [ ] 新規Demand\n- [ ] 既存Demandの変更`;
+    const body = standardGitHubIssueBodies.cycle;
+    return this.previousIssueNumber
+      ? new GitHubIssue(body).writeSection(
+          "## 前Cycle",
+          `- #${this.previousIssueNumber}`,
+        )
+      : body;
   }
 }
 

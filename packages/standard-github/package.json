@@ -1,12 +1,16 @@
 {
   "name": "@mydx-dev/spiral-standard-github",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mydx-dev/ai-driven-spiral-development.git"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

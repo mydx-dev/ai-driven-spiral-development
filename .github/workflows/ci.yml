@@ -117,3 +117,10 @@ jobs:
 
       - name: Build Standard GitHub package
         run: pnpm --dir packages/standard-github build
+
+      - name: Verify Standard GitHub publish manifest
+        run: |
+          cd packages/standard-github
+          npm pkg fix
+          git diff --exit-code -- package.json
+          npm pack --dry-run

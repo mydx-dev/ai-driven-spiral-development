@@ -221,21 +221,30 @@ jobs:
       - name: Verify published CLI against npm registry
         run: |
           CLI_VERSION=$(node -p "require('./packages/cli/package.json').version")
+          STANDARD_GITHUB_VERSION=$(node -p "require('./packages/standard-github/package.json').version")
           TARGET_DIR="$(mktemp -d)"
+          CUSTOM_DIR="$(mktemp -d)"
 
-          for ATTEMPT in $(seq 1 18); do
-            if pnpm view "@mydx-dev/spiral@${CLI_VERSION}" version \
-              --registry=https://registry.npmjs.org/ 2>/dev/null | grep -Fx "$CLI_VERSION"; then
-              break
-            fi
+          wait_for_package() {
+            local package="$1"
+            local version="$2"
+            for ATTEMPT in $(seq 1 18); do
+              if pnpm view "${package}@${version}" version \
+                --registry=https://registry.npmjs.org/ 2>/dev/null | grep -Fx "$version"; then
+                return
+              fi
 
-            if [ "$ATTEMPT" -eq 18 ]; then
-              echo "@mydx-dev/spiral@${CLI_VERSION} is not visible from npm registry"
-              exit 1
-            fi
+              if [ "$ATTEMPT" -eq 18 ]; then
+                echo "${package}@${version} is not visible from npm registry"
+                exit 1
+              fi
 
-            sleep 5
-          done
+              sleep 5
+            done
+          }
+
+          wait_for_package "@mydx-dev/spiral" "$CLI_VERSION"
+          wait_for_package "@mydx-dev/spiral-standard-github" "$STANDARD_GITHUB_VERSION"
 
           pnpm dlx "@mydx-dev/spiral@${CLI_VERSION}" init \
             --artifact github \
@@ -246,6 +255,13 @@ jobs:
           test -f "$TARGET_DIR/scripts/spiral/main.mjs"
           test -f "$TARGET_DIR/scripts/spiral/execution-channel.mjs"
           test ! -e "$TARGET_DIR/src/spiral"
+          test -f "$TARGET_DIR/.github/ISSUE_TEMPLATE/spiral-cycle.md"
+          test -f "$TARGET_DIR/.github/ISSUE_TEMPLATE/demand.md"
+          test -f "$TARGET_DIR/.github/ISSUE_TEMPLATE/feature.md"
+          test ! -e "$TARGET_DIR/.github/ISSUE_TEMPLATE/spiral-artifact.md"
+          grep -F '## 要件' "$TARGET_DIR/.github/ISSUE_TEMPLATE/demand.md"
+          grep -F '## 対象要件' "$TARGET_DIR/.github/ISSUE_TEMPLATE/feature.md"
+          grep -F '## Release' "$TARGET_DIR/.github/ISSUE_TEMPLATE/spiral-cycle.md"
           grep -F '"executionChannel": "./scripts/spiral/execution-channel.mjs"' "$TARGET_DIR/spiral.config.mjs"
 
           node - "$TARGET_DIR/package.json" <<'NODE'
@@ -276,3 +292,11 @@ jobs:
             --cwd "$TARGET_DIR")
           echo "$SECOND_RUN"
           echo "$SECOND_RUN" | grep -F "Portable Distribution is already satisfied."
+
+          pnpm dlx "@mydx-dev/spiral@${CLI_VERSION}" init \
+            --artifact github \
+            --process custom \
+            --cwd "$CUSTOM_DIR"
+          test -f "$CUSTOM_DIR/.github/ISSUE_TEMPLATE/spiral-artifact.md"
+          test ! -e "$CUSTOM_DIR/.github/ISSUE_TEMPLATE/demand.md"
+          test ! -e "$CUSTOM_DIR/.github/ISSUE_TEMPLATE/feature.md"

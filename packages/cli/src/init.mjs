@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { standardGitHubIssueBodies } from "./generated/standard-github-issue-templates.mjs";
 import { resolveComposition } from "./registry.mjs";
 
 /**
@@ -52,8 +53,17 @@ const generatedFiles = (composition) => {
   }
 
   if (composition.github) {
-    files[".github/ISSUE_TEMPLATE/spiral-artifact.md"] =
-      '---\nname: Spiral Artifact\nabout: Spiral Development artifactを記録する\ntitle: ""\nlabels: ""\nassignees: ""\n---\n\n## Artifact\n\n<!-- project / process固有のArtifact情報を記載してください。 -->\n\n## Traceability\n\n- Cycle: \n- Parent Artifact: \n';
+    if (composition.binding === "@mydx-dev/spiral-standard-github") {
+      files[".github/ISSUE_TEMPLATE/spiral-cycle.md"] =
+        `---\nname: Spiral Cycle\nabout: Standard Spiral DevelopmentのCycleを管理する\ntitle: "Cycle"\nlabels: ""\nassignees: ""\n---\n\n${standardGitHubIssueBodies.cycle}\n`;
+      files[".github/ISSUE_TEMPLATE/demand.md"] =
+        `---\nname: Demand\nabout: Standard ProcessのDemandとRequirement / QAを管理する\ntitle: ""\nlabels: ""\nassignees: ""\n---\n\n${standardGitHubIssueBodies.demand}\n`;
+      files[".github/ISSUE_TEMPLATE/feature.md"] =
+        `---\nname: Feature\nabout: Standard ProcessのExternal Design / Featureを管理する\ntitle: ""\nlabels: ""\nassignees: ""\n---\n\n${standardGitHubIssueBodies.feature}\n`;
+    } else {
+      files[".github/ISSUE_TEMPLATE/spiral-artifact.md"] =
+        '---\nname: Spiral Artifact\nabout: Spiral Development artifactを記録する\ntitle: ""\nlabels: ""\nassignees: ""\n---\n\n## Artifact\n\n<!-- project / process固有のArtifact情報を記載してください。 -->\n\n## Traceability\n\n- Cycle: \n- Parent Artifact: \n';
+    }
     files[".github/pull_request_template.md"] =
       "## Spiral Traceability\n\n- Cycle: \n- Artifact / Issue: \n\n## Verification\n\n- [ ] 対応するArtifactとの整合を確認した\n- [ ] 必要なQuality / CIを確認した\n";
     files[".github/workflows/spiral.yml"] =
