@@ -62,11 +62,7 @@ import {
 
 const client = {
   repositoryPath: (path: string) => `repos/example/repo${path}`,
-  request: async (
-    method: string,
-    path: string,
-    body?: { body?: string },
-  ) => {
+  request: async (method: string, path: string, body?: { body?: string }) => {
     if (method === "GET" && path.endsWith("/comments")) {
       return state.comments;
     }
@@ -172,72 +168,66 @@ describe("Standard GitHub Runtime", () => {
     ]);
   });
 
-  it(
-    "同一Process completion eventを再処理してもside effectを再発火しない",
-    async () => {
-      state.demands = [
-        new Demand("#10", "#1", "予約", "未対応", "対応済み", "顧客", []),
-      ];
-      const messages: StandardGitHubExecutionMessage[] = [];
-      const runtime = createStandardGitHubRuntime({
-        client,
-        channel: {
-          send: async (message) => {
-            messages.push(message);
-          },
+  it("同一Process completion eventを再処理してもside effectを再発火しない", async () => {
+    state.demands = [
+      new Demand("#10", "#1", "予約", "未対応", "対応済み", "顧客", []),
+    ];
+    const messages: StandardGitHubExecutionMessage[] = [];
+    const runtime = createStandardGitHubRuntime({
+      client,
+      channel: {
+        send: async (message) => {
+          messages.push(message);
         },
-      });
+      },
+    });
 
-      const first = await runtime.circulate({
-        cycleId: "#1",
-        name: "Demand Definition",
-        eventId: "same-process-event",
-      });
-      const second = await runtime.circulate({
-        cycleId: "#1",
-        name: "Demand Definition",
-        eventId: "same-process-event",
-      });
+    const first = await runtime.circulate({
+      cycleId: "#1",
+      name: "Demand Definition",
+      eventId: "same-process-event",
+    });
+    const second = await runtime.circulate({
+      cycleId: "#1",
+      name: "Demand Definition",
+      eventId: "same-process-event",
+    });
 
-      expect(first).toEqual({ status: "processed" });
-      expect(second).toEqual({ status: "duplicate" });
-      expect(messages).toHaveLength(1);
-      expect(state.comments).toHaveLength(1);
-    },
-  );
+    expect(first).toEqual({ status: "processed" });
+    expect(second).toEqual({ status: "duplicate" });
+    expect(messages).toHaveLength(1);
+    expect(state.comments).toHaveLength(1);
+  });
 
-  it(
-    "同一cycle completion eventを再処理しても次Cycle開始を再発火しない",
-    async () => {
-      state.cycle = new StandardCycle("#1", "exists", "none");
-      const messages: StandardGitHubExecutionMessage[] = [];
-      const runtime = createStandardGitHubRuntime({
-        client,
-        channel: {
-          send: async (message) => {
-            messages.push(message);
-          },
+  it("同一cycle completion eventを再処理しても次Cycle開始を再発火しない", async () => {
+    state.cycle = new StandardCycle("#1", "exists", "none");
+    const messages: StandardGitHubExecutionMessage[] = [];
+    const runtime = createStandardGitHubRuntime({
+      client,
+      channel: {
+        send: async (message) => {
+          messages.push(message);
         },
-      });
+      },
+    });
 
-      const first = await runtime.circulate({
-        cycleId: "#1",
-        name: "cycle",
-        eventId: "same-cycle-event",
-      });
-      const second = await runtime.circulate({
-        cycleId: "#1",
-        name: "cycle",
-        eventId: "same-cycle-event",
-      });
+    const first = await runtime.circulate({
+      cycleId: "#1",
+      name: "cycle",
+      eventId: "same-cycle-event",
+    });
+    const second = await runtime.circulate({
+      cycleId: "#1",
+      name: "cycle",
+      eventId: "same-cycle-event",
+    });
 
-      expect(first).toEqual({ status: "processed" });
-      expect(second).toEqual({ status: "duplicate" });
-      expect(messages).toHaveLength(1);
-      expect(state.saved.filter(({ id }) => id === "#2")).toHaveLength(1);
-      expect(state.comments).toHaveLength(1);
-    },
-  );
+    expect(first).toEqual({ status: "processed" });
+    expect(second).toEqual({ status: "duplicate" });
+    expect(messages).toHaveLength(1);
+    expect(state.saved.filter(({ id }) => id === "#2")).toHaveLength(1);
+    expect(state.comments).toHaveLength(1);
+  });
 
   it("別event idなら同一Processを再度完了通知できる", async () => {
     const messages: StandardGitHubExecutionMessage[] = [];
