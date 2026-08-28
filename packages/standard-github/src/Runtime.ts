@@ -177,8 +177,6 @@ export const createStandardGitHubRuntime = ({
 
   return {
     repositories,
-    cycleDefinition: CycleDefinition,
-    spiral,
     async circulate({ cycleId, name }: { cycleId: string; name: string }) {
       const event = new SemanticCompletionEvent({
         cycleId,
