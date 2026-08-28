@@ -184,6 +184,71 @@ const tokenizeJavaScript = (source) => {
   return tokens;
 };
 
+const normalizeJavaScriptTokens = (tokens) => {
+  const normalized = [];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    const next = tokens[index + 1];
+    if (
+      token[0] === "punctuator" &&
+      token[1] === "," &&
+      next?.[0] === "punctuator" &&
+      (next[1] === "]" || next[1] === "}")
+    ) {
+      continue;
+    }
+    if (
+      next?.[0] === "punctuator" &&
+      next[1] === ":" &&
+      ((token[0] === "identifier" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(token[1])) ||
+        (token[0] === "string" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(token[1])))
+    ) {
+      normalized.push(["property", token[1]]);
+      continue;
+    }
+    normalized.push(token);
+  }
+
+  return normalized;
+};
+
+const normalizeMarkdown = (value) => {
+  const lines = normalizeText(value).split("\n");
+  if (lines[0] !== "---") return lines.join("\n");
+  const frontMatterEnd = lines.indexOf("---", 1);
+  if (frontMatterEnd < 0) return lines.join("\n");
+
+  for (let index = 1; index < frontMatterEnd; index += 1) {
+    lines[index] = lines[index].replace(
+      /^(\s*[^:]+:\s*)'([^']*)'$/,
+      '$1"$2"',
+    );
+  }
+
+  return lines.join("\n");
+};
+
+const normalizeYaml = (value) => {
+  const lines = normalizeText(value).split("\n");
+  const indents = [
+    ...new Set(
+      lines
+        .filter((line) => line.trim().length > 0)
+        .map((line) => line.match(/^\s*/)?.[0].length ?? 0),
+    ),
+  ].sort((left, right) => left - right);
+  const levels = new Map(indents.map((indent, index) => [indent, index]));
+
+  return lines
+    .map((line) => {
+      if (line.trim().length === 0) return "";
+      const indent = line.match(/^\s*/)?.[0].length ?? 0;
+      return `${"  ".repeat(levels.get(indent) ?? 0)}${line.trimStart()}`;
+    })
+    .join("\n");
+};
+
 const deepEqual = (left, right) => {
   if (Object.is(left, right)) return true;
   if (Array.isArray(left) || Array.isArray(right)) {
@@ -217,12 +282,19 @@ export const generatedFileEquivalent = ({ path, current, expected }) => {
     return (
       currentTokens !== null &&
       expectedTokens !== null &&
-      deepEqual(currentTokens, expectedTokens)
+      deepEqual(
+        normalizeJavaScriptTokens(currentTokens),
+        normalizeJavaScriptTokens(expectedTokens),
+      )
     );
   }
 
-  if (path.endsWith(".md") || path.endsWith(".yml") || path.endsWith(".yaml")) {
-    return normalizeText(current) === normalizeText(expected);
+  if (path.endsWith(".md")) {
+    return normalizeMarkdown(current) === normalizeMarkdown(expected);
+  }
+
+  if (path.endsWith(".yml") || path.endsWith(".yaml")) {
+    return normalizeYaml(current) === normalizeYaml(expected);
   }
 
   return current === expected;
