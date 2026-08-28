@@ -2,11 +2,17 @@ import type { GitHubClient } from "@mydx-dev/spiral-github";
 import { Demand, StandardCycle } from "@mydx-dev/spiral-standard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+type CycleState = {
+  id: string;
+  newDemand: StandardCycle["newDemand"];
+  changedDemand: StandardCycle["changedDemand"];
+};
+
 const state = vi.hoisted(() => ({
   demands: [] as Demand[],
-  cycle: new StandardCycle("#1", "none", "none"),
-  nextCycle: new StandardCycle("#2", "none", "none"),
-  saved: [] as StandardCycle[],
+  cycle: null as CycleState | null,
+  nextCycle: null as CycleState | null,
+  saved: [] as CycleState[],
 }));
 
 vi.mock("./Repositories.js", () => {
@@ -33,12 +39,12 @@ vi.mock("./Repositories.js", () => {
       releaseRepository: emptyRepository,
       acceptanceReportRepository: emptyRepository,
       cycleRepository: {
-        create: async () => state.cycle,
-        find: async () => state.cycle,
-        save: async (cycle: StandardCycle) => {
+        create: async () => state.cycle!,
+        find: async () => state.cycle!,
+        save: async (cycle: CycleState) => {
           state.saved.push(cycle);
         },
-        createNext: async () => state.nextCycle,
+        createNext: async () => state.nextCycle!,
       },
     }),
   };
