@@ -30,7 +30,7 @@ describe("GitHub Standard Semantic Completion", () => {
     }
   });
 
-  it("workflow_dispatch入力をeventId・cycleId・Semantic Completion名へ渡す", () => {
+  it("workflow_dispatch入力はcycleIdとSemantic Completion名だけを要求する", () => {
     const cwd = temporaryRepository();
     try {
       initRepository({ cwd, artifact: "github", process: "standard" });
@@ -40,7 +40,7 @@ describe("GitHub Standard Semantic Completion", () => {
       );
 
       expect(workflow).toContain("workflow_dispatch:");
-      expect(workflow).toContain("event_id:");
+      expect(workflow).not.toContain("event_id:");
       expect(workflow).toContain("cycle_id:");
       expect(workflow).toContain("process_name:");
       for (const name of [
@@ -55,16 +55,33 @@ describe("GitHub Standard Semantic Completion", () => {
       ]) {
         expect(workflow).toContain(`- ${name}`);
       }
-      expect(workflow).toContain("SPIRAL_EVENT_ID: ${{ inputs.event_id }}");
       expect(workflow).toContain("SPIRAL_CYCLE_ID: ${{ inputs.cycle_id }}");
       expect(workflow).toContain(
         "SPIRAL_PROCESS_NAME: ${{ inputs.process_name }}",
       );
-      expect(workflow).toContain(
-        "group: spiral-semantic-completion-${{ inputs.event_id }}",
-      );
-      expect(workflow).toContain("cancel-in-progress: false");
       expect(workflow).toContain("node scripts/spiral/main.mjs");
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("event IDをrepositoryとrun_idから内部生成しrun_attemptを含めない", () => {
+    const cwd = temporaryRepository();
+    try {
+      initRepository({ cwd, artifact: "github", process: "standard" });
+      const workflow = readFileSync(
+        join(cwd, ".github/workflows/spiral-circulate.yml"),
+        "utf8",
+      );
+
+      expect(workflow).toContain(
+        "SPIRAL_EVENT_ID: ${{ github.repository }}:${{ github.run_id }}",
+      );
+      expect(workflow).toContain(
+        "group: spiral-semantic-completion-${{ github.repository }}-${{ github.run_id }}",
+      );
+      expect(workflow).not.toContain("github.run_attempt");
+      expect(workflow).not.toContain("inputs.event_id");
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
