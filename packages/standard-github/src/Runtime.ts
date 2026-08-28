@@ -126,7 +126,9 @@ const semanticCompletionMarker = (eventId: string) => {
   if (!normalized) {
     throw new Error("Semantic Completion event id is required.");
   }
-  return `<!-- spiral-semantic-completion:${encodeURIComponent(normalized)} -->`;
+  return `<!-- spiral-semantic-completion:${encodeURIComponent(
+    normalized,
+  )} -->`;
 };
 
 const semanticCompletionAlreadyProcessed = async (
