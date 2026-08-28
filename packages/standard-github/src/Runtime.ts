@@ -53,8 +53,7 @@ export type StandardGitHubExecutionMessage =
     };
 
 export type StandardGitHubCirculateResult =
-  | { readonly status: "processed" }
-  | { readonly status: "duplicate" };
+  { readonly status: "processed" } | { readonly status: "duplicate" };
 
 type IssueComment = {
   readonly body: string | null;
