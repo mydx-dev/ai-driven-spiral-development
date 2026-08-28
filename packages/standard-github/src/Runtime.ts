@@ -238,13 +238,21 @@ export const createStandardGitHubRuntime = ({
         name: "External Design",
         artifactRepository: repositories.externalSpecRepository,
         gate: new ExternalDesignGate(),
-        executor: createExecutor<ExternalSpec>("External Design", eventId, channel),
+        executor: createExecutor<ExternalSpec>(
+          "External Design",
+          eventId,
+          channel,
+        ),
       });
       const engineering = new Process({
         name: "Engineering",
         artifactRepository: repositories.implementationRepository,
         gate: new EngineeringGate(),
-        executor: createExecutor<Implementation>("Engineering", eventId, channel),
+        executor: createExecutor<Implementation>(
+          "Engineering",
+          eventId,
+          channel,
+        ),
       });
       const qa = new Process({
         name: "QA",
@@ -262,7 +270,11 @@ export const createStandardGitHubRuntime = ({
         name: "Acceptance",
         artifactRepository: repositories.acceptanceReportRepository,
         gate: new AcceptanceGate(),
-        executor: createExecutor<AcceptanceReport>("Acceptance", eventId, channel),
+        executor: createExecutor<AcceptanceReport>(
+          "Acceptance",
+          eventId,
+          channel,
+        ),
       });
 
       class StandardGitHubCycle extends StandardCycle {}
