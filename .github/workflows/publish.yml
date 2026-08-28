@@ -285,6 +285,18 @@ jobs:
 
           pnpm --dir "$TARGET_DIR" install --no-frozen-lockfile
 
+          pnpm dlx prettier@3.9.6 --write --single-quote --tab-width 4 \
+            "$TARGET_DIR/package.json" \
+            "$TARGET_DIR/spiral.config.mjs" \
+            "$TARGET_DIR/quality.config.mjs" \
+            "$TARGET_DIR/scripts/spiral/main.mjs" \
+            "$TARGET_DIR/scripts/spiral/execution-channel.mjs" \
+            "$TARGET_DIR/.github/ISSUE_TEMPLATE/spiral-cycle.md" \
+            "$TARGET_DIR/.github/ISSUE_TEMPLATE/demand.md" \
+            "$TARGET_DIR/.github/ISSUE_TEMPLATE/feature.md" \
+            "$TARGET_DIR/.github/pull_request_template.md" \
+            "$TARGET_DIR/.github/workflows/spiral.yml"
+
           SECOND_RUN=$(pnpm dlx "@mydx-dev/spiral@${CLI_VERSION}" init \
             --artifact github \
             --process standard \
