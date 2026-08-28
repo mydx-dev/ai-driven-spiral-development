@@ -1,6 +1,5 @@
 import {
   type Artifact,
-  type ArtifactRepository,
   type ExecutionChannel,
   Process,
   ProcessExecutor,
@@ -21,7 +20,6 @@ import {
   type QAReport,
   ReleaseGate,
   type Release,
-  type Requirement,
   RequirementDefinitionGate,
   StandardCycle,
 } from "@mydx-dev/spiral-standard";
@@ -73,19 +71,6 @@ const createExecutor = <TArtifact extends Artifact>(
     }),
   });
 
-const requirementArtifactRepository = (repository: {
-  find(id: string): Promise<Requirement | undefined>;
-  findByCycle(cycleId: string): Promise<Requirement[]>;
-}): ArtifactRepository<Requirement> => ({
-  find: (id) => repository.find(id),
-  findByCycle: (cycleId) => repository.findByCycle(cycleId),
-  save: async () => {
-    throw new Error(
-      "Requirement artifacts are read-only in the Standard GitHub binding.",
-    );
-  },
-});
-
 const routedCycleRepository = <TCycle extends StandardCycle>(
   repository: {
     create(): Promise<StandardCycle>;
@@ -127,9 +112,6 @@ export const createStandardGitHubRuntime = ({
   channel: ExecutionChannel<StandardGitHubExecutionMessage>;
 }) => {
   const repositories = createStandardGitHubRepositories(client);
-  const requirements = requirementArtifactRepository(
-    repositories.requirementRepository,
-  );
 
   const demandDefinition = new Process({
     name: "Demand Definition",
@@ -139,9 +121,9 @@ export const createStandardGitHubRuntime = ({
   });
   const requirementDefinition = new Process({
     name: "Requirement Definition",
-    artifactRepository: requirements,
+    artifactRepository: repositories.demandRepository,
     gate: new RequirementDefinitionGate(),
-    executor: createExecutor<Requirement>("Requirement Definition", channel),
+    executor: createExecutor<Demand>("Requirement Definition", channel),
   });
   const externalDesign = new Process({
     name: "External Design",
