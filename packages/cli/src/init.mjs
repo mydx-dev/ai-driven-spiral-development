@@ -198,7 +198,10 @@ export const planInit = (options = {}) => {
 
   const changes = [];
   const nextPackageText = `${JSON.stringify(nextPackage, null, 2)}\n`;
-  if (currentPackageText === null || !jsonEquivalent(currentPackage, nextPackage)) {
+  if (
+    currentPackageText === null ||
+    !jsonEquivalent(currentPackage, nextPackage)
+  ) {
     changes.push({
       path: "package.json",
       content: nextPackageText,
