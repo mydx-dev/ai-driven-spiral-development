@@ -52,6 +52,14 @@ export type StandardGitHubExecutionMessage =
       readonly errors: string[];
     };
 
+export type StandardGitHubCirculateResult =
+  | { readonly status: "processed" }
+  | { readonly status: "duplicate" };
+
+type IssueComment = {
+  readonly body: string | null;
+};
+
 const createExecutor = <TArtifact extends Artifact>(
   processName: StandardGitHubProcessName,
   channel: ExecutionChannel<StandardGitHubExecutionMessage>,
@@ -103,6 +111,54 @@ const routedCycleRepository = <TCycle extends StandardCycle>(
       restore(await repository.createNext(previousCycle)),
   };
 };
+
+const cycleIssueNumber = (cycleId: string) => {
+  const normalized = cycleId.replace(/^#/, "");
+  const issueNumber = Number(normalized);
+  if (!Number.isSafeInteger(issueNumber) || issueNumber < 1) {
+    throw new Error(`Invalid Standard GitHub cycle id: ${cycleId}`);
+  }
+  return issueNumber;
+};
+
+const semanticCompletionMarker = (eventId: string) => {
+  const normalized = eventId.trim();
+  if (!normalized) {
+    throw new Error("Semantic Completion event id is required.");
+  }
+  return `<!-- spiral-semantic-completion:${encodeURIComponent(normalized)} -->`;
+};
+
+const semanticCompletionAlreadyProcessed = async (
+  client: GitHubClient,
+  issueNumber: number,
+  marker: string,
+) => {
+  for (let page = 1; ; page += 1) {
+    const comments = await client.request<IssueComment[]>(
+      "GET",
+      client.repositoryPath(`/issues/${issueNumber}/comments`),
+      undefined,
+      { per_page: "100", page: String(page) },
+    );
+    if (comments.some(({ body }) => body?.includes(marker))) return true;
+    if (comments.length < 100) return false;
+  }
+};
+
+const recordSemanticCompletion = (
+  client: GitHubClient,
+  issueNumber: number,
+  marker: string,
+  name: string,
+) =>
+  client.request(
+    "POST",
+    client.repositoryPath(`/issues/${issueNumber}/comments`),
+    {
+      body: `${marker}\nSemantic Completion processed: \`${name}\``,
+    },
+  );
 
 export const createStandardGitHubRuntime = ({
   client,
@@ -177,13 +233,31 @@ export const createStandardGitHubRuntime = ({
 
   return {
     repositories,
-    async circulate({ cycleId, name }: { cycleId: string; name: string }) {
+    async circulate({
+      cycleId,
+      name,
+      eventId,
+    }: {
+      cycleId: string;
+      name: string;
+      eventId: string;
+    }): Promise<StandardGitHubCirculateResult> {
+      const marker = semanticCompletionMarker(eventId);
+      const issueNumber = cycleIssueNumber(cycleId);
+      if (
+        await semanticCompletionAlreadyProcessed(client, issueNumber, marker)
+      ) {
+        return { status: "duplicate" };
+      }
+
       const event = new SemanticCompletionEvent({
         cycleId,
         name,
         cycleDefinition: CycleDefinition,
       });
       await spiral.circulate(event);
+      await recordSemanticCompletion(client, issueNumber, marker, name);
+      return { status: "processed" };
     },
   };
 };
