@@ -103,7 +103,7 @@ describe("Standard × GitHub Binding", () => {
     expect(new QARequirementIssue(demandBody, 21).verifications()[0]).toMatchObject(
       {
         requirementId: "#21-R1",
-        passed: true,
+        satisfied: true,
       },
     );
     expect(new ExternalSpecIssue(featureBody).requirementIds()).toEqual([
