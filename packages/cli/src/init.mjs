@@ -2,6 +2,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { standardGitHubIssueBodies } from "./generated/standard-github-issue-templates.mjs";
 import { resolveComposition } from "./registry.mjs";
+import {
+  generatedFileEquivalent,
+  jsonEquivalent,
+} from "./semantic-equality.mjs";
 
 /**
  * @typedef {object} InitOptions
@@ -194,7 +198,7 @@ export const planInit = (options = {}) => {
 
   const changes = [];
   const nextPackageText = `${JSON.stringify(nextPackage, null, 2)}\n`;
-  if (currentPackageText !== nextPackageText) {
+  if (currentPackageText === null || !jsonEquivalent(currentPackage, nextPackage)) {
     changes.push({
       path: "package.json",
       content: nextPackageText,
@@ -205,7 +209,12 @@ export const planInit = (options = {}) => {
 
   for (const [path, content] of Object.entries(generatedFiles(composition))) {
     const current = readText(resolve(root, path));
-    if (current === content) continue;
+    if (
+      current !== null &&
+      generatedFileEquivalent({ path, current, expected: content })
+    ) {
+      continue;
+    }
     if (current !== null) {
       conflicts.push(`manual decision required: ${path}`);
       continue;
