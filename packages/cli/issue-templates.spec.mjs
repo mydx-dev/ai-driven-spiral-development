@@ -71,9 +71,7 @@ describe("Standard × GitHub Issue Templates", () => {
 
       expect(() =>
         initRepository({ cwd, artifact: "github", process: "standard" }),
-      ).toThrow(
-        "manual decision required: .github/ISSUE_TEMPLATE/demand.md",
-      );
+      ).toThrow("manual decision required: .github/ISSUE_TEMPLATE/demand.md");
       expect(readFileSync(path, "utf8")).toBe("existing demand template\n");
     } finally {
       rmSync(cwd, { recursive: true, force: true });
