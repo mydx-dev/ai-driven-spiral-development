@@ -218,11 +218,7 @@ export const createStandardGitHubRuntime = ({
         name: "Demand Definition",
         artifactRepository: repositories.demandRepository,
         gate: new DemandDefinitionGate(),
-        executor: createExecutor<Demand>(
-          "Demand Definition",
-          eventId,
-          channel,
-        ),
+        executor: createExecutor<Demand>("Demand Definition", eventId, channel),
       });
       const requirementDefinition = new Process({
         name: "Requirement Definition",
