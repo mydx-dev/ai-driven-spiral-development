@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier . --write",
-    "format:check": "prettier packages/cli/semantic-completion.spec.mjs packages/standard-github/src/Runtime.ts --write && git diff --exit-code -- packages/cli/semantic-completion.spec.mjs packages/standard-github/src/Runtime.ts",
+    "format:check": "prettier . --check",
     "build": "rm -rf dist && tsc -p tsconfig.json",
     "build:watch": "rm -rf dist && tsc -p tsconfig.json --watch"
   },
