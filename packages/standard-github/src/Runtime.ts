@@ -42,11 +42,13 @@ export type StandardGitHubProcessName =
 export type StandardGitHubExecutionMessage =
   | {
       readonly type: "start";
+      readonly idempotencyKey: string;
       readonly cycleId: string;
       readonly processName: StandardGitHubProcessName;
     }
   | {
       readonly type: "retry";
+      readonly idempotencyKey: string;
       readonly cycleId: string;
       readonly processName: StandardGitHubProcessName;
       readonly errors: string[];
@@ -59,19 +61,42 @@ type IssueComment = {
   readonly body: string | null;
 };
 
+const executionIdempotencyKey = (
+  eventId: string,
+  type: StandardGitHubExecutionMessage["type"],
+  cycleId: string,
+  processName: StandardGitHubProcessName,
+) =>
+  [eventId, type, cycleId, processName]
+    .map((value) => encodeURIComponent(value))
+    .join(":");
+
 const createExecutor = <TArtifact extends Artifact>(
   processName: StandardGitHubProcessName,
+  eventId: string,
   channel: ExecutionChannel<StandardGitHubExecutionMessage>,
 ) =>
   new ProcessExecutor<StandardGitHubExecutionMessage, TArtifact>({
     channel,
     createStartMessage: (cycleId) => ({
       type: "start",
+      idempotencyKey: executionIdempotencyKey(
+        eventId,
+        "start",
+        cycleId,
+        processName,
+      ),
       cycleId,
       processName,
     }),
     createRetryMessage: (cycleId, errors) => ({
       type: "retry",
+      idempotencyKey: executionIdempotencyKey(
+        eventId,
+        "retry",
+        cycleId,
+        processName,
+      ),
       cycleId,
       processName,
       errors,
@@ -170,68 +195,6 @@ export const createStandardGitHubRuntime = ({
 }) => {
   const repositories = createStandardGitHubRepositories(client);
 
-  const demandDefinition = new Process({
-    name: "Demand Definition",
-    artifactRepository: repositories.demandRepository,
-    gate: new DemandDefinitionGate(),
-    executor: createExecutor<Demand>("Demand Definition", channel),
-  });
-  const requirementDefinition = new Process({
-    name: "Requirement Definition",
-    artifactRepository: repositories.demandRepository,
-    gate: new RequirementDefinitionGate(),
-    executor: createExecutor<Demand>("Requirement Definition", channel),
-  });
-  const externalDesign = new Process({
-    name: "External Design",
-    artifactRepository: repositories.externalSpecRepository,
-    gate: new ExternalDesignGate(),
-    executor: createExecutor<ExternalSpec>("External Design", channel),
-  });
-  const engineering = new Process({
-    name: "Engineering",
-    artifactRepository: repositories.implementationRepository,
-    gate: new EngineeringGate(),
-    executor: createExecutor<Implementation>("Engineering", channel),
-  });
-  const qa = new Process({
-    name: "QA",
-    artifactRepository: repositories.qaReportRepository,
-    gate: new QAGate(),
-    executor: createExecutor<QAReport>("QA", channel),
-  });
-  const release = new Process({
-    name: "Release",
-    artifactRepository: repositories.releaseRepository,
-    gate: new ReleaseGate(),
-    executor: createExecutor<Release>("Release", channel),
-  });
-  const acceptance = new Process({
-    name: "Acceptance",
-    artifactRepository: repositories.acceptanceReportRepository,
-    gate: new AcceptanceGate(),
-    executor: createExecutor<AcceptanceReport>("Acceptance", channel),
-  });
-
-  class StandardGitHubCycle extends StandardCycle {}
-
-  const CycleDefinition = StandardGitHubCycle.route(demandDefinition)
-    .route(requirementDefinition)
-    .route(externalDesign)
-    .route(engineering)
-    .route(qa)
-    .route(release)
-    .route(acceptance);
-
-  const { cycleRepository, cycleFactory } = routedCycleRepository(
-    repositories.cycleRepository,
-    CycleDefinition,
-  );
-  const spiral = new Spiral<typeof CycleDefinition>({
-    cycleRepository,
-    cycleFactory,
-  });
-
   return {
     repositories,
     async circulate({
@@ -251,11 +214,81 @@ export const createStandardGitHubRuntime = ({
         return { status: "duplicate" };
       }
 
+      const demandDefinition = new Process({
+        name: "Demand Definition",
+        artifactRepository: repositories.demandRepository,
+        gate: new DemandDefinitionGate(),
+        executor: createExecutor<Demand>(
+          "Demand Definition",
+          eventId,
+          channel,
+        ),
+      });
+      const requirementDefinition = new Process({
+        name: "Requirement Definition",
+        artifactRepository: repositories.demandRepository,
+        gate: new RequirementDefinitionGate(),
+        executor: createExecutor<Demand>(
+          "Requirement Definition",
+          eventId,
+          channel,
+        ),
+      });
+      const externalDesign = new Process({
+        name: "External Design",
+        artifactRepository: repositories.externalSpecRepository,
+        gate: new ExternalDesignGate(),
+        executor: createExecutor<ExternalSpec>("External Design", eventId, channel),
+      });
+      const engineering = new Process({
+        name: "Engineering",
+        artifactRepository: repositories.implementationRepository,
+        gate: new EngineeringGate(),
+        executor: createExecutor<Implementation>("Engineering", eventId, channel),
+      });
+      const qa = new Process({
+        name: "QA",
+        artifactRepository: repositories.qaReportRepository,
+        gate: new QAGate(),
+        executor: createExecutor<QAReport>("QA", eventId, channel),
+      });
+      const release = new Process({
+        name: "Release",
+        artifactRepository: repositories.releaseRepository,
+        gate: new ReleaseGate(),
+        executor: createExecutor<Release>("Release", eventId, channel),
+      });
+      const acceptance = new Process({
+        name: "Acceptance",
+        artifactRepository: repositories.acceptanceReportRepository,
+        gate: new AcceptanceGate(),
+        executor: createExecutor<AcceptanceReport>("Acceptance", eventId, channel),
+      });
+
+      class StandardGitHubCycle extends StandardCycle {}
+
+      const CycleDefinition = StandardGitHubCycle.route(demandDefinition)
+        .route(requirementDefinition)
+        .route(externalDesign)
+        .route(engineering)
+        .route(qa)
+        .route(release)
+        .route(acceptance);
+
+      const { cycleRepository, cycleFactory } = routedCycleRepository(
+        repositories.cycleRepository,
+        CycleDefinition,
+      );
+      const spiral = new Spiral<typeof CycleDefinition>({
+        cycleRepository,
+        cycleFactory,
+      });
       const event = new SemanticCompletionEvent({
         cycleId,
         name,
         cycleDefinition: CycleDefinition,
       });
+
       await spiral.circulate(event);
       await recordSemanticCompletion(client, issueNumber, marker, name);
       return { status: "processed" };
