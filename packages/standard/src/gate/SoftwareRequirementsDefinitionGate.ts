@@ -158,8 +158,6 @@ export class SoftwareRequirementsDefinitionGate implements ProcessGate<SoftwareR
             }
 
             const systemRequirementKey = `${trace.systemRequirementSpecificationId}:${trace.systemRequirementId}`;
-            const systemRequirement =
-              systemRequirements.get(systemRequirementKey);
             const allocationKey = `${trace.allocationId}:${systemRequirementKey}:${trace.softwareElementId}`;
 
             if (!softwareElementIds.has(trace.softwareElementId)) {
@@ -176,13 +174,9 @@ export class SoftwareRequirementsDefinitionGate implements ProcessGate<SoftwareR
               tracedSoftwareAllocationKeys.add(allocationKey);
             }
 
-            if (!systemRequirement) {
+            if (!systemRequirements.has(systemRequirementKey)) {
               errors.push(
                 `${specification.id}/${requirement.id}: 未知のSyRS Requirementを参照しています`,
-              );
-            } else if (systemRequirement.tracesTo.length === 0) {
-              errors.push(
-                `${specification.id}/${requirement.id}: StRSまでtraceabilityが到達しません`,
               );
             }
           }
