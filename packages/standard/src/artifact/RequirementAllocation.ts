@@ -15,8 +15,6 @@ export class RequirementAllocation implements Artifact {
   constructor(
     public readonly id: string,
     public readonly cycleId: string,
-    public readonly sourceRequirements:
-      SystemRequirementReference[] | null | undefined,
     public readonly allocations:
       RequirementAllocationEntry[] | null | undefined,
   ) {}
