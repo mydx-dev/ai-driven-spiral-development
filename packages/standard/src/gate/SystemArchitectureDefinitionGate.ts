@@ -133,7 +133,13 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
 
     if (allocation.allocations === undefined) {
       errors.push(`${allocation.id}: Requirement allocationが未確定です`);
-    } else if (allocation.allocations !== null) {
+    } else if (allocation.allocations === null) {
+      if (sourceRequirementsComplete && sourceRequirementKeys.size > 0) {
+        errors.push(
+          `${allocation.id}: allocation対象のSyRS Requirementが存在します`,
+        );
+      }
+    } else {
       for (const entry of allocation.allocations) {
         const key = `${entry.requirement.specificationId}:${entry.requirement.requirementId}`;
 
