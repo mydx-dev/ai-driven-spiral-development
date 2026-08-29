@@ -302,7 +302,9 @@ describe("IntegrationGate", () => {
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
-        expect.arrayContaining([expect.stringContaining("未解決事項が残っています")]),
+        expect.arrayContaining([
+          expect.stringContaining("未解決事項が残っています"),
+        ]),
       );
     }
   });
