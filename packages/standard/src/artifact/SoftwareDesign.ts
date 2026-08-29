@@ -15,10 +15,7 @@ export type SoftwareDesignElement = {
 };
 
 export type SoftwareElementRelationshipType =
-  | "dependency"
-  | "interaction"
-  | "composition"
-  | "other";
+  "dependency" | "interaction" | "composition" | "other";
 
 export type SoftwareElementRelationship = {
   readonly sourceElementId: string;
@@ -57,18 +54,12 @@ export class SoftwareDesign implements Artifact {
     public readonly cycleId: string,
     public readonly elements: SoftwareDesignElement[] | null | undefined,
     public readonly relationships:
-      | SoftwareElementRelationship[]
-      | null
-      | undefined,
+      SoftwareElementRelationship[] | null | undefined,
     public readonly interfaces: SoftwareInterface[] | null | undefined,
     public readonly requirementAllocations:
-      | SoftwareRequirementDesignAllocation[]
-      | null
-      | undefined,
+      SoftwareRequirementDesignAllocation[] | null | undefined,
     public readonly rationales: SoftwareDesignRationale[] | null | undefined,
     public readonly unresolvedDecisions:
-      | SoftwareDesignUnresolvedDecision[]
-      | null
-      | undefined,
+      SoftwareDesignUnresolvedDecision[] | null | undefined,
   ) {}
 }
