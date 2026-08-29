@@ -26,8 +26,7 @@ export class IntegratedSoftware implements Artifact {
     public readonly cycleId: string,
     public readonly elements:
       ImplementedSoftwareElementReference[] | null | undefined,
-    public readonly relationships:
-      IntegratedRelationship[] | null | undefined,
+    public readonly relationships: IntegratedRelationship[] | null | undefined,
     public readonly interfaces: IntegratedInterface[] | null | undefined,
     public readonly artifactReferences: string[] | null | undefined,
     public readonly evidence: string[] | null | undefined,
