@@ -1,4 +1,6 @@
-import type { ArtifactRepository } from "@mydx-dev/ai-driven-spiral-development";
+import type {
+  ArtifactRepository,
+} from "@mydx-dev/ai-driven-spiral-development";
 import { describe, expect, it } from "vitest";
 import { StakeholderRequirementsSpecification } from "./StakeholderRequirementsSpecification.js";
 
@@ -17,7 +19,10 @@ describe("StakeholderRequirementsSpecification", () => {
       [],
       [],
     );
-    const artifacts = new Map<string, StakeholderRequirementsSpecification>();
+    const artifacts = new Map<
+      string,
+      StakeholderRequirementsSpecification
+    >();
     const repository: ArtifactRepository<StakeholderRequirementsSpecification> = {
       find: async (id) => artifacts.get(id),
       findByCycle: async (cycleId) =>
