@@ -19,20 +19,18 @@ describe("StakeholderRequirementsSpecification", () => {
       [],
       [],
     );
-    const artifacts = new Map<
-      string,
-      StakeholderRequirementsSpecification
-    >();
-    const repository: ArtifactRepository<StakeholderRequirementsSpecification> = {
-      find: async (id) => artifacts.get(id),
-      findByCycle: async (cycleId) =>
-        [...artifacts.values()].filter(
-          (artifact) => artifact.cycleId === cycleId,
-        ),
-      save: async (artifact) => {
-        artifacts.set(artifact.id, artifact);
-      },
-    };
+    const artifacts = new Map<string, StakeholderRequirementsSpecification>();
+    const repository: ArtifactRepository<StakeholderRequirementsSpecification> =
+      {
+        find: async (id) => artifacts.get(id),
+        findByCycle: async (cycleId) =>
+          [...artifacts.values()].filter(
+            (artifact) => artifact.cycleId === cycleId,
+          ),
+        save: async (artifact) => {
+          artifacts.set(artifact.id, artifact);
+        },
+      };
 
     await repository.save(specification);
 
