@@ -15,14 +15,14 @@ export class StakeholderRequirementsSpecification implements Artifact {
   constructor(
     public readonly id: string,
     public readonly cycleId: string,
-    public readonly stakeholders: string[],
-    public readonly purpose: string,
-    public readonly scope: string,
-    public readonly businessContext: string,
-    public readonly operationalContext: string,
-    public readonly requirements: StakeholderRequirement[],
-    public readonly constraints: string[],
-    public readonly scenarios: string[],
-    public readonly unresolvedItems: UnresolvedItem[],
+    public readonly stakeholders: string[] | null | undefined,
+    public readonly purpose: string | null | undefined,
+    public readonly scope: string | null | undefined,
+    public readonly businessContext: string | null | undefined,
+    public readonly operationalContext: string | null | undefined,
+    public readonly requirements: StakeholderRequirement[] | null | undefined,
+    public readonly constraints: string[] | null | undefined,
+    public readonly scenarios: string[] | null | undefined,
+    public readonly unresolvedItems: UnresolvedItem[] | null | undefined,
   ) {}
 }
