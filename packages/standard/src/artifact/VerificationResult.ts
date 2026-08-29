@@ -6,11 +6,7 @@ export type SoftwareRequirementVerificationReference = {
 };
 
 export type VerificationMethod =
-  | "test"
-  | "inspection"
-  | "analysis"
-  | "demonstration"
-  | "other";
+  "test" | "inspection" | "analysis" | "demonstration" | "other";
 
 export type RequirementVerificationResult = {
   readonly id: string;
@@ -28,7 +24,6 @@ export class VerificationResult implements Artifact {
   constructor(
     public readonly id: string,
     public readonly cycleId: string,
-    public readonly results:
-      RequirementVerificationResult[] | null | undefined,
+    public readonly results: RequirementVerificationResult[] | null | undefined,
   ) {}
 }
