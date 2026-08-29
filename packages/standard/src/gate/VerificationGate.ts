@@ -53,7 +53,9 @@ export class VerificationGate implements ProcessGate<VerificationResult> {
 
       if (verification.results === null) {
         if (requirementKeys.size > 0) {
-          errors.push(`${verification.id}: 検証対象Software Requirementが存在します`);
+          errors.push(
+            `${verification.id}: 検証対象Software Requirementが存在します`,
+          );
         }
         continue;
       }
@@ -64,7 +66,9 @@ export class VerificationGate implements ProcessGate<VerificationResult> {
         if (!result.id.trim()) {
           errors.push(`${verification.id}: Verification結果識別子がありません`);
         } else if (resultIds.has(result.id)) {
-          errors.push(`${verification.id}: Verification結果識別子が重複しています`);
+          errors.push(
+            `${verification.id}: Verification結果識別子が重複しています`,
+          );
         } else {
           resultIds.add(result.id);
         }
@@ -98,43 +102,61 @@ export class VerificationGate implements ProcessGate<VerificationResult> {
         }
 
         if (!result.method.trim()) {
-          errors.push(`${verification.id}/${result.id}: Verification methodがありません`);
+          errors.push(
+            `${verification.id}/${result.id}: Verification methodがありません`,
+          );
         }
 
         if (
           result.evidence.length === 0 ||
           result.evidence.some((evidence) => !evidence.trim())
         ) {
-          errors.push(`${verification.id}/${result.id}: objective evidenceがありません`);
+          errors.push(
+            `${verification.id}/${result.id}: objective evidenceがありません`,
+          );
         }
 
         if (result.failureCause === undefined) {
-          errors.push(`${verification.id}/${result.id}: failure原因の判定が未確定です`);
+          errors.push(
+            `${verification.id}/${result.id}: failure原因の判定が未確定です`,
+          );
         }
 
         if (result.unresolvedItems === undefined) {
-          errors.push(`${verification.id}/${result.id}: 未解決事項の判定が未確定です`);
+          errors.push(
+            `${verification.id}/${result.id}: 未解決事項の判定が未確定です`,
+          );
         }
 
         if (result.qualityReferences === undefined) {
-          errors.push(`${verification.id}/${result.id}: Quality Requirement関連が未確定です`);
+          errors.push(
+            `${verification.id}/${result.id}: Quality Requirement関連が未確定です`,
+          );
         } else if (
           result.qualityReferences !== null &&
           result.qualityReferences.some((reference) => !reference.trim())
         ) {
-          errors.push(`${verification.id}/${result.id}: Quality Requirement関連が不正です`);
+          errors.push(
+            `${verification.id}/${result.id}: Quality Requirement関連が不正です`,
+          );
         }
 
         if (!result.passed) {
           if (result.failureCause === null || !result.failureCause?.trim()) {
-            errors.push(`${verification.id}/${result.id}: fail原因がありません`);
+            errors.push(
+              `${verification.id}/${result.id}: fail原因がありません`,
+            );
           }
-          errors.push(`${verification.id}/${result.id}: VerificationがFAILしています`);
+          errors.push(
+            `${verification.id}/${result.id}: VerificationがFAILしています`,
+          );
         } else if (
           result.unresolvedItems !== null &&
           result.unresolvedItems.length > 0
         ) {
-          errors.push(`${verification.id}/${result.id}: 未解決事項が残っています`);
+          errors.push(
+            `${verification.id}/${result.id}: 未解決事項が残っています`,
+          );
         }
       }
     }
