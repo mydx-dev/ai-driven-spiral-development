@@ -19,6 +19,8 @@ import {
   Requirement,
   RequirementDefinitionGate,
   RequirementVerification,
+  StakeholderNeedsAndRequirementsDefinitionGate,
+  StakeholderRequirementsSpecification,
   StandardCycle,
 } from "./index.js";
 
@@ -45,6 +47,13 @@ describe("@mydx-dev/spiral-standard public API", () => {
       QAGate,
       ReleaseGate,
       AcceptanceGate,
+    ]).not.toContain(undefined);
+  });
+
+  it("Stakeholder Needs and Requirements DefinitionのArtifactとGateを公開する", () => {
+    expect([
+      StakeholderRequirementsSpecification,
+      StakeholderNeedsAndRequirementsDefinitionGate,
     ]).not.toContain(undefined);
   });
 });
