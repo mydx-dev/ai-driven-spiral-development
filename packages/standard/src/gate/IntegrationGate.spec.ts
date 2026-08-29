@@ -144,7 +144,33 @@ describe("IntegrationGate", () => {
     }
   });
 
-  it("Implemented Software Elementsがnullなら統合対象nullでPASSできる", () => {
+  it("Software Design Elementsが未判断ならFAILする", () => {
+    const design = new SoftwareDesign(
+      "design-1",
+      "cycle-1",
+      undefined,
+      [],
+      [],
+      [],
+      [],
+      [],
+    );
+    const result = new IntegrationGate(
+      [createImplementation()],
+      [design],
+    ).verifyStructuralComplete([createIntegration()]);
+
+    expect(result.passed).toBe(false);
+    if (!result.passed) {
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("Software Elementsが未確定"),
+        ]),
+      );
+    }
+  });
+
+  it("Implemented Software ElementsとSoftware Design Elementsがnullなら統合対象nullでPASSできる", () => {
     const implementation = new ImplementedSoftwareElements(
       "implementation-1",
       "cycle-1",
