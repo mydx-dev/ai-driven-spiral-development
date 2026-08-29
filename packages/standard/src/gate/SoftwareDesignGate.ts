@@ -20,13 +20,23 @@ export class SoftwareDesignGate implements ProcessGate<SoftwareDesign> {
       };
     }
 
-    const softwareRequirementKeys = new Set(
-      this.softwareRequirementsSpecifications.flatMap((specification) =>
-        (specification.requirements ?? []).map(
-          (requirement) => `${specification.id}:${requirement.id}`,
-        ),
-      ),
-    );
+    const softwareRequirementKeys = new Set<string>();
+
+    for (const specification of this.softwareRequirementsSpecifications) {
+      if (specification.requirements === undefined) {
+        errors.push(`${specification.id}: Software Requirementsが未確定です`);
+        continue;
+      }
+
+      if (specification.requirements === null) {
+        continue;
+      }
+
+      for (const requirement of specification.requirements) {
+        softwareRequirementKeys.add(`${specification.id}:${requirement.id}`);
+      }
+    }
+
     const allocatedRequirementKeys = new Set<string>();
 
     for (const design of designs) {
