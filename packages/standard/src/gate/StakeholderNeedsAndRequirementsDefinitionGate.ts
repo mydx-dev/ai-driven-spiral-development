@@ -4,7 +4,9 @@ import type {
 } from "@mydx-dev/ai-driven-spiral-development";
 import type { StakeholderRequirementsSpecification } from "../artifact/StakeholderRequirementsSpecification.js";
 
-export class StakeholderNeedsAndRequirementsDefinitionGate implements ProcessGate<StakeholderRequirementsSpecification> {
+export class StakeholderNeedsAndRequirementsDefinitionGate
+  implements ProcessGate<StakeholderRequirementsSpecification>
+{
   verifyStructuralComplete(
     specifications: StakeholderRequirementsSpecification[],
   ): GatePass {
@@ -101,18 +103,20 @@ export class StakeholderNeedsAndRequirementsDefinitionGate implements ProcessGat
 
       if (constraints === undefined) {
         errors.push(`${id}: constraintsが未確定です`);
-      } else if (constraints !== null) {
-        if (constraints.some((value) => !value.trim())) {
-          errors.push(`${id}: constraintsに空の値があります`);
-        }
+      } else if (
+        constraints !== null &&
+        constraints.some((value) => !value.trim())
+      ) {
+        errors.push(`${id}: constraintsに空の値があります`);
       }
 
       if (scenarios === undefined) {
         errors.push(`${id}: scenariosが未確定です`);
-      } else if (scenarios !== null) {
-        if (scenarios.some((value) => !value.trim())) {
-          errors.push(`${id}: scenariosに空の値があります`);
-        }
+      } else if (
+        scenarios !== null &&
+        scenarios.some((value) => !value.trim())
+      ) {
+        errors.push(`${id}: scenariosに空の値があります`);
       }
 
       if (unresolvedItems === undefined) {
