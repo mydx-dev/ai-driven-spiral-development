@@ -66,7 +66,9 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
         if (!element.id.trim()) {
           errors.push(`${implementation.id}: 実装Element識別子がありません`);
         } else if (implementationElementIds.has(element.id)) {
-          errors.push(`${implementation.id}: 実装Element識別子が重複しています`);
+          errors.push(
+            `${implementation.id}: 実装Element識別子が重複しています`,
+          );
         } else {
           implementationElementIds.add(element.id);
         }
