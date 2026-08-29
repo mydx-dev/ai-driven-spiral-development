@@ -126,6 +126,14 @@ export class VerificationGate implements ProcessGate<VerificationResult> {
           errors.push(
             `${verification.id}/${result.id}: 未解決事項の判定が未確定です`,
           );
+        } else if (
+          result.passed &&
+          result.unresolvedItems !== null &&
+          result.unresolvedItems.length > 0
+        ) {
+          errors.push(
+            `${verification.id}/${result.id}: 未解決事項が残っています`,
+          );
         }
 
         if (result.qualityReferences === undefined) {
@@ -149,13 +157,6 @@ export class VerificationGate implements ProcessGate<VerificationResult> {
           }
           errors.push(
             `${verification.id}/${result.id}: VerificationがFAILしています`,
-          );
-        } else if (
-          result.unresolvedItems !== null &&
-          result.unresolvedItems.length > 0
-        ) {
-          errors.push(
-            `${verification.id}/${result.id}: 未解決事項が残っています`,
           );
         }
       }
