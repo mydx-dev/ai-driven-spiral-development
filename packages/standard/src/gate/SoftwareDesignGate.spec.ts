@@ -149,6 +149,40 @@ describe("SoftwareDesignGate", () => {
     ).toEqual({ passed: true });
   });
 
+  it("SRS Requirementsが未判断なら設計対象をnullにしてもFAILする", () => {
+    const srs = new SoftwareRequirementsSpecification(
+      "srs-1",
+      "cycle-1",
+      "purpose",
+      "scope",
+      undefined,
+      [],
+    );
+    const design = new SoftwareDesign(
+      "design-1",
+      "cycle-1",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+    );
+
+    const result = new SoftwareDesignGate([srs]).verifyStructuralComplete([
+      design,
+    ]);
+
+    expect(result.passed).toBe(false);
+    if (!result.passed) {
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("Software Requirementsが未確定"),
+        ]),
+      );
+    }
+  });
+
   it("Software Elementの責務境界がなければFAILする", () => {
     const design = createDesign();
     const invalid = new SoftwareDesign(
