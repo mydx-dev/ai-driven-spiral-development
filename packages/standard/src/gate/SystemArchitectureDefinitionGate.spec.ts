@@ -113,7 +113,27 @@ describe("SystemArchitectureDefinitionGate", () => {
     }
   });
 
-  it("当該Cycleで対象外と判断したnullはPASSできる", () => {
+  it("allocation対象のSyRS deltaがなければnullでPASSできる", () => {
+    const architecture = new SystemArchitecture(
+      "architecture-1",
+      "cycle-1",
+      null,
+      null,
+      null,
+    );
+    const allocation = new RequirementAllocation(
+      "allocation-1",
+      "cycle-1",
+      null,
+    );
+    const noDeltaGate = new SystemArchitectureDefinitionGate([]);
+
+    expect(
+      noDeltaGate.verifyStructuralComplete([architecture, allocation]),
+    ).toEqual({ passed: true });
+  });
+
+  it("allocation対象のSyRS deltaがある場合はnullをFAILにする", () => {
     const architecture = new SystemArchitecture(
       "architecture-1",
       "cycle-1",
@@ -127,9 +147,16 @@ describe("SystemArchitectureDefinitionGate", () => {
       null,
     );
 
-    expect(gate.verifyStructuralComplete([architecture, allocation])).toEqual({
-      passed: true,
-    });
+    const result = gate.verifyStructuralComplete([architecture, allocation]);
+
+    expect(result.passed).toBe(false);
+    if (!result.passed) {
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("allocation対象のSyRS Requirement"),
+        ]),
+      );
+    }
   });
 
   it("実SyRSに存在するRequirementのallocation漏れを検出する", () => {
