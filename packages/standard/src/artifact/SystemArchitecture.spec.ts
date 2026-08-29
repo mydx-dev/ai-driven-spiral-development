@@ -36,7 +36,10 @@ describe("System Architecture Definition Artifact", () => {
         },
       ],
     );
-    const artifacts = new Map<string, SystemArchitecture | RequirementAllocation>();
+    const artifacts = new Map<
+      string,
+      SystemArchitecture | RequirementAllocation
+    >();
     const repository: ArtifactRepository<
       SystemArchitecture | RequirementAllocation
     > = {
