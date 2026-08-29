@@ -4,9 +4,7 @@ import type {
 } from "@mydx-dev/ai-driven-spiral-development";
 import type { StakeholderRequirementsSpecification } from "../artifact/StakeholderRequirementsSpecification.js";
 
-export class StakeholderNeedsAndRequirementsDefinitionGate
-  implements ProcessGate<StakeholderRequirementsSpecification>
-{
+export class StakeholderNeedsAndRequirementsDefinitionGate implements ProcessGate<StakeholderRequirementsSpecification> {
   verifyStructuralComplete(
     specifications: StakeholderRequirementsSpecification[],
   ): GatePass {
