@@ -7,7 +7,9 @@ export * from "./artifact/Implementation.js";
 export * from "./artifact/QAReport.js";
 export * from "./artifact/Release.js";
 export * from "./artifact/Requirement.js";
+export * from "./artifact/RequirementAllocation.js";
 export * from "./artifact/StakeholderRequirementsSpecification.js";
+export * from "./artifact/SystemArchitecture.js";
 export * from "./artifact/SystemRequirementsSpecification.js";
 
 export * from "./gate/AcceptanceGate.js";
@@ -18,4 +20,5 @@ export * from "./gate/QAGate.js";
 export * from "./gate/ReleaseGate.js";
 export * from "./gate/RequirementDefinitionGate.js";
 export * from "./gate/StakeholderNeedsAndRequirementsDefinitionGate.js";
+export * from "./gate/SystemArchitectureDefinitionGate.js";
 export * from "./gate/SystemRequirementsDefinitionGate.js";
