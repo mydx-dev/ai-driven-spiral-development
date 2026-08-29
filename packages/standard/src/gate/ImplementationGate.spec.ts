@@ -227,4 +227,34 @@ describe("ImplementationGate", () => {
       );
     }
   });
+
+  it("未実装箇所が残っていればFAILする", () => {
+    const implementation = createImplementation();
+    const invalid = new ImplementedSoftwareElements(
+      implementation.id,
+      implementation.cycleId,
+      [
+        {
+          ...implementation.elements![0],
+          knownConstraints: ["legacy API constraint"],
+          unimplementedItems: ["TODO"],
+        },
+      ],
+    );
+    const result = new ImplementationGate([
+      createDesign(),
+    ]).verifyStructuralComplete([invalid]);
+
+    expect(result.passed).toBe(false);
+    if (!result.passed) {
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("未実装箇所が残っています"),
+        ]),
+      );
+      expect(result.errors).not.toEqual(
+        expect.arrayContaining([expect.stringContaining("既知の制約")]),
+      );
+    }
+  });
 });
