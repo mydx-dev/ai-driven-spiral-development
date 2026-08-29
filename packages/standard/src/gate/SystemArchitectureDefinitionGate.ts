@@ -225,7 +225,10 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
             errors.push(
               `${architecture.id}/${decision.id}: SyRS traceabilityが不正です`,
             );
-          } else if (sourceRequirementsComplete && !sourceRequirementKeys.has(key)) {
+          } else if (
+            sourceRequirementsComplete &&
+            !sourceRequirementKeys.has(key)
+          ) {
             errors.push(
               `${architecture.id}/${decision.id}: 未知のSyRS Requirementを参照しています`,
             );
