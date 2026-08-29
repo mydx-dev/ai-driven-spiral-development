@@ -27,7 +27,9 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
 
     for (const implementation of this.implementations) {
       if (implementation.elements === undefined) {
-        errors.push(`${implementation.id}: Implemented Software Elementsが未確定です`);
+        errors.push(
+          `${implementation.id}: Implemented Software Elementsが未確定です`,
+        );
         continue;
       }
 
@@ -94,23 +96,31 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
       errors.push(`${integration.id}: 統合対象Software Elementsが未確定です`);
     } else if (integration.elements === null) {
       if (implementedElementKeys.size > 0) {
-        errors.push(`${integration.id}: 統合対象のSoftware Elementが存在します`);
+        errors.push(
+          `${integration.id}: 統合対象のSoftware Elementが存在します`,
+        );
       }
     } else {
       const integratedElementKeys = new Set<string>();
 
       for (const element of integration.elements) {
         if (!element.implementationId.trim() || !element.elementId.trim()) {
-          errors.push(`${integration.id}: Implemented Software Element参照が不正です`);
+          errors.push(
+            `${integration.id}: Implemented Software Element参照が不正です`,
+          );
           continue;
         }
 
         const elementKey = `${element.implementationId}:${element.elementId}`;
 
         if (!implementedElementKeys.has(elementKey)) {
-          errors.push(`${integration.id}: 未知のImplemented Software Elementを参照しています`);
+          errors.push(
+            `${integration.id}: 未知のImplemented Software Elementを参照しています`,
+          );
         } else if (integratedElementKeys.has(elementKey)) {
-          errors.push(`${integration.id}: Implemented Software Element参照が重複しています`);
+          errors.push(
+            `${integration.id}: Implemented Software Element参照が重複しています`,
+          );
         } else {
           integratedElementKeys.add(elementKey);
         }
@@ -118,7 +128,9 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
 
       for (const elementKey of implementedElementKeys) {
         if (!integratedElementKeys.has(elementKey)) {
-          errors.push(`${elementKey}: Integrated Softwareへのtraceabilityがありません`);
+          errors.push(
+            `${elementKey}: Integrated Softwareへのtraceabilityがありません`,
+          );
         }
       }
     }
@@ -136,9 +148,13 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
         const relationshipKey = `${relationship.designId}:${relationship.sourceElementId}:${relationship.targetElementId}:${relationship.type}`;
 
         if (!relationshipKeys.has(relationshipKey)) {
-          errors.push(`${integration.id}: 未知のSoftware Design relationshipを参照しています`);
+          errors.push(
+            `${integration.id}: 未知のSoftware Design relationshipを参照しています`,
+          );
         } else if (integratedRelationshipKeys.has(relationshipKey)) {
-          errors.push(`${integration.id}: relationship統合参照が重複しています`);
+          errors.push(
+            `${integration.id}: relationship統合参照が重複しています`,
+          );
         } else {
           integratedRelationshipKeys.add(relationshipKey);
         }
@@ -147,7 +163,9 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
           relationship.evidence.length === 0 ||
           relationship.evidence.some((item) => !item.trim())
         ) {
-          errors.push(`${integration.id}: relationship統合のevidenceがありません`);
+          errors.push(
+            `${integration.id}: relationship統合のevidenceがありません`,
+          );
         }
       }
 
@@ -171,7 +189,9 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
         const interfaceKey = `${softwareInterface.designId}:${softwareInterface.interfaceId}`;
 
         if (!interfaceKeys.has(interfaceKey)) {
-          errors.push(`${integration.id}: 未知のSoftware Design interfaceを参照しています`);
+          errors.push(
+            `${integration.id}: 未知のSoftware Design interfaceを参照しています`,
+          );
         } else if (integratedInterfaceKeys.has(interfaceKey)) {
           errors.push(`${integration.id}: interface統合参照が重複しています`);
         } else {
@@ -200,7 +220,9 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
       (integration.artifactReferences === null ||
         integration.artifactReferences.length === 0)
     ) {
-      errors.push(`${integration.id}: Verification対象となる統合Software成果物がありません`);
+      errors.push(
+        `${integration.id}: Verification対象となる統合Software成果物がありません`,
+      );
     } else if (
       integration.artifactReferences !== null &&
       integration.artifactReferences.some((reference) => !reference.trim())
