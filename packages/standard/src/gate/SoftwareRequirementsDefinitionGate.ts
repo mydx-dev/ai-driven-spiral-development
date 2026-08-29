@@ -5,7 +5,10 @@ import type {
 import type { RequirementAllocation } from "../artifact/RequirementAllocation.js";
 import type { SoftwareRequirementsSpecification } from "../artifact/SoftwareRequirementsSpecification.js";
 import type { SystemArchitecture } from "../artifact/SystemArchitecture.js";
-import type { SystemRequirementsSpecification } from "../artifact/SystemRequirementsSpecification.js";
+import type {
+  SystemRequirement,
+  SystemRequirementsSpecification,
+} from "../artifact/SystemRequirementsSpecification.js";
 
 export class SoftwareRequirementsDefinitionGate implements ProcessGate<SoftwareRequirementsSpecification> {
   constructor(
@@ -26,7 +29,7 @@ export class SoftwareRequirementsDefinitionGate implements ProcessGate<SoftwareR
       };
     }
 
-    const systemRequirements = new Map(
+    const systemRequirements = new Map<string, SystemRequirement>(
       this.systemRequirementsSpecifications.flatMap((specification) =>
         (specification.requirements ?? []).map(
           (requirement) =>
