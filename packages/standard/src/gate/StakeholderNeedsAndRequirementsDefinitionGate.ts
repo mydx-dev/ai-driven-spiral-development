@@ -2,7 +2,9 @@ import type {
   GatePass,
   ProcessGate,
 } from "@mydx-dev/ai-driven-spiral-development";
-import type { StakeholderRequirementsSpecification } from "../artifact/StakeholderRequirementsSpecification.js";
+import type {
+  StakeholderRequirementsSpecification,
+} from "../artifact/StakeholderRequirementsSpecification.js";
 
 export class StakeholderNeedsAndRequirementsDefinitionGate
   implements ProcessGate<StakeholderRequirementsSpecification>
@@ -48,10 +50,7 @@ export class StakeholderNeedsAndRequirementsDefinitionGate
 
       if (specification.scope === undefined) {
         errors.push(`${specification.id}: scopeが未確定です`);
-      } else if (
-        specification.scope !== null &&
-        !specification.scope.trim()
-      ) {
+      } else if (specification.scope !== null && !specification.scope.trim()) {
         errors.push(`${specification.id}: scopeが不正です`);
       }
 
