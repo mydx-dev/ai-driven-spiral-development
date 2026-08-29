@@ -21,7 +21,7 @@ export type SystemRequirement = {
   readonly tracesTo: StakeholderRequirementTrace[];
 };
 
-export type SystemRequirementsUnresolvedItem = {
+export type SyRSUnresolvedItem = {
   readonly id: string;
   readonly description: string;
 };
@@ -36,6 +36,6 @@ export class SystemRequirementsSpecification implements Artifact {
     public readonly requirements: SystemRequirement[] | null | undefined,
     public readonly assumptions: string[] | null | undefined,
     public readonly dependencies: string[] | null | undefined,
-    public readonly unresolvedItems: SystemRequirementsUnresolvedItem[] | null | undefined,
+    public readonly unresolvedItems: SyRSUnresolvedItem[] | null | undefined,
   ) {}
 }
