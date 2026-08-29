@@ -88,7 +88,7 @@ export class StakeholderNeedsAndRequirementsDefinitionGate
           }
 
           if (!requirement.statement.trim()) {
-            errors.push(`${id}/${requirement.id}: Requirementが未記述です`);
+            errors.push(`${id}/${requirement.id}: Requirementが記述されていません`);
           }
 
           if (!requirement.source.trim()) {
@@ -122,7 +122,7 @@ export class StakeholderNeedsAndRequirementsDefinitionGate
           }
 
           if (!unresolvedItem.description.trim()) {
-            errors.push(`${id}/${unresolvedItem.id}: 未確定事項が未記述です`);
+            errors.push(`${id}/${unresolvedItem.id}: 未確定事項が記述されていません`);
           }
         }
       }
