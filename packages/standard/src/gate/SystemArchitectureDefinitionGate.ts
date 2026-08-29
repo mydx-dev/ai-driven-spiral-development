@@ -6,8 +6,7 @@ import type { RequirementAllocation } from "../artifact/RequirementAllocation.js
 import type { SystemArchitecture } from "../artifact/SystemArchitecture.js";
 
 export type SystemArchitectureDefinitionArtifact =
-  | SystemArchitecture
-  | RequirementAllocation;
+  SystemArchitecture | RequirementAllocation;
 
 export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchitectureDefinitionArtifact> {
   verifyStructuralComplete(
@@ -55,12 +54,17 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
     }
 
     if (architecture.cycleId !== allocation.cycleId) {
-      errors.push("System ArchitectureとRequirement AllocationのCycleが不一致です");
+      errors.push(
+        "System ArchitectureとRequirement AllocationのCycleが不一致です",
+      );
     }
 
     if (architecture.boundary === undefined) {
       errors.push(`${architecture.id}: System boundaryが未確定です`);
-    } else if (architecture.boundary !== null && !architecture.boundary.trim()) {
+    } else if (
+      architecture.boundary !== null &&
+      !architecture.boundary.trim()
+    ) {
       errors.push(`${architecture.id}: System boundaryが不正です`);
     }
 
@@ -77,13 +81,17 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
         if (!element.id.trim()) {
           errors.push(`${architecture.id}: System Element識別子がありません`);
         } else if (elementIds.has(element.id)) {
-          errors.push(`${architecture.id}: System Element識別子が重複しています`);
+          errors.push(
+            `${architecture.id}: System Element識別子が重複しています`,
+          );
         } else {
           elementIds.add(element.id);
         }
 
         if (!element.name.trim()) {
-          errors.push(`${architecture.id}/${element.id}: Element名がありません`);
+          errors.push(
+            `${architecture.id}/${element.id}: Element名がありません`,
+          );
         }
 
         if (
@@ -109,7 +117,10 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
       for (const requirement of allocation.sourceRequirements) {
         const key = `${requirement.specificationId}:${requirement.requirementId}`;
 
-        if (!requirement.specificationId.trim() || !requirement.requirementId.trim()) {
+        if (
+          !requirement.specificationId.trim() ||
+          !requirement.requirementId.trim()
+        ) {
           errors.push(`${allocation.id}: SyRS traceabilityが不正です`);
         } else if (sourceRequirementKeys.has(key)) {
           errors.push(`${allocation.id}: SyRS Requirementが重複しています`);
@@ -131,7 +142,9 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
           !entry.requirement.specificationId.trim() ||
           !entry.requirement.requirementId.trim()
         ) {
-          errors.push(`${allocation.id}: allocationのSyRS traceabilityが不正です`);
+          errors.push(
+            `${allocation.id}: allocationのSyRS traceabilityが不正です`,
+          );
         }
 
         if (allocatedRequirementKeys.has(key)) {
@@ -160,12 +173,17 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
           if (!elementId.trim()) {
             errors.push(`${allocation.id}/${key}: allocation先が不正です`);
           } else if (targetIds.has(elementId)) {
-            errors.push(`${allocation.id}/${key}: allocation先が重複しています`);
+            errors.push(
+              `${allocation.id}/${key}: allocation先が重複しています`,
+            );
           } else {
             targetIds.add(elementId);
           }
 
-          if (architecture.elements !== null && architecture.elements !== undefined) {
+          if (
+            architecture.elements !== null &&
+            architecture.elements !== undefined
+          ) {
             if (!elementIds.has(elementId)) {
               errors.push(
                 `${allocation.id}/${key}: 存在しないSystem Elementへのallocationです`,
@@ -194,7 +212,9 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
     } else if (architecture.decisions !== null) {
       for (const decision of architecture.decisions) {
         if (!decision.id.trim()) {
-          errors.push(`${architecture.id}: architecture decision識別子がありません`);
+          errors.push(
+            `${architecture.id}: architecture decision識別子がありません`,
+          );
         }
 
         if (!decision.statement.trim()) {
