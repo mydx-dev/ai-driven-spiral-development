@@ -1,10 +1,6 @@
-import type {
-  ArtifactRepository,
-} from "@mydx-dev/ai-driven-spiral-development";
+import type { ArtifactRepository } from "@mydx-dev/ai-driven-spiral-development";
 import { describe, expect, it } from "vitest";
-import {
-  StakeholderRequirementsSpecification,
-} from "./StakeholderRequirementsSpecification.js";
+import { StakeholderRequirementsSpecification } from "./StakeholderRequirementsSpecification.js";
 
 describe("StakeholderRequirementsSpecification", () => {
   it("CoreのArtifactRepositoryで永続化できる", async () => {
