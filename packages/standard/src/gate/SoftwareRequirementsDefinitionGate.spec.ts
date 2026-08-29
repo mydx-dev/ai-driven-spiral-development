@@ -269,7 +269,7 @@ describe("SoftwareRequirementsDefinitionGate", () => {
     }
   });
 
-  it("SyRSからStRSへのtraceability断絶を検出する", () => {
+  it("StRSとの接続はSyRS Gateの責務としてSRS Gateでは検証しない", () => {
     const syRS = createSyRS();
     const withoutStakeholderTrace = new SystemRequirementsSpecification(
       syRS.id,
@@ -294,13 +294,8 @@ describe("SoftwareRequirementsDefinitionGate", () => {
       [withoutStakeholderTrace],
     );
 
-    const result = gate.verifyStructuralComplete([createSRS()]);
-
-    expect(result.passed).toBe(false);
-    if (!result.passed) {
-      expect(result.errors).toEqual(
-        expect.arrayContaining([expect.stringContaining("StRSまで")]),
-      );
-    }
+    expect(gate.verifyStructuralComplete([createSRS()])).toEqual({
+      passed: true,
+    });
   });
 });
