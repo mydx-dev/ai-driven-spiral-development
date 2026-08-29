@@ -45,13 +45,17 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
       }
 
       if (implementation.elements === undefined) {
-        errors.push(`${implementation.id}: 実装対象Software Elementsが未確定です`);
+        errors.push(
+          `${implementation.id}: 実装対象Software Elementsが未確定です`,
+        );
         continue;
       }
 
       if (implementation.elements === null) {
         if (designElementKeys.size > 0) {
-          errors.push(`${implementation.id}: 実装対象のSoftware Elementが存在します`);
+          errors.push(
+            `${implementation.id}: 実装対象のSoftware Elementが存在します`,
+          );
         }
         continue;
       }
@@ -71,14 +75,18 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
           !element.designElement.designId.trim() ||
           !element.designElement.elementId.trim()
         ) {
-          errors.push(`${implementation.id}/${element.id}: Software Design参照が不正です`);
+          errors.push(
+            `${implementation.id}/${element.id}: Software Design参照が不正です`,
+          );
           continue;
         }
 
         const designElementKey = `${element.designElement.designId}:${element.designElement.elementId}`;
 
         if (!designElementKeys.has(designElementKey)) {
-          errors.push(`${implementation.id}/${element.id}: 未知のSoftware Design Elementを参照しています`);
+          errors.push(
+            `${implementation.id}/${element.id}: 未知のSoftware Design Elementを参照しています`,
+          );
         } else {
           implementedDesignElementKeys.add(designElementKey);
         }
@@ -87,46 +95,64 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
           element.artifactReferences.length === 0 ||
           element.artifactReferences.some((reference) => !reference.trim())
         ) {
-          errors.push(`${implementation.id}/${element.id}: 実装成果物への参照がありません`);
+          errors.push(
+            `${implementation.id}/${element.id}: 実装成果物への参照がありません`,
+          );
         }
 
         if (element.checks === undefined) {
-          errors.push(`${implementation.id}/${element.id}: 機械的条件の判定が未確定です`);
+          errors.push(
+            `${implementation.id}/${element.id}: 機械的条件の判定が未確定です`,
+          );
         } else if (element.checks !== null) {
           for (const check of element.checks) {
             if (!check.name.trim()) {
-              errors.push(`${implementation.id}/${element.id}: 実装チェック名がありません`);
+              errors.push(
+                `${implementation.id}/${element.id}: 実装チェック名がありません`,
+              );
             }
 
             if (!check.passed) {
-              errors.push(`${implementation.id}/${element.id}: ${check.name}が成功していません`);
+              errors.push(
+                `${implementation.id}/${element.id}: ${check.name}が成功していません`,
+              );
             }
           }
         }
 
         if (element.knownConstraints === undefined) {
-          errors.push(`${implementation.id}/${element.id}: 既知の制約が未確定です`);
+          errors.push(
+            `${implementation.id}/${element.id}: 既知の制約が未確定です`,
+          );
         } else if (
           element.knownConstraints !== null &&
           element.knownConstraints.some((constraint) => !constraint.trim())
         ) {
-          errors.push(`${implementation.id}/${element.id}: 既知の制約が不正です`);
+          errors.push(
+            `${implementation.id}/${element.id}: 既知の制約が不正です`,
+          );
         }
 
         if (element.unimplementedItems === undefined) {
-          errors.push(`${implementation.id}/${element.id}: 未実装箇所が未確定です`);
+          errors.push(
+            `${implementation.id}/${element.id}: 未実装箇所が未確定です`,
+          );
         } else if (
           element.unimplementedItems !== null &&
           element.unimplementedItems.some((item) => !item.trim())
         ) {
-          errors.push(`${implementation.id}/${element.id}: 未実装箇所が不正です`);
+          errors.push(
+            `${implementation.id}/${element.id}: 未実装箇所が不正です`,
+          );
         }
       }
     }
 
     for (const designElementKey of designElementKeys) {
       if (!implementedDesignElementKeys.has(designElementKey)) {
-        errors.push(`${designElementKey}: Implementationへのtraceabilityがありません`);
+        errors.push(
+          `${designElementKey}: Implementationへのtraceabilityがありません`,
+        );
       }
     }
 
