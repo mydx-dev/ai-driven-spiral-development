@@ -22,20 +22,15 @@ describe("System Architecture Definition Artifact", () => {
       ],
       [],
     );
-    const allocation = new RequirementAllocation(
-      "allocation-1",
-      "cycle-1",
-      [{ specificationId: "syrs-1", requirementId: "sr-1" }],
-      [
-        {
-          requirement: {
-            specificationId: "syrs-1",
-            requirementId: "sr-1",
-          },
-          elementIds: ["software-1"],
+    const allocation = new RequirementAllocation("allocation-1", "cycle-1", [
+      {
+        requirement: {
+          specificationId: "syrs-1",
+          requirementId: "sr-1",
         },
-      ],
-    );
+        elementIds: ["software-1"],
+      },
+    ]);
     const artifacts = new Map<
       string,
       SystemArchitecture | RequirementAllocation
@@ -83,30 +78,22 @@ describe("System Architecture Definition Artifact", () => {
       ],
       [],
     );
-    const allocation = new RequirementAllocation(
-      "allocation-1",
-      "cycle-1",
-      [
-        { specificationId: "syrs-1", requirementId: "sr-1" },
-        { specificationId: "syrs-1", requirementId: "sr-2" },
-      ],
-      [
-        {
-          requirement: {
-            specificationId: "syrs-1",
-            requirementId: "sr-1",
-          },
-          elementIds: ["human-1"],
+    const allocation = new RequirementAllocation("allocation-1", "cycle-1", [
+      {
+        requirement: {
+          specificationId: "syrs-1",
+          requirementId: "sr-1",
         },
-        {
-          requirement: {
-            specificationId: "syrs-1",
-            requirementId: "sr-2",
-          },
-          elementIds: ["software-1"],
+        elementIds: ["human-1"],
+      },
+      {
+        requirement: {
+          specificationId: "syrs-1",
+          requirementId: "sr-2",
         },
-      ],
-    );
+        elementIds: ["software-1"],
+      },
+    ]);
 
     expect(extractSoftwareAllocations(architecture, allocation)).toEqual([
       allocation.allocations?.[1],
