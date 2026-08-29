@@ -95,7 +95,9 @@ describe("VerificationGate", () => {
     const result = new VerificationGate(
       [srs],
       [createIntegratedSoftware()],
-    ).verifyStructuralComplete([new VerificationResult("verification-1", "cycle-1", null)]);
+    ).verifyStructuralComplete([
+      new VerificationResult("verification-1", "cycle-1", null),
+    ]);
 
     expect(result.passed).toBe(false);
     if (!result.passed) {
@@ -113,18 +115,18 @@ describe("VerificationGate", () => {
       [createSrs()],
       [createIntegratedSoftware()],
     ).verifyStructuralComplete([
-      new VerificationResult(
-        verification.id,
-        verification.cycleId,
-        [verification.results![0]],
-      ),
+      new VerificationResult(verification.id, verification.cycleId, [
+        verification.results![0],
+      ]),
     ]);
 
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringContaining("srs-1:quality-1: Verification結果がありません"),
+          expect.stringContaining(
+            "srs-1:quality-1: Verification結果がありません",
+          ),
         ]),
       );
     }
@@ -186,9 +188,7 @@ describe("VerificationGate", () => {
       verification.id,
       verification.cycleId,
       verification.results!.map((result, index) =>
-        index === 0
-          ? { ...result, passed: false, failureCause: null }
-          : result,
+        index === 0 ? { ...result, passed: false, failureCause: null } : result,
       ),
     );
     const result = new VerificationGate(
