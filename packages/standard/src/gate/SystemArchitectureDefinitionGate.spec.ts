@@ -155,9 +155,7 @@ describe("SystemArchitectureDefinitionGate", () => {
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
-        expect.arrayContaining([
-          expect.stringContaining("重複または矛盾"),
-        ]),
+        expect.arrayContaining([expect.stringContaining("重複または矛盾")]),
       );
     }
   });
@@ -201,9 +199,7 @@ describe("SystemArchitectureDefinitionGate", () => {
         {
           id: "decision-1",
           statement: "decision",
-          tracesTo: [
-            { specificationId: "syrs-1", requirementId: "unknown" },
-          ],
+          tracesTo: [{ specificationId: "syrs-1", requirementId: "unknown" }],
         },
       ],
     );
