@@ -139,11 +139,10 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
           errors.push(
             `${implementation.id}/${element.id}: 未実装箇所が未確定です`,
           );
-        } else if (element.unimplementedItems === null) {
-          errors.push(
-            `${implementation.id}/${element.id}: 未実装箇所なしと確定されていません`,
-          );
-        } else if (element.unimplementedItems.length > 0) {
+        } else if (
+          element.unimplementedItems !== null &&
+          element.unimplementedItems.length > 0
+        ) {
           errors.push(
             `${implementation.id}/${element.id}: 未実装箇所が残っています`,
           );
