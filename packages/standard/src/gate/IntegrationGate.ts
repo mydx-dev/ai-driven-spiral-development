@@ -45,6 +45,10 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
     const interfaceKeys = new Set<string>();
 
     for (const design of this.softwareDesigns) {
+      if (design.elements === undefined) {
+        errors.push(`${design.id}: Software Elementsが未確定です`);
+      }
+
       if (design.relationships === undefined) {
         errors.push(`${design.id}: Software Element Relationshipsが未確定です`);
       } else {
