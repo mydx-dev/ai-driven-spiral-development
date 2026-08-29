@@ -4,11 +4,16 @@ import type {
 } from "@mydx-dev/ai-driven-spiral-development";
 import type { RequirementAllocation } from "../artifact/RequirementAllocation.js";
 import type { SystemArchitecture } from "../artifact/SystemArchitecture.js";
+import type { SystemRequirementsSpecification } from "../artifact/SystemRequirementsSpecification.js";
 
 export type SystemArchitectureDefinitionArtifact =
   SystemArchitecture | RequirementAllocation;
 
 export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchitectureDefinitionArtifact> {
+  constructor(
+    public readonly systemRequirementsSpecifications: SystemRequirementsSpecification[],
+  ) {}
+
   verifyStructuralComplete(
     artifacts: SystemArchitectureDefinitionArtifact[],
   ): GatePass {
@@ -106,27 +111,21 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
     }
 
     const sourceRequirementKeys = new Set<string>();
+    let sourceRequirementsComplete = true;
 
-    if (allocation.sourceRequirements === undefined) {
-      errors.push(`${allocation.id}: SyRS Requirementsが未確定です`);
-    } else if (allocation.sourceRequirements !== null) {
-      if (allocation.sourceRequirements.length === 0) {
-        errors.push(`${allocation.id}: SyRS Requirementsが不正です`);
+    for (const specification of this.systemRequirementsSpecifications) {
+      if (specification.requirements === undefined) {
+        sourceRequirementsComplete = false;
+        errors.push(`${specification.id}: SyRS Requirementsが未確定です`);
+        continue;
       }
 
-      for (const requirement of allocation.sourceRequirements) {
-        const key = `${requirement.specificationId}:${requirement.requirementId}`;
+      if (specification.requirements === null) {
+        continue;
+      }
 
-        if (
-          !requirement.specificationId.trim() ||
-          !requirement.requirementId.trim()
-        ) {
-          errors.push(`${allocation.id}: SyRS traceabilityが不正です`);
-        } else if (sourceRequirementKeys.has(key)) {
-          errors.push(`${allocation.id}: SyRS Requirementが重複しています`);
-        } else {
-          sourceRequirementKeys.add(key);
-        }
+      for (const requirement of specification.requirements) {
+        sourceRequirementKeys.add(`${specification.id}:${requirement.id}`);
       }
     }
 
@@ -155,11 +154,7 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
           allocatedRequirementKeys.add(key);
         }
 
-        if (
-          allocation.sourceRequirements !== null &&
-          allocation.sourceRequirements !== undefined &&
-          !sourceRequirementKeys.has(key)
-        ) {
+        if (sourceRequirementsComplete && !sourceRequirementKeys.has(key)) {
           errors.push(`${allocation.id}/${key}: 未知のSyRS Requirementです`);
         }
 
@@ -182,27 +177,21 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
 
           if (
             architecture.elements !== null &&
-            architecture.elements !== undefined
+            architecture.elements !== undefined &&
+            !elementIds.has(elementId)
           ) {
-            if (!elementIds.has(elementId)) {
-              errors.push(
-                `${allocation.id}/${key}: 存在しないSystem Elementへのallocationです`,
-              );
-            }
+            errors.push(
+              `${allocation.id}/${key}: 存在しないSystem Elementへのallocationです`,
+            );
           }
         }
       }
-    }
 
-    if (
-      allocation.sourceRequirements !== null &&
-      allocation.sourceRequirements !== undefined &&
-      allocation.allocations !== null &&
-      allocation.allocations !== undefined
-    ) {
-      for (const key of sourceRequirementKeys) {
-        if (!allocatedRequirementKeys.has(key)) {
-          errors.push(`${allocation.id}/${key}: allocation漏れがあります`);
+      if (sourceRequirementsComplete) {
+        for (const key of sourceRequirementKeys) {
+          if (!allocatedRequirementKeys.has(key)) {
+            errors.push(`${allocation.id}/${key}: allocation漏れがあります`);
+          }
         }
       }
     }
@@ -236,11 +225,7 @@ export class SystemArchitectureDefinitionGate implements ProcessGate<SystemArchi
             errors.push(
               `${architecture.id}/${decision.id}: SyRS traceabilityが不正です`,
             );
-          } else if (
-            allocation.sourceRequirements !== null &&
-            allocation.sourceRequirements !== undefined &&
-            !sourceRequirementKeys.has(key)
-          ) {
+          } else if (sourceRequirementsComplete && !sourceRequirementKeys.has(key)) {
             errors.push(
               `${architecture.id}/${decision.id}: 未知のSyRS Requirementを参照しています`,
             );
