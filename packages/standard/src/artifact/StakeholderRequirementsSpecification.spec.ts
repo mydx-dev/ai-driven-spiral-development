@@ -1,4 +1,6 @@
-import type { ArtifactRepository } from "@mydx-dev/ai-driven-spiral-development";
+import type {
+  ArtifactRepository,
+} from "@mydx-dev/ai-driven-spiral-development";
 import { describe, expect, it } from "vitest";
 import { StakeholderRequirementsSpecification } from "./StakeholderRequirementsSpecification.js";
 
