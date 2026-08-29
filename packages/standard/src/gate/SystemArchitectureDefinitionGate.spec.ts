@@ -121,7 +121,11 @@ describe("SystemArchitectureDefinitionGate", () => {
       null,
       null,
     );
-    const allocation = new RequirementAllocation("allocation-1", "cycle-1", null);
+    const allocation = new RequirementAllocation(
+      "allocation-1",
+      "cycle-1",
+      null,
+    );
 
     expect(gate.verifyStructuralComplete([architecture, allocation])).toEqual({
       passed: true,
