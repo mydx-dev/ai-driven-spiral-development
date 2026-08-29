@@ -44,7 +44,9 @@ export class SoftwareDesignGate implements ProcessGate<SoftwareDesign> {
         errors.push(`${design.id}: Software Elementsが未確定です`);
       } else if (design.elements === null) {
         if (softwareRequirementKeys.size > 0) {
-          errors.push(`${design.id}: 設計対象のSoftware Requirementが存在します`);
+          errors.push(
+            `${design.id}: 設計対象のSoftware Requirementが存在します`,
+          );
         }
       } else {
         if (design.elements.length === 0 && softwareRequirementKeys.size > 0) {
@@ -68,7 +70,9 @@ export class SoftwareDesignGate implements ProcessGate<SoftwareDesign> {
             element.responsibilities.length === 0 ||
             element.responsibilities.some((value) => !value.trim())
           ) {
-            errors.push(`${design.id}/${element.id}: 責務境界が定義されていません`);
+            errors.push(
+              `${design.id}/${element.id}: 責務境界が定義されていません`,
+            );
           }
 
           if (element.data === undefined) {
@@ -108,7 +112,9 @@ export class SoftwareDesignGate implements ProcessGate<SoftwareDesign> {
             !elementIds.has(relationship.sourceElementId) ||
             !elementIds.has(relationship.targetElementId)
           ) {
-            errors.push(`${design.id}: 未知のSoftware Element間relationshipがあります`);
+            errors.push(
+              `${design.id}: 未知のSoftware Element間relationshipがあります`,
+            );
           }
 
           if (!relationship.description.trim()) {
@@ -135,11 +141,15 @@ export class SoftwareDesignGate implements ProcessGate<SoftwareDesign> {
             !softwareInterface.name.trim() ||
             !softwareInterface.contract.trim()
           ) {
-            errors.push(`${design.id}/${softwareInterface.id}: interface設計が不正です`);
+            errors.push(
+              `${design.id}/${softwareInterface.id}: interface設計が不正です`,
+            );
           }
 
           if (!elementIds.has(softwareInterface.providedByElementId)) {
-            errors.push(`${design.id}/${softwareInterface.id}: interface提供Elementが不正です`);
+            errors.push(
+              `${design.id}/${softwareInterface.id}: interface提供Elementが不正です`,
+            );
           }
 
           if (
@@ -147,7 +157,9 @@ export class SoftwareDesignGate implements ProcessGate<SoftwareDesign> {
               (elementId) => !elementIds.has(elementId),
             )
           ) {
-            errors.push(`${design.id}/${softwareInterface.id}: interface利用Elementが不正です`);
+            errors.push(
+              `${design.id}/${softwareInterface.id}: interface利用Elementが不正です`,
+            );
           }
         }
       }
@@ -156,7 +168,9 @@ export class SoftwareDesignGate implements ProcessGate<SoftwareDesign> {
         errors.push(`${design.id}: SRS Requirement allocationが未確定です`);
       } else if (design.requirementAllocations === null) {
         if (softwareRequirementKeys.size > 0) {
-          errors.push(`${design.id}: Software Requirementの設計allocationが必要です`);
+          errors.push(
+            `${design.id}: Software Requirementの設計allocationが必要です`,
+          );
         }
       } else {
         for (const allocation of design.requirementAllocations) {
@@ -176,9 +190,13 @@ export class SoftwareDesignGate implements ProcessGate<SoftwareDesign> {
 
           if (
             allocation.elementIds.length === 0 ||
-            allocation.elementIds.some((elementId) => !elementIds.has(elementId))
+            allocation.elementIds.some(
+              (elementId) => !elementIds.has(elementId),
+            )
           ) {
-            errors.push(`${design.id}: Software RequirementのElement allocationが不正です`);
+            errors.push(
+              `${design.id}: Software RequirementのElement allocationが不正です`,
+            );
           } else if (softwareRequirementKeys.has(requirementKey)) {
             allocatedRequirementKeys.add(requirementKey);
           }
@@ -212,7 +230,9 @@ export class SoftwareDesignGate implements ProcessGate<SoftwareDesign> {
 
     for (const requirementKey of softwareRequirementKeys) {
       if (!allocatedRequirementKeys.has(requirementKey)) {
-        errors.push(`${requirementKey}: Software Designへのtraceabilityがありません`);
+        errors.push(
+          `${requirementKey}: Software Designへのtraceabilityがありません`,
+        );
       }
     }
 
