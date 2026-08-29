@@ -17,11 +17,8 @@ describe("StakeholderRequirementsSpecification", () => {
       [],
       [],
     );
-    const artifacts = new Map<
-      string,
-      StakeholderRequirementsSpecification
-    >();
-    const repository: ArtifactRepository<StakeholderRequirementsSpecification> = {
+    const artifacts = new Map<string, typeof specification>();
+    const repository: ArtifactRepository<typeof specification> = {
       find: async (id) => artifacts.get(id),
       findByCycle: async (cycleId) =>
         [...artifacts.values()].filter(
