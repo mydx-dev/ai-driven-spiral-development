@@ -1,11 +1,7 @@
 import type { Artifact } from "@mydx-dev/ai-driven-spiral-development";
 
 export type SystemElementType =
-  | "human"
-  | "software"
-  | "hardware"
-  | "external-service"
-  | "other";
+  "human" | "software" | "hardware" | "external-service" | "other";
 
 export type SystemRequirementReference = {
   readonly specificationId: string;
