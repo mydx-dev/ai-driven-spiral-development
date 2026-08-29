@@ -144,9 +144,9 @@ describe("SoftwareDesignGate", () => {
       null,
     );
 
-    expect(new SoftwareDesignGate([srs]).verifyStructuralComplete([design])).toEqual(
-      { passed: true },
-    );
+    expect(
+      new SoftwareDesignGate([srs]).verifyStructuralComplete([design]),
+    ).toEqual({ passed: true });
   });
 
   it("Software Elementの責務境界がなければFAILする", () => {
