@@ -42,4 +42,48 @@ describe("SoftwareElementExecutionPlan", () => {
       ]),
     ).toEqual(["api"]);
   });
+
+  it("全Software Elementが完了済みなら実行可能Elementなしとして返す", () => {
+    expect(
+      new SoftwareElementExecutionPlan(architecture).executableElementIds([
+        "api",
+        "domain",
+        "repository",
+      ]),
+    ).toEqual([]);
+  });
+
+  it("未完了Elementが残る循環依存を正常な空配列として返さない", () => {
+    const cyclicArchitecture = new SoftwareArchitectureDescription(
+      "architecture-2",
+      "cycle-1",
+      [
+        { id: "a", name: "A", responsibilities: ["A"] },
+        { id: "b", name: "B", responsibilities: ["B"] },
+      ],
+      [
+        {
+          sourceElementId: "a",
+          targetElementId: "b",
+          type: "dependency",
+          description: "A depends on B",
+        },
+        {
+          sourceElementId: "b",
+          targetElementId: "a",
+          type: "dependency",
+          description: "B depends on A",
+        },
+      ],
+      [],
+      [],
+      [],
+    );
+
+    expect(() =>
+      new SoftwareElementExecutionPlan(cyclicArchitecture).executableElementIds(
+        [],
+      ),
+    ).toThrow("Software Element execution is blocked");
+  });
 });
