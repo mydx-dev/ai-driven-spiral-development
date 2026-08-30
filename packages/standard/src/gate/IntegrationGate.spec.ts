@@ -121,11 +121,9 @@ const createIntegration = () =>
 describe("IntegrationGate", () => {
   it("Architecture上のrelationshipとinterfaceに従って統合されていればPASSする", () => {
     expect(
-      new IntegrationGate(
-        [createArchitecture()],
-        createDesigns(),
-        [createImplementation()],
-      ).verifyStructuralComplete([createIntegration()]),
+      new IntegrationGate([createArchitecture()], createDesigns(), [
+        createImplementation(),
+      ]).verifyStructuralComplete([createIntegration()]),
     ).toEqual({ passed: true });
   });
 
