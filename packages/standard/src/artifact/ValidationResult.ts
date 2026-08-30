@@ -32,13 +32,9 @@ export type RequirementValidationResult = {
   readonly id: string;
   readonly stakeholderRequirement: StakeholderRequirementValidationReference;
   readonly systemRequirements:
-    | SystemRequirementValidationReference[]
-    | null
-    | undefined;
+    SystemRequirementValidationReference[] | null | undefined;
   readonly softwareRequirements:
-    | SoftwareRequirementValidationReference[]
-    | null
-    | undefined;
+    SoftwareRequirementValidationReference[] | null | undefined;
   readonly verificationResultIds: string[] | null | undefined;
   readonly intendedUse: string;
   readonly scenario: string;
