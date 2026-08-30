@@ -1,10 +1,15 @@
 import type { Artifact } from "@mydx-dev/ai-driven-spiral-development";
 
 export type SoftwareRequirementCategory =
-  "functional" | "interface" | "data" | "quality" | "security" | "other";
+  | "functional"
+  | "interface"
+  | "data"
+  | "quality"
+  | "security"
+  | "other";
 
-export type RequirementAllocationReference = {
-  readonly allocationId: string;
+export type SystemArchitectureAllocationReference = {
+  readonly architectureId: string;
   readonly systemRequirementSpecificationId: string;
   readonly systemRequirementId: string;
   readonly softwareElementId: string;
@@ -15,7 +20,7 @@ export type SoftwareRequirement = {
   readonly statement: string;
   readonly category: SoftwareRequirementCategory;
   readonly verificationCriteria: string[];
-  readonly tracesTo: RequirementAllocationReference[];
+  readonly tracesTo: SystemArchitectureAllocationReference[];
 };
 
 export type SRSUnresolvedItem = {
