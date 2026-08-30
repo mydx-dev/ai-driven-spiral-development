@@ -21,7 +21,9 @@ export class ValidationGate implements ProcessGate<ValidationResult> {
 
     for (const specification of this.stakeholderSpecifications) {
       if (specification.requirements === undefined) {
-        errors.push(`${specification.id}: Stakeholder Requirementsが未確定です`);
+        errors.push(
+          `${specification.id}: Stakeholder Requirementsが未確定です`,
+        );
         continue;
       }
 
@@ -86,7 +88,9 @@ export class ValidationGate implements ProcessGate<ValidationResult> {
         }
 
         if (!result.intendedUse.trim()) {
-          errors.push(`${validation.id}/${result.id}: intended useがありません`);
+          errors.push(
+            `${validation.id}/${result.id}: intended useがありません`,
+          );
         }
 
         if (!result.scenario.trim()) {
@@ -94,60 +98,84 @@ export class ValidationGate implements ProcessGate<ValidationResult> {
         }
 
         if (!result.method.trim()) {
-          errors.push(`${validation.id}/${result.id}: Validation methodがありません`);
+          errors.push(
+            `${validation.id}/${result.id}: Validation methodがありません`,
+          );
         }
 
         if (
           result.evidence.length === 0 ||
           result.evidence.some((evidence) => !evidence.trim())
         ) {
-          errors.push(`${validation.id}/${result.id}: Validation evidenceがありません`);
+          errors.push(
+            `${validation.id}/${result.id}: Validation evidenceがありません`,
+          );
         }
 
         if (result.systemRequirements === undefined) {
-          errors.push(`${validation.id}/${result.id}: System traceabilityが未確定です`);
+          errors.push(
+            `${validation.id}/${result.id}: System traceabilityが未確定です`,
+          );
         } else if (
           result.systemRequirements !== null &&
           result.systemRequirements.some(
             (reference) =>
-              !reference.specificationId.trim() || !reference.requirementId.trim(),
+              !reference.specificationId.trim() ||
+              !reference.requirementId.trim(),
           )
         ) {
-          errors.push(`${validation.id}/${result.id}: System traceabilityが不正です`);
+          errors.push(
+            `${validation.id}/${result.id}: System traceabilityが不正です`,
+          );
         }
 
         if (result.softwareRequirements === undefined) {
-          errors.push(`${validation.id}/${result.id}: Software traceabilityが未確定です`);
+          errors.push(
+            `${validation.id}/${result.id}: Software traceabilityが未確定です`,
+          );
         } else if (
           result.softwareRequirements !== null &&
           result.softwareRequirements.some(
             (reference) =>
-              !reference.specificationId.trim() || !reference.requirementId.trim(),
+              !reference.specificationId.trim() ||
+              !reference.requirementId.trim(),
           )
         ) {
-          errors.push(`${validation.id}/${result.id}: Software traceabilityが不正です`);
+          errors.push(
+            `${validation.id}/${result.id}: Software traceabilityが不正です`,
+          );
         }
 
         if (result.verificationResultIds === undefined) {
-          errors.push(`${validation.id}/${result.id}: Verification traceabilityが未確定です`);
+          errors.push(
+            `${validation.id}/${result.id}: Verification traceabilityが未確定です`,
+          );
         } else if (
           result.verificationResultIds !== null &&
           result.verificationResultIds.some((id) => !id.trim())
         ) {
-          errors.push(`${validation.id}/${result.id}: Verification traceabilityが不正です`);
+          errors.push(
+            `${validation.id}/${result.id}: Verification traceabilityが不正です`,
+          );
         }
 
         if (result.feedback === undefined) {
-          errors.push(`${validation.id}/${result.id}: Stakeholder feedbackが未確定です`);
+          errors.push(
+            `${validation.id}/${result.id}: Stakeholder feedbackが未確定です`,
+          );
         } else if (
           result.feedback !== null &&
           result.feedback.some((feedback) => !feedback.trim())
         ) {
-          errors.push(`${validation.id}/${result.id}: Stakeholder feedbackが不正です`);
+          errors.push(
+            `${validation.id}/${result.id}: Stakeholder feedbackが不正です`,
+          );
         }
 
         if (result.feedbackCandidates === undefined) {
-          errors.push(`${validation.id}/${result.id}: Feedback候補が未確定です`);
+          errors.push(
+            `${validation.id}/${result.id}: Feedback候補が未確定です`,
+          );
         } else if (!result.passed) {
           if (
             result.feedbackCandidates === null ||
@@ -165,7 +193,9 @@ export class ValidationGate implements ProcessGate<ValidationResult> {
                 candidate.evidence.some((evidence) => !evidence.trim()),
             )
           ) {
-            errors.push(`${validation.id}/${result.id}: Feedback候補が不正です`);
+            errors.push(
+              `${validation.id}/${result.id}: Feedback候補が不正です`,
+            );
           }
         }
       }
