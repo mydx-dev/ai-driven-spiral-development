@@ -1,30 +1,30 @@
 import type { Artifact } from "@mydx-dev/ai-driven-spiral-development";
 
-export type SoftwareRequirementReference = {
+export type SoftwareArchitectureRequirementReference = {
   readonly specificationId: string;
   readonly requirementId: string;
 };
 
-export type SoftwareElement = {
+export type SoftwareArchitectureElement = {
   readonly id: string;
   readonly name: string;
   readonly responsibilities: string[];
 };
 
-export type SoftwareElementRelationshipType =
+export type SoftwareArchitectureRelationshipType =
   | "dependency"
   | "interaction"
   | "composition"
   | "other";
 
-export type SoftwareElementRelationship = {
+export type SoftwareArchitectureRelationship = {
   readonly sourceElementId: string;
   readonly targetElementId: string;
-  readonly type: SoftwareElementRelationshipType;
+  readonly type: SoftwareArchitectureRelationshipType;
   readonly description: string;
 };
 
-export type SoftwareInterface = {
+export type SoftwareArchitectureInterface = {
   readonly id: string;
   readonly name: string;
   readonly providedByElementId: string;
@@ -32,29 +32,32 @@ export type SoftwareInterface = {
   readonly contract: string;
 };
 
-export type SoftwareRequirementAllocation = {
-  readonly requirement: SoftwareRequirementReference;
+export type SoftwareArchitectureRequirementAllocation = {
+  readonly requirement: SoftwareArchitectureRequirementReference;
   readonly elementIds: string[];
 };
 
 export type SoftwareArchitectureDecision = {
   readonly id: string;
   readonly statement: string;
-  readonly tracesTo: SoftwareRequirementReference[];
+  readonly tracesTo: SoftwareArchitectureRequirementReference[];
 };
 
 export class SoftwareArchitectureDescription implements Artifact {
   constructor(
     public readonly id: string,
     public readonly cycleId: string,
-    public readonly elements: SoftwareElement[] | null | undefined,
+    public readonly elements: SoftwareArchitectureElement[] | null | undefined,
     public readonly relationships:
-      | SoftwareElementRelationship[]
+      | SoftwareArchitectureRelationship[]
       | null
       | undefined,
-    public readonly interfaces: SoftwareInterface[] | null | undefined,
+    public readonly interfaces:
+      | SoftwareArchitectureInterface[]
+      | null
+      | undefined,
     public readonly requirementAllocations:
-      | SoftwareRequirementAllocation[]
+      | SoftwareArchitectureRequirementAllocation[]
       | null
       | undefined,
     public readonly decisions: SoftwareArchitectureDecision[] | null | undefined,
