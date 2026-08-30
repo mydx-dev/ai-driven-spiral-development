@@ -3,10 +3,7 @@ import type {
   ArtifactRepository,
   GatePass,
 } from "@mydx-dev/ai-driven-spiral-development";
-import {
-  GitHubIssue,
-  type GitHubClient,
-} from "@mydx-dev/spiral-github";
+import { GitHubIssue, type GitHubClient } from "@mydx-dev/spiral-github";
 
 export type StandardArtifact = Artifact & { readonly cycleId: string };
 
@@ -33,8 +30,7 @@ const typeMarker = (artifactType: string) =>
 
 export class StandardArtifactIssueRepository<
   TArtifact extends StandardArtifact,
-> implements ArtifactRepository<TArtifact>
-{
+> implements ArtifactRepository<TArtifact> {
   constructor(
     public readonly client: GitHubClient,
     public readonly codec: StandardArtifactIssueCodec<TArtifact>,
@@ -72,7 +68,10 @@ export class StandardArtifactIssueRepository<
     await this.client.createIssue(input);
   }
 
-  async saveGateResult(artifactId: string, gateResult: GatePass): Promise<void> {
+  async saveGateResult(
+    artifactId: string,
+    gateResult: GatePass,
+  ): Promise<void> {
     const issue = await this.findIssueByArtifactId(artifactId);
     if (!issue) {
       throw new Error(`Standard Artifact Issue not found: ${artifactId}`);
@@ -82,9 +81,10 @@ export class StandardArtifactIssueRepository<
       "## Gate Result",
       gateResult.passed
         ? "- [x] PASS"
-        : ["- [ ] FAIL", ...gateResult.errors.map((error) => `  - ${error}`)].join(
-            "\n",
-          ),
+        : [
+            "- [ ] FAIL",
+            ...gateResult.errors.map((error) => `  - ${error}`),
+          ].join("\n"),
     );
     await this.client.updateIssue(issue.number, { body });
   }
@@ -117,7 +117,9 @@ export class StandardArtifactIssueRepository<
 
     const artifact = this.codec.restore(JSON.parse(match[1]));
     if (!body.includes(artifactMarker(artifact.id))) {
-      throw new Error(`Artifact ID marker does not match Issue #${issue.number}.`);
+      throw new Error(
+        `Artifact ID marker does not match Issue #${issue.number}.`,
+      );
     }
     if (!body.includes(cycleMarker(artifact.cycleId))) {
       throw new Error(`Cycle ID marker does not match Issue #${issue.number}.`);
@@ -173,7 +175,8 @@ export class StandardArtifactIssueRepository<
       `"${artifactMarker(id)}" in:body`,
     );
     const issues = response.items.filter(
-      (issue) => !issue.pull_request && (issue.body ?? "").includes(artifactMarker(id)),
+      (issue) =>
+        !issue.pull_request && (issue.body ?? "").includes(artifactMarker(id)),
     );
     if (issues.length > 1) {
       throw new Error(`Artifact ${id} is mapped to multiple GitHub Issues.`);
