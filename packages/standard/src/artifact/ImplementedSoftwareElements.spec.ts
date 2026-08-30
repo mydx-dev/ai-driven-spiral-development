@@ -10,9 +10,8 @@ describe("ImplementedSoftwareElements", () => {
       [
         {
           id: "implemented-service",
-          designElement: {
-            designId: "design-1",
-            elementId: "service-1",
+          elementDesign: {
+            designId: "service-design",
           },
           artifactReferences: ["src/service.ts"],
           checks: [{ name: "typecheck", passed: true, details: null }],
