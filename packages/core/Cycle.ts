@@ -22,6 +22,7 @@ export type CycleClass<
 > = {
   new (...args: TConstructorArgs): TCycle;
   readonly __processNames?: TProcessNames;
+  readonly cycleCompletionName?: string;
   processNames(): TProcessNames[];
 };
 
@@ -38,6 +39,12 @@ export type InferProcessNames<TCycleClass> = TCycleClass extends {
 }
   ? Extract<TProcessNames, string>
   : never;
+
+export type InferCycleCompletionName<TCycleClass> = TCycleClass extends {
+  readonly cycleCompletionName: infer TCompletionName;
+}
+  ? Extract<TCompletionName, string>
+  : "cycle";
 
 type RoutedProcess = {
   readonly name: string;
@@ -73,8 +80,9 @@ export abstract class Cycle implements Artifact {
       ? never
       : Process<TName, TArtifact, TCallMessage>,
   ): RoutedCycleClass<TCycleClass, TName> {
-    if (process.name === "cycle") {
-      throw new Error('"cycle" is reserved for cycle completion.');
+    const completionName = this.cycleCompletionName ?? "cycle";
+    if (process.name === "cycle" || process.name === completionName) {
+      throw new Error(`"${process.name}" is reserved for cycle completion.`);
     }
 
     const routes = Cycle.routeRegistry.get(this) ?? [];
