@@ -116,4 +116,31 @@ describe("SystemArchitectureDescriptionGate", () => {
       passed: false,
     });
   });
+
+  it("同じSystem Elementへの重複allocationを拒否する", () => {
+    const architecture = createArchitecture();
+    const invalid = new SystemArchitectureDescription(
+      architecture.id,
+      architecture.cycleId,
+      architecture.boundary,
+      architecture.elements,
+      architecture.relationships,
+      architecture.interfaces,
+      [
+        {
+          requirement: {
+            specificationId: "syrs-1",
+            requirementId: "sr-1",
+          },
+          elementIds: ["software-1", "software-1"],
+        },
+      ],
+      architecture.decisions,
+    );
+    const gate = new SystemArchitectureDescriptionGate([requirements]);
+
+    expect(gate.verifyStructuralComplete([invalid])).toMatchObject({
+      passed: false,
+    });
+  });
 });
