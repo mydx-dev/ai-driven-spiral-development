@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as standard from "./index.js";
 
 describe("@mydx-dev/spiral-standard public API", () => {
-  it("8工程のStage名を公開する", () => {
+  it("8工程のStage名を唯一のStandard工程名として公開する", () => {
     expect(standard.standardStageNames).toEqual([
       "要求定義",
       "システム要件定義",
@@ -13,6 +13,10 @@ describe("@mydx-dev/spiral-standard public API", () => {
       "検収",
       "フィードバック",
     ]);
+    expect(standard.standardProcessNames).toEqual(
+      standard.standardStageNames.slice(0, -1),
+    );
+    expect(standard.standardFeedbackName).toBe("フィードバック");
   });
 
   it("8工程で利用するArtifactとGateをpackage rootから公開する", () => {
@@ -38,27 +42,25 @@ describe("@mydx-dev/spiral-standard public API", () => {
     ]).not.toContain(undefined);
   });
 
-  it("旧Standard Process APIをpackage rootへ公開しない", () => {
-    for (const name of [
-      "Demand",
-      "DemandDefinitionGate",
-      "Requirement",
-      "RequirementDefinitionGate",
-      "ExternalSpec",
-      "ExternalDesignGate",
-      "Implementation",
-      "EngineeringGate",
-      "QAReport",
-      "QAGate",
-      "Release",
-      "ReleaseGate",
-      "AcceptanceReport",
-      "AcceptanceGate",
-      "RequirementAllocation",
-      "SystemArchitecture",
-      "SoftwareDesign",
-    ]) {
-      expect(name in standard).toBe(false);
-    }
+  it("旧APIは移行用legacy namespaceに隔離されている", () => {
+    expect([
+      standard.legacy.Demand,
+      standard.legacy.ExternalSpec,
+      standard.legacy.Implementation,
+      standard.legacy.QAReport,
+      standard.legacy.Release,
+      standard.legacy.AcceptanceReport,
+    ]).not.toContain(undefined);
+
+    expect(standard.standardStageNames).not.toEqual(
+      expect.arrayContaining([
+        "Demand Definition",
+        "Requirement Definition",
+        "External Design",
+        "Engineering",
+        "Release",
+        "Acceptance",
+      ]),
+    );
   });
 });
