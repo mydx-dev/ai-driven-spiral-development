@@ -32,9 +32,19 @@ export class VerificationGate implements ProcessGate<VerificationResult> {
       }
     }
 
-    const integratedSoftwareIds = new Set(
-      this.integratedSoftware.map((software) => software.id),
-    );
+    const integratedSoftwareIds = new Set<string>();
+
+    for (const software of this.integratedSoftware) {
+      if (software.artifactReferences === undefined) {
+        errors.push(`${software.id}: Integrated Softwareが未確定です`);
+        continue;
+      }
+
+      if (software.artifactReferences !== null) {
+        integratedSoftwareIds.add(software.id);
+      }
+    }
+
     const verifiedRequirementKeys = new Set<string>();
 
     for (const verification of verifications) {
