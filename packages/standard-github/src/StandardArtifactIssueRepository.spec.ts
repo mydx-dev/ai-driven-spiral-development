@@ -149,9 +149,9 @@ describe("StandardArtifactIssueRepository", () => {
     ).save(createSyRs());
 
     expect(issues[1].body).toContain("- #100 — `strs-order`");
-    expect(
-      systemRequirementsIssueCodec.traceability(createSyRs()),
-    ).toEqual(["strs-order"]);
+    expect(systemRequirementsIssueCodec.traceability(createSyRs())).toEqual([
+      "strs-order",
+    ]);
   });
 
   it("Gate ResultをIssueへ記録してもArtifact Dataを保持する", async () => {
