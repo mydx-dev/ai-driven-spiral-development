@@ -30,7 +30,7 @@ describe("GitHub Standard Semantic Completion", () => {
     }
   });
 
-  it("workflow_dispatch入力はcycleIdとSemantic Completion名だけを要求する", () => {
+  it("workflow_dispatch入力は8工程のSemantic Completion名を要求する", () => {
     const cwd = temporaryRepository();
     try {
       initRepository({ cwd, artifact: "github", process: "standard" });
@@ -44,16 +44,27 @@ describe("GitHub Standard Semantic Completion", () => {
       expect(workflow).toContain("cycle_id:");
       expect(workflow).toContain("process_name:");
       for (const name of [
+        "要求定義",
+        "システム要件定義",
+        "ソフトウェア要件定義",
+        "実装",
+        "統合",
+        "QA",
+        "検収",
+        "フィードバック",
+      ]) {
+        expect(workflow).toContain(`- ${name}`);
+      }
+      for (const legacyName of [
         "Demand Definition",
         "Requirement Definition",
         "External Design",
         "Engineering",
-        "QA",
         "Release",
         "Acceptance",
         "cycle",
       ]) {
-        expect(workflow).toContain(`- ${name}`);
+        expect(workflow).not.toContain(`- ${legacyName}`);
       }
       expect(workflow).toContain("SPIRAL_CYCLE_ID: ${{ inputs.cycle_id }}");
       expect(workflow).toContain(
