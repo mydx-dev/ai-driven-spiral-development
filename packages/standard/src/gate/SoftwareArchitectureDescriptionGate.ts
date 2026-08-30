@@ -54,20 +54,26 @@ export class SoftwareArchitectureDescriptionGate implements ProcessGate<Software
       errors.push(`${architecture.id}: Software Elementsが未確定です`);
     } else if (architecture.elements === null) {
       if (requirementsComplete && requirementKeys.size > 0) {
-        errors.push(`${architecture.id}: allocation対象のSRS Requirementが存在します`);
+        errors.push(
+          `${architecture.id}: allocation対象のSRS Requirementが存在します`,
+        );
       }
     } else {
       for (const element of architecture.elements) {
         if (!element.id.trim()) {
           errors.push(`${architecture.id}: Software Element識別子がありません`);
         } else if (elementIds.has(element.id)) {
-          errors.push(`${architecture.id}: Software Element識別子が重複しています`);
+          errors.push(
+            `${architecture.id}: Software Element識別子が重複しています`,
+          );
         } else {
           elementIds.add(element.id);
         }
 
         if (!element.name.trim()) {
-          errors.push(`${architecture.id}/${element.id}: Element名がありません`);
+          errors.push(
+            `${architecture.id}/${element.id}: Element名がありません`,
+          );
         }
 
         if (
@@ -143,12 +149,16 @@ export class SoftwareArchitectureDescriptionGate implements ProcessGate<Software
           allocation.elementIds.length === 0 ||
           allocation.elementIds.some((elementId) => !elementIds.has(elementId))
         ) {
-          errors.push(`${architecture.id}/${key}: Requirement allocationが不正です`);
+          errors.push(
+            `${architecture.id}/${key}: Requirement allocationが不正です`,
+          );
           continue;
         }
 
         if (allocatedRequirementKeys.has(key)) {
-          errors.push(`${architecture.id}/${key}: Requirement allocationが重複しています`);
+          errors.push(
+            `${architecture.id}/${key}: Requirement allocationが重複しています`,
+          );
         } else {
           allocatedRequirementKeys.add(key);
         }
@@ -158,7 +168,9 @@ export class SoftwareArchitectureDescriptionGate implements ProcessGate<Software
     if (requirementsComplete) {
       for (const requirementKey of requirementKeys) {
         if (!allocatedRequirementKeys.has(requirementKey)) {
-          errors.push(`${requirementKey}: Software Elementへのallocationがありません`);
+          errors.push(
+            `${requirementKey}: Software Elementへのallocationがありません`,
+          );
         }
       }
     }
