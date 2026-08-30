@@ -1,38 +1,38 @@
 import type { Artifact } from "@mydx-dev/ai-driven-spiral-development";
 
-export type SystemElementType =
+export type SystemArchitectureElementType =
   | "human"
   | "software"
   | "hardware"
   | "external-service"
   | "other";
 
-export type SystemRequirementReference = {
+export type SystemArchitectureRequirementReference = {
   readonly specificationId: string;
   readonly requirementId: string;
 };
 
-export type SystemElement = {
+export type SystemArchitectureElement = {
   readonly id: string;
   readonly name: string;
-  readonly type: SystemElementType;
+  readonly type: SystemArchitectureElementType;
   readonly responsibilities: string[];
 };
 
-export type SystemElementRelationshipType =
+export type SystemArchitectureRelationshipType =
   | "dependency"
   | "interaction"
   | "composition"
   | "other";
 
-export type SystemElementRelationship = {
+export type SystemArchitectureRelationship = {
   readonly sourceElementId: string;
   readonly targetElementId: string;
-  readonly type: SystemElementRelationshipType;
+  readonly type: SystemArchitectureRelationshipType;
   readonly description: string;
 };
 
-export type SystemInterface = {
+export type SystemArchitectureInterface = {
   readonly id: string;
   readonly name: string;
   readonly providedByElementId: string;
@@ -40,15 +40,15 @@ export type SystemInterface = {
   readonly contract: string;
 };
 
-export type SystemRequirementAllocation = {
-  readonly requirement: SystemRequirementReference;
+export type SystemArchitectureRequirementAllocation = {
+  readonly requirement: SystemArchitectureRequirementReference;
   readonly elementIds: string[];
 };
 
-export type SystemArchitectureDecision = {
+export type SystemArchitectureDescriptionDecision = {
   readonly id: string;
   readonly statement: string;
-  readonly tracesTo: SystemRequirementReference[];
+  readonly tracesTo: SystemArchitectureRequirementReference[];
 };
 
 export class SystemArchitectureDescription implements Artifact {
@@ -56,13 +56,22 @@ export class SystemArchitectureDescription implements Artifact {
     public readonly id: string,
     public readonly cycleId: string,
     public readonly boundary: string | null | undefined,
-    public readonly elements: SystemElement[] | null | undefined,
-    public readonly relationships: SystemElementRelationship[] | null | undefined,
-    public readonly interfaces: SystemInterface[] | null | undefined,
-    public readonly requirementAllocations:
-      | SystemRequirementAllocation[]
+    public readonly elements: SystemArchitectureElement[] | null | undefined,
+    public readonly relationships:
+      | SystemArchitectureRelationship[]
       | null
       | undefined,
-    public readonly decisions: SystemArchitectureDecision[] | null | undefined,
+    public readonly interfaces:
+      | SystemArchitectureInterface[]
+      | null
+      | undefined,
+    public readonly requirementAllocations:
+      | SystemArchitectureRequirementAllocation[]
+      | null
+      | undefined,
+    public readonly decisions:
+      | SystemArchitectureDescriptionDecision[]
+      | null
+      | undefined,
   ) {}
 }
