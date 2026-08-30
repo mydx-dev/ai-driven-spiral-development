@@ -1,11 +1,11 @@
 import {
   type Artifact,
+  type CycleRepository,
   type ExecutionChannel,
   Process,
   ProcessExecutor,
   SemanticCompletionEvent,
   Spiral,
-  type CycleRepository,
 } from "@mydx-dev/ai-driven-spiral-development";
 import {
   AcceptanceGate,
@@ -18,26 +18,22 @@ import {
   type Implementation,
   QAGate,
   type QAReport,
-  ReleaseGate,
-  type Release,
   RequirementDefinitionGate,
   StandardCycle,
+  standardFeedbackName,
+  standardProcessNames,
+  standardStageNames,
 } from "@mydx-dev/spiral-standard";
 import type { GitHubClient } from "@mydx-dev/spiral-github";
 import { createStandardGitHubRepositories } from "./Repositories.js";
 
-export const standardGitHubProcessNames = [
-  "Demand Definition",
-  "Requirement Definition",
-  "External Design",
-  "Engineering",
-  "QA",
-  "Release",
-  "Acceptance",
-] as const;
+export const standardGitHubProcessNames = standardProcessNames;
+export const standardGitHubStageNames = standardStageNames;
+export const standardGitHubFeedbackName = standardFeedbackName;
 
 export type StandardGitHubProcessName =
   (typeof standardGitHubProcessNames)[number];
+export type StandardGitHubStageName = (typeof standardGitHubStageNames)[number];
 
 export type StandardGitHubExecutionMessage =
   | {
@@ -55,7 +51,8 @@ export type StandardGitHubExecutionMessage =
     };
 
 export type StandardGitHubCirculateResult =
-  { readonly status: "processed" } | { readonly status: "duplicate" };
+  | { readonly status: "processed" }
+  | { readonly status: "duplicate" };
 
 type IssueComment = {
   readonly body: string | null;
@@ -112,15 +109,19 @@ const routedCycleRepository = <TCycle extends StandardCycle>(
   },
   CycleDefinition: new (
     id: string,
-    newDemand: StandardCycle["newDemand"],
-    changedDemand: StandardCycle["changedDemand"],
+    newInformation: StandardCycle["newInformation"],
+    changedInformation: StandardCycle["changedInformation"],
   ) => TCycle,
 ): {
   cycleRepository: CycleRepository<TCycle>;
   cycleFactory: (previousCycle: TCycle) => Promise<TCycle>;
 } => {
   const restore = (cycle: StandardCycle) =>
-    new CycleDefinition(cycle.id, cycle.newDemand, cycle.changedDemand);
+    new CycleDefinition(
+      cycle.id,
+      cycle.newInformation,
+      cycle.changedInformation,
+    );
 
   return {
     cycleRepository: {
@@ -214,41 +215,46 @@ export const createStandardGitHubRuntime = ({
         return { status: "duplicate" };
       }
 
-      const demandDefinition = new Process({
-        name: "Demand Definition",
+      // The concrete GitHub Artifact mapping remains a compatibility layer until
+      // Issue #58 replaces it with the 8-stage Artifact repositories. Public
+      // Process names and Semantic Completion schema already use the 8-stage model.
+      const requirements = new Process({
+        name: "要求定義",
         artifactRepository: repositories.demandRepository,
         gate: new DemandDefinitionGate(),
-        executor: createExecutor<Demand>("Demand Definition", eventId, channel),
+        executor: createExecutor<Demand>("要求定義", eventId, channel),
       });
-      const requirementDefinition = new Process({
-        name: "Requirement Definition",
+      const systemRequirements = new Process({
+        name: "システム要件定義",
         artifactRepository: repositories.demandRepository,
         gate: new RequirementDefinitionGate(),
         executor: createExecutor<Demand>(
-          "Requirement Definition",
+          "システム要件定義",
           eventId,
           channel,
         ),
       });
-      const externalDesign = new Process({
-        name: "External Design",
+      const softwareRequirements = new Process({
+        name: "ソフトウェア要件定義",
         artifactRepository: repositories.externalSpecRepository,
         gate: new ExternalDesignGate(),
         executor: createExecutor<ExternalSpec>(
-          "External Design",
+          "ソフトウェア要件定義",
           eventId,
           channel,
         ),
       });
-      const engineering = new Process({
-        name: "Engineering",
+      const implementation = new Process({
+        name: "実装",
         artifactRepository: repositories.implementationRepository,
         gate: new EngineeringGate(),
-        executor: createExecutor<Implementation>(
-          "Engineering",
-          eventId,
-          channel,
-        ),
+        executor: createExecutor<Implementation>("実装", eventId, channel),
+      });
+      const integration = new Process({
+        name: "統合",
+        artifactRepository: repositories.implementationRepository,
+        gate: new EngineeringGate(),
+        executor: createExecutor<Implementation>("統合", eventId, channel),
       });
       const qa = new Process({
         name: "QA",
@@ -256,32 +262,22 @@ export const createStandardGitHubRuntime = ({
         gate: new QAGate(),
         executor: createExecutor<QAReport>("QA", eventId, channel),
       });
-      const release = new Process({
-        name: "Release",
-        artifactRepository: repositories.releaseRepository,
-        gate: new ReleaseGate(),
-        executor: createExecutor<Release>("Release", eventId, channel),
-      });
-      const acceptance = new Process({
-        name: "Acceptance",
+      const validation = new Process({
+        name: "検収",
         artifactRepository: repositories.acceptanceReportRepository,
         gate: new AcceptanceGate(),
-        executor: createExecutor<AcceptanceReport>(
-          "Acceptance",
-          eventId,
-          channel,
-        ),
+        executor: createExecutor<AcceptanceReport>("検収", eventId, channel),
       });
 
       class StandardGitHubCycle extends StandardCycle {}
 
-      const CycleDefinition = StandardGitHubCycle.route(demandDefinition)
-        .route(requirementDefinition)
-        .route(externalDesign)
-        .route(engineering)
+      const CycleDefinition = StandardGitHubCycle.route(requirements)
+        .route(systemRequirements)
+        .route(softwareRequirements)
+        .route(implementation)
+        .route(integration)
         .route(qa)
-        .route(release)
-        .route(acceptance);
+        .route(validation);
 
       const { cycleRepository, cycleFactory } = routedCycleRepository(
         repositories.cycleRepository,
