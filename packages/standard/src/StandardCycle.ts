@@ -2,14 +2,17 @@ import {
   Cycle,
   type CycleFeedbackResult,
 } from "@mydx-dev/ai-driven-spiral-development";
+import { standardFeedbackName } from "./StandardProcess.js";
 
-export type DemandChangeState = "unconfirmed" | "exists" | "none";
+export type FeedbackChangeState = "unconfirmed" | "exists" | "none";
 
 export class StandardCycle extends Cycle {
+  static readonly cycleCompletionName = standardFeedbackName;
+
   constructor(
     public readonly id: string,
-    public readonly newDemand: DemandChangeState,
-    public readonly changedDemand: DemandChangeState,
+    public readonly newInformation: FeedbackChangeState,
+    public readonly changedInformation: FeedbackChangeState,
   ) {
     super();
   }
@@ -21,7 +24,7 @@ export class StandardCycle extends Cycle {
   feedback(): CycleFeedbackResult {
     return {
       needNextCycle:
-        this.newDemand === "exists" || this.changedDemand === "exists",
+        this.newInformation === "exists" || this.changedInformation === "exists",
     };
   }
 }
