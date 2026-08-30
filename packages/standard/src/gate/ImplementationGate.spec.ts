@@ -1,130 +1,146 @@
 import { describe, expect, it } from "vitest";
 import { ImplementedSoftwareElements } from "../artifact/ImplementedSoftwareElements.js";
-import { SoftwareDesign } from "../artifact/SoftwareDesign.js";
+import { SoftwareArchitectureDescription } from "../artifact/SoftwareArchitectureDescription.js";
+import { SoftwareElementDesign } from "../artifact/SoftwareElementDesign.js";
 import { ImplementationGate } from "./ImplementationGate.js";
 
-const createDesign = () =>
-  new SoftwareDesign(
-    "design-1",
+const createArchitecture = () =>
+  new SoftwareArchitectureDescription(
+    "architecture-1",
     "cycle-1",
     [
       {
-        id: "service-1",
-        name: "Service",
+        id: "application",
+        name: "Application",
         responsibilities: ["execute use case"],
-        data: null,
-        state: null,
-        behavior: ["execute"],
+      },
+      {
+        id: "repository",
+        name: "Repository",
+        responsibilities: ["persist data"],
+      },
+    ],
+    [
+      {
+        sourceElementId: "application",
+        targetElementId: "repository",
+        type: "dependency",
+        description: "Application depends on Repository",
+      },
+    ],
+    [
+      {
+        id: "repository-interface",
+        name: "RepositoryPort",
+        providedByElementId: "repository",
+        consumedByElementIds: ["application"],
+        contract: "save data",
       },
     ],
     [],
     [],
-    [],
-    [],
-    [],
   );
+
+const createDesigns = () => [
+  new SoftwareElementDesign(
+    "application-design",
+    "cycle-1",
+    { architectureId: "architecture-1", elementId: "application" },
+    null,
+    null,
+    ["call RepositoryPort"],
+    ["repository-interface"],
+    [],
+    [],
+  ),
+  new SoftwareElementDesign(
+    "repository-design",
+    "cycle-1",
+    { architectureId: "architecture-1", elementId: "repository" },
+    ["Order"],
+    null,
+    ["save Order"],
+    ["repository-interface"],
+    [],
+    [],
+  ),
+];
 
 const createImplementation = () =>
   new ImplementedSoftwareElements("implementation-1", "cycle-1", [
     {
-      id: "implemented-service",
-      designElement: { designId: "design-1", elementId: "service-1" },
-      artifactReferences: ["src/service.ts"],
-      checks: [
-        { name: "build", passed: true, details: null },
-        { name: "typecheck", passed: true, details: null },
-        { name: "lint", passed: true, details: null },
-        { name: "local test", passed: true, details: null },
-      ],
+      id: "implemented-application",
+      elementDesign: { designId: "application-design" },
+      artifactReferences: ["src/application.ts"],
+      checks: [{ name: "local test", passed: true, details: null }],
+      knownConstraints: [],
+      unimplementedItems: [],
+    },
+    {
+      id: "implemented-repository",
+      elementDesign: { designId: "repository-design" },
+      artifactReferences: ["src/repository.ts"],
+      checks: [{ name: "typecheck", passed: true, details: null }],
       knownConstraints: [],
       unimplementedItems: [],
     },
   ]);
 
 describe("ImplementationGate", () => {
-  it("Software Design Elementの実装と機械的条件が揃えばPASSする", () => {
+  it("全Software ElementのDesignとImplementationが揃えばPASSする", () => {
     expect(
-      new ImplementationGate([createDesign()]).verifyStructuralComplete([
-        createImplementation(),
-      ]),
+      new ImplementationGate(
+        [createArchitecture()],
+        createDesigns(),
+      ).verifyStructuralComplete([createImplementation()]),
     ).toEqual({ passed: true });
   });
 
-  it("Software Design Elementsが未判断ならFAILする", () => {
-    const design = new SoftwareDesign(
-      "design-1",
-      "cycle-1",
-      undefined,
-      null,
-      null,
-      null,
-      null,
-      null,
-    );
-    const implementation = new ImplementedSoftwareElements(
-      "implementation-1",
-      "cycle-1",
-      null,
-    );
-    const result = new ImplementationGate([design]).verifyStructuralComplete([
-      implementation,
-    ]);
+  it("Architecture上のSoftware ElementにDesignがなければFAILする", () => {
+    const result = new ImplementationGate(
+      [createArchitecture()],
+      [createDesigns()[0]],
+    ).verifyStructuralComplete([createImplementation()]);
 
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringContaining("Software Elementsが未確定"),
+          expect.stringContaining("Software Element Designがありません"),
         ]),
       );
     }
   });
 
-  it("Software Design Elementsがnullなら実装対象nullでPASSできる", () => {
-    const design = new SoftwareDesign(
-      "design-1",
-      "cycle-1",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
+  it("未解決Design Decisionが残っていればImplementation可能とみなさない", () => {
+    const designs = createDesigns();
+    const invalid = new SoftwareElementDesign(
+      designs[0].id,
+      designs[0].cycleId,
+      designs[0].architectureElement,
+      designs[0].data,
+      designs[0].state,
+      designs[0].behavior,
+      designs[0].interfaceIds,
+      designs[0].rationales,
+      [{ id: "decision-1", description: "storage strategy" }],
     );
-    const implementation = new ImplementedSoftwareElements(
-      "implementation-1",
-      "cycle-1",
-      null,
-    );
-
-    expect(
-      new ImplementationGate([design]).verifyStructuralComplete([
-        implementation,
-      ]),
-    ).toEqual({ passed: true });
-  });
-
-  it("Software Design Elementの実装取りこぼしを検出する", () => {
-    const implementation = new ImplementedSoftwareElements(
-      "implementation-1",
-      "cycle-1",
-      [],
-    );
-    const result = new ImplementationGate([
-      createDesign(),
-    ]).verifyStructuralComplete([implementation]);
+    const result = new ImplementationGate(
+      [createArchitecture()],
+      [invalid, designs[1]],
+    ).verifyStructuralComplete([createImplementation()]);
 
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringContaining("Implementationへのtraceability"),
+          expect.stringContaining("未解決Design Decisionが残っています"),
         ]),
       );
     }
   });
 
-  it("未知のSoftware Design Element参照を検出する", () => {
+  it("ImplementationがSoftware Element Designを参照しなければFAILする", () => {
     const implementation = createImplementation();
     const invalid = new ImplementedSoftwareElements(
       implementation.id,
@@ -132,103 +148,51 @@ describe("ImplementationGate", () => {
       [
         {
           ...implementation.elements![0],
-          designElement: { designId: "design-1", elementId: "missing" },
+          elementDesign: { designId: "missing-design" },
         },
+        implementation.elements![1],
       ],
     );
-    const result = new ImplementationGate([
-      createDesign(),
-    ]).verifyStructuralComplete([invalid]);
+    const result = new ImplementationGate(
+      [createArchitecture()],
+      createDesigns(),
+    ).verifyStructuralComplete([invalid]);
 
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringContaining("未知のSoftware Design Element"),
+          expect.stringContaining("未知のSoftware Element Design"),
         ]),
       );
     }
   });
 
-  it("実装成果物への参照がなければFAILする", () => {
-    const implementation = createImplementation();
-    const invalid = new ImplementedSoftwareElements(
-      implementation.id,
-      implementation.cycleId,
+  it("project-defined Quality Guard結果を注入して失敗をGateへ反映できる", () => {
+    const result = new ImplementationGate(
+      [createArchitecture()],
+      createDesigns(),
       [
         {
-          ...implementation.elements![0],
-          artifactReferences: [],
+          designId: "application-design",
+          name: "complexity",
+          passed: false,
+          details: "threshold exceeded",
         },
       ],
-    );
-    const result = new ImplementationGate([
-      createDesign(),
-    ]).verifyStructuralComplete([invalid]);
-
-    expect(result.passed).toBe(false);
-    if (!result.passed) {
-      expect(result.errors).toEqual(
-        expect.arrayContaining([expect.stringContaining("実装成果物への参照")]),
-      );
-    }
-  });
-
-  it("プロジェクト固有の機械的条件が失敗していればFAILする", () => {
-    const implementation = createImplementation();
-    const invalid = new ImplementedSoftwareElements(
-      implementation.id,
-      implementation.cycleId,
-      [
-        {
-          ...implementation.elements![0],
-          checks: [{ name: "quality guard", passed: false, details: "failed" }],
-        },
-      ],
-    );
-    const result = new ImplementationGate([
-      createDesign(),
-    ]).verifyStructuralComplete([invalid]);
-
-    expect(result.passed).toBe(false);
-    if (!result.passed) {
-      expect(result.errors).toEqual(
-        expect.arrayContaining([expect.stringContaining("quality guard")]),
-      );
-    }
-  });
-
-  it("機械的条件や既知制約の未判断を検出する", () => {
-    const implementation = createImplementation();
-    const invalid = new ImplementedSoftwareElements(
-      implementation.id,
-      implementation.cycleId,
-      [
-        {
-          ...implementation.elements![0],
-          checks: undefined,
-          knownConstraints: undefined,
-          unimplementedItems: undefined,
-        },
-      ],
-    );
-    const result = new ImplementationGate([
-      createDesign(),
-    ]).verifyStructuralComplete([invalid]);
+    ).verifyStructuralComplete([createImplementation()]);
 
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringContaining("機械的条件"),
-          expect.stringContaining("既知の制約"),
-          expect.stringContaining("未実装箇所"),
+          expect.stringContaining("project-defined Quality Guardが成功していません"),
         ]),
       );
     }
   });
 
-  it("未実装箇所が残っていればFAILする", () => {
+  it("未実装箇所が残っていればFAILするがSRS適合性は判定しない", () => {
     const implementation = createImplementation();
     const invalid = new ImplementedSoftwareElements(
       implementation.id,
@@ -236,14 +200,15 @@ describe("ImplementationGate", () => {
       [
         {
           ...implementation.elements![0],
-          knownConstraints: ["legacy API constraint"],
           unimplementedItems: ["TODO"],
         },
+        implementation.elements![1],
       ],
     );
-    const result = new ImplementationGate([
-      createDesign(),
-    ]).verifyStructuralComplete([invalid]);
+    const result = new ImplementationGate(
+      [createArchitecture()],
+      createDesigns(),
+    ).verifyStructuralComplete([invalid]);
 
     expect(result.passed).toBe(false);
     if (!result.passed) {
@@ -252,9 +217,7 @@ describe("ImplementationGate", () => {
           expect.stringContaining("未実装箇所が残っています"),
         ]),
       );
-      expect(result.errors).not.toEqual(
-        expect.arrayContaining([expect.stringContaining("既知の制約")]),
-      );
+      expect(result.errors.join("\n")).not.toContain("SRS");
     }
   });
 });
