@@ -1,35 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { ImplementedSoftwareElements } from "../artifact/ImplementedSoftwareElements.js";
 import { IntegratedSoftware } from "../artifact/IntegratedSoftware.js";
-import { SoftwareDesign } from "../artifact/SoftwareDesign.js";
+import { SoftwareArchitectureDescription } from "../artifact/SoftwareArchitectureDescription.js";
+import { SoftwareElementDesign } from "../artifact/SoftwareElementDesign.js";
 import { IntegrationGate } from "./IntegrationGate.js";
 
-const createDesign = () =>
-  new SoftwareDesign(
-    "design-1",
+const createArchitecture = () =>
+  new SoftwareArchitectureDescription(
+    "architecture-1",
     "cycle-1",
     [
+      { id: "service", name: "Service", responsibilities: ["execute"] },
       {
-        id: "service-1",
-        name: "Service",
-        responsibilities: ["execute"],
-        data: null,
-        state: null,
-        behavior: ["execute"],
-      },
-      {
-        id: "repository-1",
+        id: "repository",
         name: "Repository",
         responsibilities: ["persist"],
-        data: null,
-        state: null,
-        behavior: ["save"],
       },
     ],
     [
       {
-        sourceElementId: "service-1",
-        targetElementId: "repository-1",
+        sourceElementId: "service",
+        targetElementId: "repository",
         type: "dependency",
         description: "Service depends on Repository",
       },
@@ -38,21 +29,45 @@ const createDesign = () =>
       {
         id: "repository-interface",
         name: "RepositoryPort",
-        providedByElementId: "repository-1",
-        consumedByElementIds: ["service-1"],
+        providedByElementId: "repository",
+        consumedByElementIds: ["service"],
         contract: "save data",
       },
     ],
     [],
     [],
-    [],
   );
+
+const createDesigns = () => [
+  new SoftwareElementDesign(
+    "service-design",
+    "cycle-1",
+    { architectureId: "architecture-1", elementId: "service" },
+    null,
+    null,
+    ["execute"],
+    ["repository-interface"],
+    [],
+    [],
+  ),
+  new SoftwareElementDesign(
+    "repository-design",
+    "cycle-1",
+    { architectureId: "architecture-1", elementId: "repository" },
+    ["entity"],
+    null,
+    ["save"],
+    ["repository-interface"],
+    [],
+    [],
+  ),
+];
 
 const createImplementation = () =>
   new ImplementedSoftwareElements("implementation-1", "cycle-1", [
     {
       id: "implemented-service",
-      designElement: { designId: "design-1", elementId: "service-1" },
+      elementDesign: { designId: "service-design" },
       artifactReferences: ["src/service.ts"],
       checks: [],
       knownConstraints: [],
@@ -60,7 +75,7 @@ const createImplementation = () =>
     },
     {
       id: "implemented-repository",
-      designElement: { designId: "design-1", elementId: "repository-1" },
+      elementDesign: { designId: "repository-design" },
       artifactReferences: ["src/repository.ts"],
       checks: [],
       knownConstraints: [],
@@ -84,16 +99,16 @@ const createIntegration = () =>
     ],
     [
       {
-        designId: "design-1",
-        sourceElementId: "service-1",
-        targetElementId: "repository-1",
+        architectureId: "architecture-1",
+        sourceElementId: "service",
+        targetElementId: "repository",
         type: "dependency",
         evidence: ["integration/service-repository.spec.ts"],
       },
     ],
     [
       {
-        designId: "design-1",
+        architectureId: "architecture-1",
         interfaceId: "repository-interface",
         evidence: ["integration/repository-interface.spec.ts"],
       },
@@ -104,103 +119,13 @@ const createIntegration = () =>
   );
 
 describe("IntegrationGate", () => {
-  it("必要なElement・relationship・interfaceが統合されていればPASSする", () => {
+  it("Architecture上のrelationshipとinterfaceに従って統合されていればPASSする", () => {
     expect(
       new IntegrationGate(
+        [createArchitecture()],
+        createDesigns(),
         [createImplementation()],
-        [createDesign()],
       ).verifyStructuralComplete([createIntegration()]),
-    ).toEqual({ passed: true });
-  });
-
-  it("Implemented Software Elementsが未判断ならFAILする", () => {
-    const implementation = new ImplementedSoftwareElements(
-      "implementation-1",
-      "cycle-1",
-      undefined,
-    );
-    const integration = new IntegratedSoftware(
-      "integration-1",
-      "cycle-1",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-    );
-    const result = new IntegrationGate(
-      [implementation],
-      [createDesign()],
-    ).verifyStructuralComplete([integration]);
-
-    expect(result.passed).toBe(false);
-    if (!result.passed) {
-      expect(result.errors).toEqual(
-        expect.arrayContaining([
-          expect.stringContaining("Implemented Software Elementsが未確定"),
-        ]),
-      );
-    }
-  });
-
-  it("Software Design Elementsが未判断ならFAILする", () => {
-    const design = new SoftwareDesign(
-      "design-1",
-      "cycle-1",
-      undefined,
-      [],
-      [],
-      [],
-      [],
-      [],
-    );
-    const result = new IntegrationGate(
-      [createImplementation()],
-      [design],
-    ).verifyStructuralComplete([createIntegration()]);
-
-    expect(result.passed).toBe(false);
-    if (!result.passed) {
-      expect(result.errors).toEqual(
-        expect.arrayContaining([
-          expect.stringContaining("Software Elementsが未確定"),
-        ]),
-      );
-    }
-  });
-
-  it("Implemented Software ElementsとSoftware Design Elementsがnullなら統合対象nullでPASSできる", () => {
-    const implementation = new ImplementedSoftwareElements(
-      "implementation-1",
-      "cycle-1",
-      null,
-    );
-    const design = new SoftwareDesign(
-      "design-1",
-      "cycle-1",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-    );
-    const integration = new IntegratedSoftware(
-      "integration-1",
-      "cycle-1",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-    );
-
-    expect(
-      new IntegrationGate([implementation], [design]).verifyStructuralComplete([
-        integration,
-      ]),
     ).toEqual({ passed: true });
   });
 
@@ -217,8 +142,9 @@ describe("IntegrationGate", () => {
       integration.unresolvedItems,
     );
     const result = new IntegrationGate(
+      [createArchitecture()],
+      createDesigns(),
       [createImplementation()],
-      [createDesign()],
     ).verifyStructuralComplete([invalid]);
 
     expect(result.passed).toBe(false);
@@ -231,7 +157,7 @@ describe("IntegrationGate", () => {
     }
   });
 
-  it("Design上のrelationship統合取りこぼしを検出する", () => {
+  it("Architecture上のrelationship統合取りこぼしを検出する", () => {
     const integration = createIntegration();
     const invalid = new IntegratedSoftware(
       integration.id,
@@ -244,8 +170,9 @@ describe("IntegrationGate", () => {
       integration.unresolvedItems,
     );
     const result = new IntegrationGate(
+      [createArchitecture()],
+      createDesigns(),
       [createImplementation()],
-      [createDesign()],
     ).verifyStructuralComplete([invalid]);
 
     expect(result.passed).toBe(false);
@@ -256,7 +183,7 @@ describe("IntegrationGate", () => {
     }
   });
 
-  it("Design上のinterface統合取りこぼしを検出する", () => {
+  it("Architecture上のinterface統合取りこぼしを検出する", () => {
     const integration = createIntegration();
     const invalid = new IntegratedSoftware(
       integration.id,
@@ -269,8 +196,9 @@ describe("IntegrationGate", () => {
       integration.unresolvedItems,
     );
     const result = new IntegrationGate(
+      [createArchitecture()],
+      createDesigns(),
       [createImplementation()],
-      [createDesign()],
     ).verifyStructuralComplete([invalid]);
 
     expect(result.passed).toBe(false);
@@ -281,7 +209,7 @@ describe("IntegrationGate", () => {
     }
   });
 
-  it("Verification対象となる統合Software成果物がなければFAILする", () => {
+  it("QA対象となる統合Software成果物がなければFAILする", () => {
     const integration = createIntegration();
     const invalid = new IntegratedSoftware(
       integration.id,
@@ -294,42 +222,16 @@ describe("IntegrationGate", () => {
       integration.unresolvedItems,
     );
     const result = new IntegrationGate(
+      [createArchitecture()],
+      createDesigns(),
       [createImplementation()],
-      [createDesign()],
     ).verifyStructuralComplete([invalid]);
 
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringContaining("Verification対象となる統合Software成果物"),
-        ]),
-      );
-    }
-  });
-
-  it("integration上の未解決事項が残っていればFAILする", () => {
-    const integration = createIntegration();
-    const invalid = new IntegratedSoftware(
-      integration.id,
-      integration.cycleId,
-      integration.elements,
-      integration.relationships,
-      integration.interfaces,
-      integration.artifactReferences,
-      integration.evidence,
-      ["interface failure"],
-    );
-    const result = new IntegrationGate(
-      [createImplementation()],
-      [createDesign()],
-    ).verifyStructuralComplete([invalid]);
-
-    expect(result.passed).toBe(false);
-    if (!result.passed) {
-      expect(result.errors).toEqual(
-        expect.arrayContaining([
-          expect.stringContaining("未解決事項が残っています"),
+          expect.stringContaining("QA対象となる統合Software成果物"),
         ]),
       );
     }
