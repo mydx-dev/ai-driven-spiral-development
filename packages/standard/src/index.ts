@@ -15,6 +15,7 @@ export * from "./artifact/SoftwareRequirementsSpecification.js";
 export * from "./artifact/StakeholderRequirementsSpecification.js";
 export * from "./artifact/SystemArchitecture.js";
 export * from "./artifact/SystemRequirementsSpecification.js";
+export * from "./artifact/VerificationResult.js";
 
 export * from "./gate/AcceptanceGate.js";
 export * from "./gate/DemandDefinitionGate.js";
@@ -30,3 +31,4 @@ export * from "./gate/SoftwareRequirementsDefinitionGate.js";
 export * from "./gate/StakeholderNeedsAndRequirementsDefinitionGate.js";
 export * from "./gate/SystemArchitectureDefinitionGate.js";
 export * from "./gate/SystemRequirementsDefinitionGate.js";
+export * from "./gate/VerificationGate.js";
