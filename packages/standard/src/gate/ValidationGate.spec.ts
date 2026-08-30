@@ -116,9 +116,11 @@ const createValidation = (passed = true) =>
 
 describe("ValidationGate", () => {
   it("intended useとStakeholder Requirementへの適合が記録されていればPASSする", () => {
-    expect(createGate().verifyStructuralComplete([createValidation()])).toEqual({
-      passed: true,
-    });
+    expect(createGate().verifyStructuralComplete([createValidation()])).toEqual(
+      {
+        passed: true,
+      },
+    );
   });
 
   it("StRS requirementsが未判断ならFAILする", () => {
