@@ -25,10 +25,9 @@ export class SoftwareElementDesign implements Artifact {
     public readonly state: string[] | null | undefined,
     public readonly behavior: string[] | null | undefined,
     public readonly interfaceIds: string[] | null | undefined,
-    public readonly rationales: SoftwareElementDesignRationale[] | null | undefined,
+    public readonly rationales:
+      SoftwareElementDesignRationale[] | null | undefined,
     public readonly unresolvedDecisions:
-      | SoftwareElementDesignUnresolvedDecision[]
-      | null
-      | undefined,
+      SoftwareElementDesignUnresolvedDecision[] | null | undefined,
   ) {}
 }
