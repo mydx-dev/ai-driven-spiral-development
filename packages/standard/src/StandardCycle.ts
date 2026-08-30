@@ -5,6 +5,8 @@ import {
 import { standardFeedbackName } from "./StandardProcess.js";
 
 export type FeedbackChangeState = "unconfirmed" | "exists" | "none";
+/** @deprecated Use FeedbackChangeState. */
+export type DemandChangeState = FeedbackChangeState;
 
 export class StandardCycle extends Cycle {
   static readonly cycleCompletionName = standardFeedbackName;
@@ -15,6 +17,16 @@ export class StandardCycle extends Cycle {
     public readonly changedInformation: FeedbackChangeState,
   ) {
     super();
+  }
+
+  /** @deprecated Use newInformation. */
+  get newDemand(): FeedbackChangeState {
+    return this.newInformation;
+  }
+
+  /** @deprecated Use changedInformation. */
+  get changedDemand(): FeedbackChangeState {
+    return this.changedInformation;
   }
 
   fallback(_processName: string): this {
