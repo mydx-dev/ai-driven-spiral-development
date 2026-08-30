@@ -67,56 +67,56 @@ const genericMain =
 const circulateWorkflow = `name: Spiral Circulate
 
 on:
-  workflow_dispatch:
-    inputs:
-      cycle_id:
-        description: Cycle Issue number or id (for example #123)
-        required: true
-        type: string
-      process_name:
-        description: Semantic Completion target
-        required: true
-        type: choice
-        options:
-          - 要求定義
-          - システム要件定義
-          - ソフトウェア要件定義
-          - 実装
-          - 統合
-          - QA
-          - 検収
-          - フィードバック
+    workflow_dispatch:
+        inputs:
+            cycle_id:
+                description: Cycle Issue number or id (for example #123)
+                required: true
+                type: string
+            process_name:
+                description: Semantic Completion target
+                required: true
+                type: choice
+                options:
+                    - 要求定義
+                    - システム要件定義
+                    - ソフトウェア要件定義
+                    - 実装
+                    - 統合
+                    - QA
+                    - 検収
+                    - フィードバック
 
 concurrency:
-  group: spiral-semantic-completion-\${{ github.repository }}-\${{ github.run_id }}
-  cancel-in-progress: false
+    group: spiral-semantic-completion-\${{ github.repository }}-\${{ github.run_id }}
+    cancel-in-progress: false
 
 permissions:
-  contents: read
-  issues: write
-  pull-requests: read
-  checks: read
-  actions: read
+    contents: read
+    issues: write
+    pull-requests: read
+    checks: read
+    actions: read
 
 jobs:
-  circulate:
-    runs-on: ubuntu-latest
-    env:
-      SPIRAL_EVENT_ID: \${{ github.repository }}:\${{ github.run_id }}
-      SPIRAL_CYCLE_ID: \${{ inputs.cycle_id }}
-      SPIRAL_PROCESS_NAME: \${{ inputs.process_name }}
-      GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-      GITHUB_REPOSITORY: \${{ github.repository }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.18.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - run: pnpm install --no-frozen-lockfile
-      - run: node scripts/spiral/main.mjs
+    circulate:
+        runs-on: ubuntu-latest
+        env:
+            SPIRAL_EVENT_ID: \${{ github.repository }}:\${{ github.run_id }}
+            SPIRAL_CYCLE_ID: \${{ inputs.cycle_id }}
+            SPIRAL_PROCESS_NAME: \${{ inputs.process_name }}
+            GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+            GITHUB_REPOSITORY: \${{ github.repository }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10.18.0
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+            - run: pnpm install --no-frozen-lockfile
+            - run: node scripts/spiral/main.mjs
 `;
 
 const generatedFiles = (composition) => {
