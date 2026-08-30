@@ -12,10 +12,7 @@ export type SoftwareArchitectureElement = {
 };
 
 export type SoftwareArchitectureRelationshipType =
-  | "dependency"
-  | "interaction"
-  | "composition"
-  | "other";
+  "dependency" | "interaction" | "composition" | "other";
 
 export type SoftwareArchitectureRelationship = {
   readonly sourceElementId: string;
@@ -49,18 +46,13 @@ export class SoftwareArchitectureDescription implements Artifact {
     public readonly cycleId: string,
     public readonly elements: SoftwareArchitectureElement[] | null | undefined,
     public readonly relationships:
-      | SoftwareArchitectureRelationship[]
-      | null
-      | undefined,
+      SoftwareArchitectureRelationship[] | null | undefined,
     public readonly interfaces:
-      | SoftwareArchitectureInterface[]
-      | null
-      | undefined,
+      SoftwareArchitectureInterface[] | null | undefined,
     public readonly requirementAllocations:
-      | SoftwareArchitectureRequirementAllocation[]
-      | null
-      | undefined,
-    public readonly decisions: SoftwareArchitectureDecision[] | null | undefined,
+      SoftwareArchitectureRequirementAllocation[] | null | undefined,
+    public readonly decisions:
+      SoftwareArchitectureDecision[] | null | undefined,
   ) {}
 
   dependencyGraph(): ReadonlyMap<string, ReadonlySet<string>> {
@@ -75,9 +67,9 @@ export class SoftwareArchitectureDescription implements Artifact {
         continue;
       }
 
-      graph.get(relationship.sourceElementId)?.add(
-        relationship.targetElementId,
-      );
+      graph
+        .get(relationship.sourceElementId)
+        ?.add(relationship.targetElementId);
     }
 
     return graph;
