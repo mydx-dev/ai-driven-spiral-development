@@ -118,4 +118,30 @@ describe("SoftwareArchitectureDescriptionGate", () => {
       passed: false,
     });
   });
+
+  it("同じSoftware Elementへの重複allocationを拒否する", () => {
+    const architecture = createArchitecture();
+    const invalid = new SoftwareArchitectureDescription(
+      architecture.id,
+      architecture.cycleId,
+      architecture.elements,
+      architecture.relationships,
+      architecture.interfaces,
+      [
+        {
+          requirement: {
+            specificationId: "srs-1",
+            requirementId: "swr-1",
+          },
+          elementIds: ["repository", "repository"],
+        },
+      ],
+      architecture.decisions,
+    );
+    const gate = new SoftwareArchitectureDescriptionGate([requirements]);
+
+    expect(gate.verifyStructuralComplete([invalid])).toMatchObject({
+      passed: false,
+    });
+  });
 });
