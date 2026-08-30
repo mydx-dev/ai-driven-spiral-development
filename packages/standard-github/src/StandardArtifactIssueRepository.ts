@@ -47,7 +47,7 @@ export class StandardArtifactIssueRepository<
 
   async findByCycle(cycleId: string): Promise<TArtifact[]> {
     const response = await this.client.searchIssues<SearchIssues>(
-      `\"${cycleMarker(cycleId)}\" in:body`,
+      `"${cycleMarker(cycleId)}" in:body`,
     );
     const issues = response.items.filter(
       (issue) =>
@@ -91,7 +91,7 @@ export class StandardArtifactIssueRepository<
 
   async findIssueByArtifactId(id: string): Promise<Issue | undefined> {
     const response = await this.client.searchIssues<SearchIssues>(
-      `\"${artifactMarker(id)}\" in:body`,
+      `"${artifactMarker(id)}" in:body`,
     );
     const issues = response.items.filter(
       (issue) =>
@@ -170,7 +170,7 @@ export class StandardArtifactIssueRepository<
 
   async findAnyArtifactIssue(id: string): Promise<Issue | undefined> {
     const response = await this.client.searchIssues<SearchIssues>(
-      `\"${artifactMarker(id)}\" in:body`,
+      `"${artifactMarker(id)}" in:body`,
     );
     const issues = response.items.filter(
       (issue) => !issue.pull_request && (issue.body ?? "").includes(artifactMarker(id)),
