@@ -2,12 +2,18 @@ import type {
   GatePass,
   ProcessGate,
 } from "@mydx-dev/ai-driven-spiral-development";
+import type { SoftwareRequirementsSpecification } from "../artifact/SoftwareRequirementsSpecification.js";
 import type { StakeholderRequirementsSpecification } from "../artifact/StakeholderRequirementsSpecification.js";
+import type { SystemRequirementsSpecification } from "../artifact/SystemRequirementsSpecification.js";
 import type { ValidationResult } from "../artifact/ValidationResult.js";
+import type { VerificationResult } from "../artifact/VerificationResult.js";
 
 export class ValidationGate implements ProcessGate<ValidationResult> {
   constructor(
     public readonly stakeholderSpecifications: StakeholderRequirementsSpecification[],
+    public readonly systemSpecifications: SystemRequirementsSpecification[],
+    public readonly softwareSpecifications: SoftwareRequirementsSpecification[],
+    public readonly verificationResults: VerificationResult[],
   ) {}
 
   verifyStructuralComplete(validations: ValidationResult[]): GatePass {
@@ -32,6 +38,23 @@ export class ValidationGate implements ProcessGate<ValidationResult> {
       }
     }
 
+    const systemRequirementKeys = new Set<string>();
+    for (const specification of this.systemSpecifications) {
+      for (const requirement of specification.requirements ?? []) {
+        systemRequirementKeys.add(`${specification.id}:${requirement.id}`);
+      }
+    }
+
+    const softwareRequirementKeys = new Set<string>();
+    for (const specification of this.softwareSpecifications) {
+      for (const requirement of specification.requirements ?? []) {
+        softwareRequirementKeys.add(`${specification.id}:${requirement.id}`);
+      }
+    }
+
+    const verificationResultIds = new Set(
+      this.verificationResults.map((verification) => verification.id),
+    );
     const validatedRequirementKeys = new Set<string>();
 
     for (const validation of validations) {
@@ -116,47 +139,62 @@ export class ValidationGate implements ProcessGate<ValidationResult> {
           errors.push(
             `${validation.id}/${result.id}: System traceabilityが未確定です`,
           );
-        } else if (
-          result.systemRequirements !== null &&
-          result.systemRequirements.some(
-            (reference) =>
+        } else if (result.systemRequirements !== null) {
+          for (const reference of result.systemRequirements) {
+            const referenceKey = `${reference.specificationId}:${reference.requirementId}`;
+            if (
               !reference.specificationId.trim() ||
-              !reference.requirementId.trim(),
-          )
-        ) {
-          errors.push(
-            `${validation.id}/${result.id}: System traceabilityが不正です`,
-          );
+              !reference.requirementId.trim()
+            ) {
+              errors.push(
+                `${validation.id}/${result.id}: System traceabilityが不正です`,
+              );
+            } else if (!systemRequirementKeys.has(referenceKey)) {
+              errors.push(
+                `${validation.id}/${result.id}: 未知のSystem Requirementを参照しています`,
+              );
+            }
+          }
         }
 
         if (result.softwareRequirements === undefined) {
           errors.push(
             `${validation.id}/${result.id}: Software traceabilityが未確定です`,
           );
-        } else if (
-          result.softwareRequirements !== null &&
-          result.softwareRequirements.some(
-            (reference) =>
+        } else if (result.softwareRequirements !== null) {
+          for (const reference of result.softwareRequirements) {
+            const referenceKey = `${reference.specificationId}:${reference.requirementId}`;
+            if (
               !reference.specificationId.trim() ||
-              !reference.requirementId.trim(),
-          )
-        ) {
-          errors.push(
-            `${validation.id}/${result.id}: Software traceabilityが不正です`,
-          );
+              !reference.requirementId.trim()
+            ) {
+              errors.push(
+                `${validation.id}/${result.id}: Software traceabilityが不正です`,
+              );
+            } else if (!softwareRequirementKeys.has(referenceKey)) {
+              errors.push(
+                `${validation.id}/${result.id}: 未知のSoftware Requirementを参照しています`,
+              );
+            }
+          }
         }
 
         if (result.verificationResultIds === undefined) {
           errors.push(
             `${validation.id}/${result.id}: Verification traceabilityが未確定です`,
           );
-        } else if (
-          result.verificationResultIds !== null &&
-          result.verificationResultIds.some((id) => !id.trim())
-        ) {
-          errors.push(
-            `${validation.id}/${result.id}: Verification traceabilityが不正です`,
-          );
+        } else if (result.verificationResultIds !== null) {
+          for (const verificationResultId of result.verificationResultIds) {
+            if (!verificationResultId.trim()) {
+              errors.push(
+                `${validation.id}/${result.id}: Verification traceabilityが不正です`,
+              );
+            } else if (!verificationResultIds.has(verificationResultId)) {
+              errors.push(
+                `${validation.id}/${result.id}: 未知のVerification Resultを参照しています`,
+              );
+            }
+          }
         }
 
         if (result.feedback === undefined) {
@@ -176,15 +214,8 @@ export class ValidationGate implements ProcessGate<ValidationResult> {
           errors.push(
             `${validation.id}/${result.id}: Feedback候補が未確定です`,
           );
-        } else if (!result.passed) {
+        } else if (result.feedbackCandidates !== null) {
           if (
-            result.feedbackCandidates === null ||
-            result.feedbackCandidates.length === 0
-          ) {
-            errors.push(
-              `${validation.id}/${result.id}: Validation FAILを次Cycleへ引き継ぐFeedback候補がありません`,
-            );
-          } else if (
             result.feedbackCandidates.some(
               (candidate) =>
                 !candidate.id.trim() ||
@@ -197,6 +228,16 @@ export class ValidationGate implements ProcessGate<ValidationResult> {
               `${validation.id}/${result.id}: Feedback候補が不正です`,
             );
           }
+
+          if (!result.passed && result.feedbackCandidates.length === 0) {
+            errors.push(
+              `${validation.id}/${result.id}: Validation FAILを次Cycleへ引き継ぐFeedback候補がありません`,
+            );
+          }
+        } else if (!result.passed) {
+          errors.push(
+            `${validation.id}/${result.id}: Validation FAILを次Cycleへ引き継ぐFeedback候補がありません`,
+          );
         }
       }
     }
