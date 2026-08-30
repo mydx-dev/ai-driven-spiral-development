@@ -141,12 +141,14 @@ export class SoftwareArchitectureDescriptionGate implements ProcessGate<Software
     } else {
       for (const allocation of architecture.requirementAllocations) {
         const key = `${allocation.requirement.specificationId}:${allocation.requirement.requirementId}`;
+        const allocationElementIds = new Set(allocation.elementIds);
 
         if (
           !allocation.requirement.specificationId.trim() ||
           !allocation.requirement.requirementId.trim() ||
           (requirementsComplete && !requirementKeys.has(key)) ||
           allocation.elementIds.length === 0 ||
+          allocationElementIds.size !== allocation.elementIds.length ||
           allocation.elementIds.some((elementId) => !elementIds.has(elementId))
         ) {
           errors.push(
