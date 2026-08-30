@@ -106,8 +106,13 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
         }
 
         for (const interfaceId of design.interfaceIds) {
-          if (!interfaceId.trim() || !architectureInterfaceIds.has(interfaceId)) {
-            errors.push(`${design.id}: 未知のSoftware interfaceを参照しています`);
+          if (
+            !interfaceId.trim() ||
+            !architectureInterfaceIds.has(interfaceId)
+          ) {
+            errors.push(
+              `${design.id}: 未知のSoftware interfaceを参照しています`,
+            );
           }
         }
       }
@@ -172,7 +177,9 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
 
       if (implementation.elements === null) {
         if (targetElementIds.size > 0) {
-          errors.push(`${implementation.id}: 実装対象Software Elementが存在します`);
+          errors.push(
+            `${implementation.id}: 実装対象Software Elementが存在します`,
+          );
         }
         continue;
       }
