@@ -1,11 +1,7 @@
 import type { Artifact } from "@mydx-dev/ai-driven-spiral-development";
 
 export type SystemArchitectureElementType =
-  | "human"
-  | "software"
-  | "hardware"
-  | "external-service"
-  | "other";
+  "human" | "software" | "hardware" | "external-service" | "other";
 
 export type SystemArchitectureRequirementReference = {
   readonly specificationId: string;
@@ -20,10 +16,7 @@ export type SystemArchitectureElement = {
 };
 
 export type SystemArchitectureRelationshipType =
-  | "dependency"
-  | "interaction"
-  | "composition"
-  | "other";
+  "dependency" | "interaction" | "composition" | "other";
 
 export type SystemArchitectureRelationship = {
   readonly sourceElementId: string;
@@ -58,20 +51,12 @@ export class SystemArchitectureDescription implements Artifact {
     public readonly boundary: string | null | undefined,
     public readonly elements: SystemArchitectureElement[] | null | undefined,
     public readonly relationships:
-      | SystemArchitectureRelationship[]
-      | null
-      | undefined,
+      SystemArchitectureRelationship[] | null | undefined,
     public readonly interfaces:
-      | SystemArchitectureInterface[]
-      | null
-      | undefined,
+      SystemArchitectureInterface[] | null | undefined,
     public readonly requirementAllocations:
-      | SystemArchitectureRequirementAllocation[]
-      | null
-      | undefined,
+      SystemArchitectureRequirementAllocation[] | null | undefined,
     public readonly decisions:
-      | SystemArchitectureDescriptionDecision[]
-      | null
-      | undefined,
+      SystemArchitectureDescriptionDecision[] | null | undefined,
   ) {}
 }
