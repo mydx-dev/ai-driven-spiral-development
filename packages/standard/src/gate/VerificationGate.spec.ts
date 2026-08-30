@@ -109,6 +109,63 @@ describe("VerificationGate", () => {
     }
   });
 
+  it("Integrated SoftwareのVerification対象成果物が未判断ならFAILする", () => {
+    const integratedSoftware = new IntegratedSoftware(
+      "integration-1",
+      "cycle-1",
+      [],
+      [],
+      [],
+      undefined,
+      [],
+      [],
+    );
+    const result = new VerificationGate(
+      [createSrs()],
+      [integratedSoftware],
+    ).verifyStructuralComplete([createVerification()]);
+
+    expect(result.passed).toBe(false);
+    if (!result.passed) {
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("Integrated Softwareが未確定"),
+        ]),
+      );
+    }
+  });
+
+  it("Integrated SoftwareのVerification対象成果物がnullならVerification対象外として扱う", () => {
+    const integratedSoftware = new IntegratedSoftware(
+      "integration-1",
+      "cycle-1",
+      [],
+      [],
+      [],
+      null,
+      [],
+      [],
+    );
+    const result = new VerificationGate(
+      [createSrs()],
+      [integratedSoftware],
+    ).verifyStructuralComplete([createVerification()]);
+
+    expect(result.passed).toBe(false);
+    if (!result.passed) {
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("Integrated Softwareを特定できません"),
+        ]),
+      );
+      expect(result.errors).not.toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("Integrated Softwareが未確定"),
+        ]),
+      );
+    }
+  });
+
   it("quality requirementを含む未検証Requirementを検出する", () => {
     const verification = createVerification();
     const result = new VerificationGate(
