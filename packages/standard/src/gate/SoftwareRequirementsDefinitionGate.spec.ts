@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { RequirementAllocation } from "../artifact/RequirementAllocation.js";
 import { SoftwareRequirementsSpecification } from "../artifact/SoftwareRequirementsSpecification.js";
-import { SystemArchitecture } from "../artifact/SystemArchitecture.js";
+import { SystemArchitectureDescription } from "../artifact/SystemArchitectureDescription.js";
 import { SystemRequirementsSpecification } from "../artifact/SystemRequirementsSpecification.js";
 import { SoftwareRequirementsDefinitionGate } from "./SoftwareRequirementsDefinitionGate.js";
 
 const createArchitecture = () =>
-  new SystemArchitecture(
+  new SystemArchitectureDescription(
     "architecture-1",
     "cycle-1",
     "boundary",
@@ -25,25 +24,25 @@ const createArchitecture = () =>
       },
     ],
     [],
+    [],
+    [
+      {
+        requirement: {
+          specificationId: "syrs-1",
+          requirementId: "sr-1",
+        },
+        elementIds: ["software-1"],
+      },
+      {
+        requirement: {
+          specificationId: "syrs-1",
+          requirementId: "sr-2",
+        },
+        elementIds: ["human-1"],
+      },
+    ],
+    [],
   );
-
-const createAllocation = () =>
-  new RequirementAllocation("allocation-1", "cycle-1", [
-    {
-      requirement: {
-        specificationId: "syrs-1",
-        requirementId: "sr-1",
-      },
-      elementIds: ["software-1"],
-    },
-    {
-      requirement: {
-        specificationId: "syrs-1",
-        requirementId: "sr-2",
-      },
-      elementIds: ["human-1"],
-    },
-  ]);
 
 const createSyRS = () =>
   new SystemRequirementsSpecification(
@@ -89,7 +88,7 @@ const createSRS = () =>
         verificationCriteria: ["automation result is observable"],
         tracesTo: [
           {
-            allocationId: "allocation-1",
+            architectureId: "architecture-1",
             systemRequirementSpecificationId: "syrs-1",
             systemRequirementId: "sr-1",
             softwareElementId: "software-1",
@@ -101,14 +100,10 @@ const createSRS = () =>
   );
 
 const createGate = () =>
-  new SoftwareRequirementsDefinitionGate(
-    [createArchitecture()],
-    [createAllocation()],
-    [createSyRS()],
-  );
+  new SoftwareRequirementsDefinitionGate([createArchitecture()], [createSyRS()]);
 
 describe("SoftwareRequirementsDefinitionGate", () => {
-  it("Software allocationをSRSへ追跡できればPASSする", () => {
+  it("System Architecture上のSoftware allocationをSRSへ追跡できればPASSする", () => {
     expect(createGate().verifyStructuralComplete([createSRS()])).toEqual({
       passed: true,
     });
@@ -148,9 +143,25 @@ describe("SoftwareRequirementsDefinitionGate", () => {
       null,
       null,
     );
+    const architecture = new SystemArchitectureDescription(
+      "architecture-1",
+      "cycle-1",
+      "boundary",
+      [
+        {
+          id: "human-1",
+          name: "Human",
+          type: "human",
+          responsibilities: ["approval"],
+        },
+      ],
+      [],
+      [],
+      [],
+      [],
+    );
     const gate = new SoftwareRequirementsDefinitionGate(
-      [createArchitecture()],
-      [new RequirementAllocation("allocation-1", "cycle-1", null)],
+      [architecture],
       [createSyRS()],
     );
 
@@ -201,14 +212,14 @@ describe("SoftwareRequirementsDefinitionGate", () => {
     if (!result.passed) {
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringContaining("Requirement Allocationへのtraceability"),
+          expect.stringContaining("System Architecture allocationへのtraceability"),
           expect.stringContaining("SRSへのtraceability"),
         ]),
       );
     }
   });
 
-  it("Software以外のallocation参照を検出する", () => {
+  it("Software以外のallocation参照を未知のallocationとして検出する", () => {
     const specification = createSRS();
     const invalid = new SoftwareRequirementsSpecification(
       specification.id,
@@ -220,7 +231,7 @@ describe("SoftwareRequirementsDefinitionGate", () => {
           ...specification.requirements![0],
           tracesTo: [
             {
-              allocationId: "allocation-1",
+              architectureId: "architecture-1",
               systemRequirementSpecificationId: "syrs-1",
               systemRequirementId: "sr-2",
               softwareElementId: "human-1",
@@ -236,7 +247,7 @@ describe("SoftwareRequirementsDefinitionGate", () => {
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
-        expect.arrayContaining([expect.stringContaining("Software以外")]),
+        expect.arrayContaining([expect.stringContaining("未知のSoftware allocation")]),
       );
     }
   });
@@ -290,7 +301,6 @@ describe("SoftwareRequirementsDefinitionGate", () => {
     );
     const gate = new SoftwareRequirementsDefinitionGate(
       [createArchitecture()],
-      [createAllocation()],
       [withoutStakeholderTrace],
     );
 
