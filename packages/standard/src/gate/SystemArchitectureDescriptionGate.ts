@@ -50,7 +50,10 @@ export class SystemArchitectureDescriptionGate implements ProcessGate<SystemArch
 
     if (architecture.boundary === undefined) {
       errors.push(`${architecture.id}: System boundaryが未確定です`);
-    } else if (architecture.boundary !== null && !architecture.boundary.trim()) {
+    } else if (
+      architecture.boundary !== null &&
+      !architecture.boundary.trim()
+    ) {
       errors.push(`${architecture.id}: System boundaryが不正です`);
     }
 
@@ -60,20 +63,26 @@ export class SystemArchitectureDescriptionGate implements ProcessGate<SystemArch
       errors.push(`${architecture.id}: System Elementsが未確定です`);
     } else if (architecture.elements === null) {
       if (requirementsComplete && requirementKeys.size > 0) {
-        errors.push(`${architecture.id}: allocation対象のSyRS Requirementが存在します`);
+        errors.push(
+          `${architecture.id}: allocation対象のSyRS Requirementが存在します`,
+        );
       }
     } else {
       for (const element of architecture.elements) {
         if (!element.id.trim()) {
           errors.push(`${architecture.id}: System Element識別子がありません`);
         } else if (elementIds.has(element.id)) {
-          errors.push(`${architecture.id}: System Element識別子が重複しています`);
+          errors.push(
+            `${architecture.id}: System Element識別子が重複しています`,
+          );
         } else {
           elementIds.add(element.id);
         }
 
         if (!element.name.trim()) {
-          errors.push(`${architecture.id}/${element.id}: Element名がありません`);
+          errors.push(
+            `${architecture.id}/${element.id}: Element名がありません`,
+          );
         }
 
         if (
@@ -133,10 +142,14 @@ export class SystemArchitectureDescriptionGate implements ProcessGate<SystemArch
     const allocatedRequirementKeys = new Set<string>();
 
     if (architecture.requirementAllocations === undefined) {
-      errors.push(`${architecture.id}: SyRS Requirement allocationが未確定です`);
+      errors.push(
+        `${architecture.id}: SyRS Requirement allocationが未確定です`,
+      );
     } else if (architecture.requirementAllocations === null) {
       if (requirementsComplete && requirementKeys.size > 0) {
-        errors.push(`${architecture.id}: SyRS Requirement allocationが必要です`);
+        errors.push(
+          `${architecture.id}: SyRS Requirement allocationが必要です`,
+        );
       }
     } else {
       for (const allocation of architecture.requirementAllocations) {
@@ -149,12 +162,16 @@ export class SystemArchitectureDescriptionGate implements ProcessGate<SystemArch
           allocation.elementIds.length === 0 ||
           allocation.elementIds.some((elementId) => !elementIds.has(elementId))
         ) {
-          errors.push(`${architecture.id}/${key}: Requirement allocationが不正です`);
+          errors.push(
+            `${architecture.id}/${key}: Requirement allocationが不正です`,
+          );
           continue;
         }
 
         if (allocatedRequirementKeys.has(key)) {
-          errors.push(`${architecture.id}/${key}: Requirement allocationが重複しています`);
+          errors.push(
+            `${architecture.id}/${key}: Requirement allocationが重複しています`,
+          );
         } else {
           allocatedRequirementKeys.add(key);
         }
@@ -164,7 +181,9 @@ export class SystemArchitectureDescriptionGate implements ProcessGate<SystemArch
     if (requirementsComplete) {
       for (const requirementKey of requirementKeys) {
         if (!allocatedRequirementKeys.has(requirementKey)) {
-          errors.push(`${requirementKey}: System Elementへのallocationがありません`);
+          errors.push(
+            `${requirementKey}: System Elementへのallocationがありません`,
+          );
         }
       }
     }
