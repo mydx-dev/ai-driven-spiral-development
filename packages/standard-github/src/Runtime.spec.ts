@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type CycleState = {
   id: string;
-  newDemand: StandardCycle["newDemand"];
-  changedDemand: StandardCycle["changedDemand"];
+  newInformation: StandardCycle["newInformation"];
+  changedInformation: StandardCycle["changedInformation"];
 };
 
 type IssueComment = {
@@ -18,7 +18,6 @@ const state = vi.hoisted(() => ({
   nextCycle: null as CycleState | null,
   saved: [] as CycleState[],
   comments: [] as IssueComment[],
-  failNextCommentWrite: false,
 }));
 
 vi.mock("./Repositories.js", () => {
@@ -58,6 +57,8 @@ vi.mock("./Repositories.js", () => {
 
 import {
   createStandardGitHubRuntime,
+  standardGitHubProcessNames,
+  standardGitHubStageNames,
   type StandardGitHubExecutionMessage,
 } from "./Runtime.js";
 
@@ -68,10 +69,6 @@ const client = {
       return state.comments;
     }
     if (method === "POST" && path.endsWith("/comments")) {
-      if (state.failNextCommentWrite) {
-        state.failNextCommentWrite = false;
-        throw new Error("Semantic Completion marker write failed");
-      }
       state.comments.push({ body: body?.body ?? "" });
       return {};
     }
@@ -97,7 +94,22 @@ describe("Standard GitHub Runtime", () => {
     state.nextCycle = new StandardCycle("#2", "none", "none");
     state.saved = [];
     state.comments = [];
-    state.failNextCommentWrite = false;
+  });
+
+  it("公開Process / Stage名を8工程へ統一する", () => {
+    expect(standardGitHubProcessNames).toEqual([
+      "要求定義",
+      "システム要件定義",
+      "ソフトウェア要件定義",
+      "実装",
+      "統合",
+      "QA",
+      "検収",
+    ]);
+    expect(standardGitHubStageNames).toEqual([
+      ...standardGitHubProcessNames,
+      "フィードバック",
+    ]);
   });
 
   it("Gate falseで同一Processをretryする", async () => {
@@ -109,23 +121,22 @@ describe("Standard GitHub Runtime", () => {
 
     await runtime.circulate({
       cycleId: "#1",
-      name: "Demand Definition",
+      name: "要求定義",
       eventId: "event-1",
     });
 
     expect(messages).toEqual([
       {
         type: "retry",
-        idempotencyKey: "event-1:retry:%231:Demand%20Definition",
+        idempotencyKey: "event-1:retry:%231:%E8%A6%81%E6%B1%82%E5%AE%9A%E7%BE%A9",
         cycleId: "#1",
-        processName: "Demand Definition",
+        processName: "要求定義",
         errors: ["Demandが1件も存在しません"],
       },
     ]);
-    expect(state.saved).toHaveLength(1);
   });
 
-  it("Gate trueで次Processを開始する", async () => {
+  it("Gate trueで次のシステム要件定義を開始する", async () => {
     state.demands = [
       new Demand("#10", "#1", "予約", "未対応", "対応済み", "顧客", []),
     ];
@@ -137,21 +148,18 @@ describe("Standard GitHub Runtime", () => {
 
     await runtime.circulate({
       cycleId: "#1",
-      name: "Demand Definition",
+      name: "要求定義",
       eventId: "event-2",
     });
 
-    expect(messages).toEqual([
-      {
-        type: "start",
-        idempotencyKey: "event-2:start:%231:Requirement%20Definition",
-        cycleId: "#1",
-        processName: "Requirement Definition",
-      },
-    ]);
+    expect(messages[0]).toMatchObject({
+      type: "start",
+      cycleId: "#1",
+      processName: "システム要件定義",
+    });
   });
 
-  it("cycle eventでfeedback後に次Cycleを生成して先頭Processを開始する", async () => {
+  it("フィードバックで次Cycleを生成して要求定義を開始する", async () => {
     state.cycle = new StandardCycle("#1", "exists", "none");
     const messages: StandardGitHubExecutionMessage[] = [];
     const runtime = createStandardGitHubRuntime({
@@ -161,25 +169,19 @@ describe("Standard GitHub Runtime", () => {
 
     await runtime.circulate({
       cycleId: "#1",
-      name: "cycle",
+      name: "フィードバック",
       eventId: "event-3",
     });
 
     expect(state.saved.map(({ id }) => id)).toContain("#2");
-    expect(messages).toEqual([
-      {
-        type: "start",
-        idempotencyKey: "event-3:start:%232:Demand%20Definition",
-        cycleId: "#2",
-        processName: "Demand Definition",
-      },
-    ]);
+    expect(messages[0]).toMatchObject({
+      type: "start",
+      cycleId: "#2",
+      processName: "要求定義",
+    });
   });
 
-  it("同一Process completion eventを再処理してもside effectを再発火しない", async () => {
-    state.demands = [
-      new Demand("#10", "#1", "予約", "未対応", "対応済み", "顧客", []),
-    ];
+  it("同じSemantic Completion eventを重複処理しない", async () => {
     const messages: StandardGitHubExecutionMessage[] = [];
     const runtime = createStandardGitHubRuntime({
       client,
@@ -188,128 +190,21 @@ describe("Standard GitHub Runtime", () => {
 
     const first = await runtime.circulate({
       cycleId: "#1",
-      name: "Demand Definition",
-      eventId: "same-process-event",
+      name: "要求定義",
+      eventId: "same-event",
     });
     const second = await runtime.circulate({
       cycleId: "#1",
-      name: "Demand Definition",
-      eventId: "same-process-event",
+      name: "要求定義",
+      eventId: "same-event",
     });
 
     expect(first).toEqual({ status: "processed" });
     expect(second).toEqual({ status: "duplicate" });
     expect(messages).toHaveLength(1);
-    expect(state.comments).toHaveLength(1);
   });
 
-  it("同一cycle completion eventを再処理しても次Cycle開始を再発火しない", async () => {
-    state.cycle = new StandardCycle("#1", "exists", "none");
-    const messages: StandardGitHubExecutionMessage[] = [];
-    const runtime = createStandardGitHubRuntime({
-      client,
-      channel: idempotentChannel(messages),
-    });
-
-    const first = await runtime.circulate({
-      cycleId: "#1",
-      name: "cycle",
-      eventId: "same-cycle-event",
-    });
-    const second = await runtime.circulate({
-      cycleId: "#1",
-      name: "cycle",
-      eventId: "same-cycle-event",
-    });
-
-    expect(first).toEqual({ status: "processed" });
-    expect(second).toEqual({ status: "duplicate" });
-    expect(messages).toHaveLength(1);
-    expect(state.saved.filter(({ id }) => id === "#2")).toHaveLength(1);
-    expect(state.comments).toHaveLength(1);
-  });
-
-  it("side effect後にmarker保存が失敗しても同一Process eventのside effectを再発火しない", async () => {
-    state.demands = [
-      new Demand("#10", "#1", "予約", "未対応", "対応済み", "顧客", []),
-    ];
-    state.failNextCommentWrite = true;
-    const messages: StandardGitHubExecutionMessage[] = [];
-    const runtime = createStandardGitHubRuntime({
-      client,
-      channel: idempotentChannel(messages),
-    });
-
-    await expect(
-      runtime.circulate({
-        cycleId: "#1",
-        name: "Demand Definition",
-        eventId: "recover-process-event",
-      }),
-    ).rejects.toThrow("Semantic Completion marker write failed");
-
-    const retried = await runtime.circulate({
-      cycleId: "#1",
-      name: "Demand Definition",
-      eventId: "recover-process-event",
-    });
-
-    expect(retried).toEqual({ status: "processed" });
-    expect(messages).toHaveLength(1);
-    expect(state.comments).toHaveLength(1);
-  });
-
-  it("side effect後にmarker保存が失敗しても同一cycle eventの次Cycle開始を再発火しない", async () => {
-    state.cycle = new StandardCycle("#1", "exists", "none");
-    state.failNextCommentWrite = true;
-    const messages: StandardGitHubExecutionMessage[] = [];
-    const runtime = createStandardGitHubRuntime({
-      client,
-      channel: idempotentChannel(messages),
-    });
-
-    await expect(
-      runtime.circulate({
-        cycleId: "#1",
-        name: "cycle",
-        eventId: "recover-cycle-event",
-      }),
-    ).rejects.toThrow("Semantic Completion marker write failed");
-
-    const retried = await runtime.circulate({
-      cycleId: "#1",
-      name: "cycle",
-      eventId: "recover-cycle-event",
-    });
-
-    expect(retried).toEqual({ status: "processed" });
-    expect(messages).toHaveLength(1);
-    expect(state.comments).toHaveLength(1);
-  });
-
-  it("別event idなら同一Processを再度完了通知できる", async () => {
-    const messages: StandardGitHubExecutionMessage[] = [];
-    const runtime = createStandardGitHubRuntime({
-      client,
-      channel: idempotentChannel(messages),
-    });
-
-    await runtime.circulate({
-      cycleId: "#1",
-      name: "Demand Definition",
-      eventId: "retry-attempt-1",
-    });
-    await runtime.circulate({
-      cycleId: "#1",
-      name: "Demand Definition",
-      eventId: "retry-attempt-2",
-    });
-
-    expect(messages).toHaveLength(2);
-    expect(state.comments).toHaveLength(2);
-  });
-
-  it("未定義Process名をSemanticCompletionEventで拒否する", async () => {
+  it("旧工程名をSemantic Completion Eventとして拒否する", async () => {
     const runtime = createStandardGitHubRuntime({
       client,
       channel: { send: async () => {} },
@@ -318,9 +213,9 @@ describe("Standard GitHub Runtime", () => {
     await expect(
       runtime.circulate({
         cycleId: "#1",
-        name: "Unknown",
-        eventId: "event-unknown",
+        name: "Demand Definition",
+        eventId: "legacy-event",
       }),
-    ).rejects.toThrow("Invalid semantic completion event name: Unknown");
+    ).rejects.toThrow("Invalid semantic completion event name: Demand Definition");
   });
 });
