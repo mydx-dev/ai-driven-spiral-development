@@ -1,8 +1,7 @@
 import type { Artifact } from "@mydx-dev/ai-driven-spiral-development";
 
-export type SoftwareDesignElementReference = {
+export type SoftwareElementDesignReference = {
   readonly designId: string;
-  readonly elementId: string;
 };
 
 export type ImplementationCheckResult = {
@@ -13,7 +12,7 @@ export type ImplementationCheckResult = {
 
 export type ImplementedSoftwareElement = {
   readonly id: string;
-  readonly designElement: SoftwareDesignElementReference;
+  readonly elementDesign: SoftwareElementDesignReference;
   readonly artifactReferences: string[];
   readonly checks: ImplementationCheckResult[] | null | undefined;
   readonly knownConstraints: string[] | null | undefined;
