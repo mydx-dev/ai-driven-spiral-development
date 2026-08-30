@@ -1,5 +1,6 @@
 export * from "./StandardCycle.js";
 export * from "./StandardProcess.js";
+export * as legacy from "./legacy.js";
 
 export * from "./artifact/ImplementedSoftwareElements.js";
 export * from "./artifact/IntegratedSoftware.js";
