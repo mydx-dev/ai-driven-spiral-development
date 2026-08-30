@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { SoftwareRequirementsSpecification } from "../artifact/SoftwareRequirementsSpecification.js";
 import { StakeholderRequirementsSpecification } from "../artifact/StakeholderRequirementsSpecification.js";
+import { SystemRequirementsSpecification } from "../artifact/SystemRequirementsSpecification.js";
 import { ValidationResult } from "../artifact/ValidationResult.js";
+import { VerificationResult } from "../artifact/VerificationResult.js";
 import { ValidationGate } from "./ValidationGate.js";
 
 const createStrs = () =>
@@ -22,6 +25,60 @@ const createStrs = () =>
     [],
     ["利用シナリオ"],
     [],
+  );
+
+const createSyrs = () =>
+  new SystemRequirementsSpecification(
+    "syrs-1",
+    "cycle-1",
+    "purpose",
+    "scope",
+    "overview",
+    [
+      {
+        id: "system-1",
+        statement: "System Requirement",
+        category: "functional",
+        tracesTo: [
+          {
+            specificationId: "strs-1",
+            requirementId: "stakeholder-1",
+          },
+        ],
+      },
+    ],
+    [],
+    [],
+    [],
+  );
+
+const createSrs = () =>
+  new SoftwareRequirementsSpecification(
+    "srs-1",
+    "cycle-1",
+    "purpose",
+    "scope",
+    [
+      {
+        id: "software-1",
+        statement: "Software Requirement",
+        category: "functional",
+        verificationCriteria: ["works"],
+        tracesTo: [],
+      },
+    ],
+    [],
+  );
+
+const createVerification = () =>
+  new VerificationResult("verification-1", "cycle-1", []);
+
+const createGate = () =>
+  new ValidationGate(
+    [createStrs()],
+    [createSyrs()],
+    [createSrs()],
+    [createVerification()],
   );
 
 const createValidation = (passed = true) =>
@@ -59,11 +116,9 @@ const createValidation = (passed = true) =>
 
 describe("ValidationGate", () => {
   it("intended useとStakeholder Requirementへの適合が記録されていればPASSする", () => {
-    expect(
-      new ValidationGate([createStrs()]).verifyStructuralComplete([
-        createValidation(),
-      ]),
-    ).toEqual({ passed: true });
+    expect(createGate().verifyStructuralComplete([createValidation()])).toEqual({
+      passed: true,
+    });
   });
 
   it("StRS requirementsが未判断ならFAILする", () => {
@@ -80,7 +135,12 @@ describe("ValidationGate", () => {
       null,
       null,
     );
-    const result = new ValidationGate([strs]).verifyStructuralComplete([
+    const result = new ValidationGate(
+      [strs],
+      [createSyrs()],
+      [createSrs()],
+      [createVerification()],
+    ).verifyStructuralComplete([
       new ValidationResult("validation-1", "cycle-1", null),
     ]);
 
@@ -96,7 +156,7 @@ describe("ValidationGate", () => {
 
   it("intended use / scenario / evidenceの欠落を検出する", () => {
     const validation = createValidation();
-    const result = new ValidationGate([createStrs()]).verifyStructuralComplete([
+    const result = createGate().verifyStructuralComplete([
       new ValidationResult(validation.id, validation.cycleId, [
         {
           ...validation.results![0],
@@ -121,7 +181,7 @@ describe("ValidationGate", () => {
 
   it("StRS / System / Software / Verificationへのtraceabilityを要求する", () => {
     const validation = createValidation();
-    const result = new ValidationGate([createStrs()]).verifyStructuralComplete([
+    const result = createGate().verifyStructuralComplete([
       new ValidationResult(validation.id, validation.cycleId, [
         {
           ...validation.results![0],
@@ -144,17 +204,67 @@ describe("ValidationGate", () => {
     }
   });
 
+  it("存在しないSystem / Software / Verification参照を検出する", () => {
+    const validation = createValidation();
+    const result = createGate().verifyStructuralComplete([
+      new ValidationResult(validation.id, validation.cycleId, [
+        {
+          ...validation.results![0],
+          systemRequirements: [
+            { specificationId: "syrs-1", requirementId: "unknown-system" },
+          ],
+          softwareRequirements: [
+            { specificationId: "srs-1", requirementId: "unknown-software" },
+          ],
+          verificationResultIds: ["does-not-exist"],
+        },
+      ]),
+    ]);
+
+    expect(result.passed).toBe(false);
+    if (!result.passed) {
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("未知のSystem Requirement"),
+          expect.stringContaining("未知のSoftware Requirement"),
+          expect.stringContaining("未知のVerification Result"),
+        ]),
+      );
+    }
+  });
+
+  it("Validation PASSでも不正なFeedback候補を検出する", () => {
+    const validation = createValidation();
+    const result = createGate().verifyStructuralComplete([
+      new ValidationResult(validation.id, validation.cycleId, [
+        {
+          ...validation.results![0],
+          feedbackCandidates: [
+            { id: "", description: "invalid", evidence: ["evidence"] },
+          ],
+        },
+      ]),
+    ]);
+
+    expect(result.passed).toBe(false);
+    if (!result.passed) {
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("Feedback候補が不正です"),
+        ]),
+      );
+    }
+  });
+
   it("Validation FAILでもFeedback候補があればGateはPASSする", () => {
     expect(
-      new ValidationGate([createStrs()]).verifyStructuralComplete([
-        createValidation(false),
-      ]),
+      createGate().verifyStructuralComplete([createValidation(false)]),
     ).toEqual({ passed: true });
   });
 
   it("Validation FAILで次Cycle向けFeedback候補がなければFAILする", () => {
     const validation = createValidation(false);
-    const result = new ValidationGate([createStrs()]).verifyStructuralComplete([
+    const result = createGate().verifyStructuralComplete([
       new ValidationResult(validation.id, validation.cycleId, [
         { ...validation.results![0], feedbackCandidates: [] },
       ]),
