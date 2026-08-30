@@ -4,12 +4,14 @@ import type {
 } from "@mydx-dev/ai-driven-spiral-development";
 import type { ImplementedSoftwareElements } from "../artifact/ImplementedSoftwareElements.js";
 import type { IntegratedSoftware } from "../artifact/IntegratedSoftware.js";
-import type { SoftwareDesign } from "../artifact/SoftwareDesign.js";
+import type { SoftwareArchitectureDescription } from "../artifact/SoftwareArchitectureDescription.js";
+import type { SoftwareElementDesign } from "../artifact/SoftwareElementDesign.js";
 
 export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
   constructor(
+    public readonly softwareArchitectures: SoftwareArchitectureDescription[],
+    public readonly elementDesigns: SoftwareElementDesign[],
     public readonly implementations: ImplementedSoftwareElements[],
-    public readonly softwareDesigns: SoftwareDesign[],
   ) {}
 
   verifyStructuralComplete(integrations: IntegratedSoftware[]): GatePass {
@@ -22,8 +24,21 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
       };
     }
 
+    if (this.softwareArchitectures.length !== 1) {
+      return {
+        passed: false,
+        errors: [
+          "対象CycleのSoftware Architecture Descriptionを一意に特定できません",
+        ],
+      };
+    }
+
+    const architecture = this.softwareArchitectures[0];
+    const designById = new Map(
+      this.elementDesigns.map((design) => [design.id, design] as const),
+    );
     const implementedElementKeys = new Set<string>();
-    const implementedDesignElementKeys = new Set<string>();
+    const implementedArchitectureElementIds = new Set<string>();
 
     for (const implementation of this.implementations) {
       if (implementation.elements === undefined) {
@@ -35,8 +50,21 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
 
       for (const element of implementation.elements ?? []) {
         implementedElementKeys.add(`${implementation.id}:${element.id}`);
-        implementedDesignElementKeys.add(
-          `${element.designElement.designId}:${element.designElement.elementId}`,
+        const design = designById.get(element.elementDesign.designId);
+        if (!design) {
+          errors.push(
+            `${implementation.id}/${element.id}: 未知のSoftware Element Designを参照しています`,
+          );
+          continue;
+        }
+        if (design.architectureElement.architectureId !== architecture.id) {
+          errors.push(
+            `${design.id}: 対象Software Architectureが一致していません`,
+          );
+          continue;
+        }
+        implementedArchitectureElementIds.add(
+          design.architectureElement.elementId,
         );
       }
     }
@@ -44,44 +72,34 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
     const relationshipKeys = new Set<string>();
     const interfaceKeys = new Set<string>();
 
-    for (const design of this.softwareDesigns) {
-      if (design.elements === undefined) {
-        errors.push(`${design.id}: Software Elementsが未確定です`);
-      }
-
-      if (design.relationships === undefined) {
-        errors.push(`${design.id}: Software Element Relationshipsが未確定です`);
-      } else {
-        for (const relationship of design.relationships ?? []) {
-          if (
-            implementedDesignElementKeys.has(
-              `${design.id}:${relationship.sourceElementId}`,
-            ) &&
-            implementedDesignElementKeys.has(
-              `${design.id}:${relationship.targetElementId}`,
-            )
-          ) {
-            relationshipKeys.add(
-              `${design.id}:${relationship.sourceElementId}:${relationship.targetElementId}:${relationship.type}`,
-            );
-          }
+    if (architecture.relationships === undefined) {
+      errors.push(`${architecture.id}: Software relationshipsが未確定です`);
+    } else {
+      for (const relationship of architecture.relationships ?? []) {
+        if (
+          implementedArchitectureElementIds.has(relationship.sourceElementId) &&
+          implementedArchitectureElementIds.has(relationship.targetElementId)
+        ) {
+          relationshipKeys.add(
+            `${architecture.id}:${relationship.sourceElementId}:${relationship.targetElementId}:${relationship.type}`,
+          );
         }
       }
+    }
 
-      if (design.interfaces === undefined) {
-        errors.push(`${design.id}: Software Interfacesが未確定です`);
-      } else {
-        for (const softwareInterface of design.interfaces ?? []) {
-          if (
-            implementedDesignElementKeys.has(
-              `${design.id}:${softwareInterface.providedByElementId}`,
-            ) ||
-            softwareInterface.consumedByElementIds.some((elementId) =>
-              implementedDesignElementKeys.has(`${design.id}:${elementId}`),
-            )
-          ) {
-            interfaceKeys.add(`${design.id}:${softwareInterface.id}`);
-          }
+    if (architecture.interfaces === undefined) {
+      errors.push(`${architecture.id}: Software interfacesが未確定です`);
+    } else {
+      for (const softwareInterface of architecture.interfaces ?? []) {
+        if (
+          implementedArchitectureElementIds.has(
+            softwareInterface.providedByElementId,
+          ) ||
+          softwareInterface.consumedByElementIds.some((elementId) =>
+            implementedArchitectureElementIds.has(elementId),
+          )
+        ) {
+          interfaceKeys.add(`${architecture.id}:${softwareInterface.id}`);
         }
       }
     }
@@ -149,11 +167,11 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
       const integratedRelationshipKeys = new Set<string>();
 
       for (const relationship of integration.relationships) {
-        const relationshipKey = `${relationship.designId}:${relationship.sourceElementId}:${relationship.targetElementId}:${relationship.type}`;
+        const relationshipKey = `${relationship.architectureId}:${relationship.sourceElementId}:${relationship.targetElementId}:${relationship.type}`;
 
         if (!relationshipKeys.has(relationshipKey)) {
           errors.push(
-            `${integration.id}: 未知のSoftware Design relationshipを参照しています`,
+            `${integration.id}: 未知のSoftware Architecture relationshipを参照しています`,
           );
         } else if (integratedRelationshipKeys.has(relationshipKey)) {
           errors.push(
@@ -190,11 +208,11 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
       const integratedInterfaceKeys = new Set<string>();
 
       for (const softwareInterface of integration.interfaces) {
-        const interfaceKey = `${softwareInterface.designId}:${softwareInterface.interfaceId}`;
+        const interfaceKey = `${softwareInterface.architectureId}:${softwareInterface.interfaceId}`;
 
         if (!interfaceKeys.has(interfaceKey)) {
           errors.push(
-            `${integration.id}: 未知のSoftware Design interfaceを参照しています`,
+            `${integration.id}: 未知のSoftware Architecture interfaceを参照しています`,
           );
         } else if (integratedInterfaceKeys.has(interfaceKey)) {
           errors.push(`${integration.id}: interface統合参照が重複しています`);
@@ -225,7 +243,7 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
         integration.artifactReferences.length === 0)
     ) {
       errors.push(
-        `${integration.id}: Verification対象となる統合Software成果物がありません`,
+        `${integration.id}: QA対象となる統合Software成果物がありません`,
       );
     } else if (
       integration.artifactReferences !== null &&

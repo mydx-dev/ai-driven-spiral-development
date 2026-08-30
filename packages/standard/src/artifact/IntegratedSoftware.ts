@@ -1,5 +1,5 @@
 import type { Artifact } from "@mydx-dev/ai-driven-spiral-development";
-import type { SoftwareElementRelationshipType } from "./SoftwareDesign.js";
+import type { SoftwareArchitectureRelationshipType } from "./SoftwareArchitectureDescription.js";
 
 export type ImplementedSoftwareElementReference = {
   readonly implementationId: string;
@@ -7,15 +7,15 @@ export type ImplementedSoftwareElementReference = {
 };
 
 export type IntegratedRelationship = {
-  readonly designId: string;
+  readonly architectureId: string;
   readonly sourceElementId: string;
   readonly targetElementId: string;
-  readonly type: SoftwareElementRelationshipType;
+  readonly type: SoftwareArchitectureRelationshipType;
   readonly evidence: string[];
 };
 
 export type IntegratedInterface = {
-  readonly designId: string;
+  readonly architectureId: string;
   readonly interfaceId: string;
   readonly evidence: string[];
 };

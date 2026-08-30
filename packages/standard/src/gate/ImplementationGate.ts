@@ -3,37 +3,161 @@ import type {
   ProcessGate,
 } from "@mydx-dev/ai-driven-spiral-development";
 import type { ImplementedSoftwareElements } from "../artifact/ImplementedSoftwareElements.js";
-import type { SoftwareDesign } from "../artifact/SoftwareDesign.js";
+import type { SoftwareArchitectureDescription } from "../artifact/SoftwareArchitectureDescription.js";
+import type { SoftwareElementDesign } from "../artifact/SoftwareElementDesign.js";
+
+export type ProjectImplementationQualityResult = {
+  readonly designId: string;
+  readonly name: string;
+  readonly passed: boolean;
+  readonly details: string | null;
+};
 
 export class ImplementationGate implements ProcessGate<ImplementedSoftwareElements> {
-  constructor(public readonly softwareDesigns: SoftwareDesign[]) {}
+  constructor(
+    public readonly softwareArchitectures: SoftwareArchitectureDescription[],
+    public readonly elementDesigns: SoftwareElementDesign[],
+    public readonly qualityResults: ProjectImplementationQualityResult[] = [],
+  ) {}
 
   verifyStructuralComplete(
     implementations: ImplementedSoftwareElements[],
   ): GatePass {
     const errors: string[] = [];
 
-    if (implementations.length === 0) {
+    if (this.softwareArchitectures.length !== 1) {
       return {
         passed: false,
-        errors: ["Implemented Software Elementsがありません"],
+        errors: [
+          "対象CycleのSoftware Architecture Descriptionを一意に特定できません",
+        ],
       };
     }
 
-    const designElementKeys = new Set<string>();
+    const architecture = this.softwareArchitectures[0];
+    const targetElementIds = new Set<string>();
+    const architectureInterfaceIds = new Set<string>();
 
-    for (const design of this.softwareDesigns) {
-      if (design.elements === undefined) {
-        errors.push(`${design.id}: Software Elementsが未確定です`);
-        continue;
-      }
-
-      for (const element of design.elements ?? []) {
-        designElementKeys.add(`${design.id}:${element.id}`);
+    if (architecture.elements === undefined) {
+      errors.push(`${architecture.id}: Software Elementsが未確定です`);
+    } else {
+      for (const element of architecture.elements ?? []) {
+        targetElementIds.add(element.id);
       }
     }
 
-    const implementedDesignElementKeys = new Set<string>();
+    if (architecture.interfaces === undefined) {
+      errors.push(`${architecture.id}: Software interfacesが未確定です`);
+    } else {
+      for (const softwareInterface of architecture.interfaces ?? []) {
+        architectureInterfaceIds.add(softwareInterface.id);
+      }
+    }
+
+    const designIds = new Set<string>();
+    const designByElementId = new Map<string, SoftwareElementDesign>();
+
+    for (const design of this.elementDesigns) {
+      if (!design.id.trim()) {
+        errors.push("Software Element Design識別子がありません");
+      } else if (designIds.has(design.id)) {
+        errors.push("Software Element Design識別子が重複しています");
+      } else {
+        designIds.add(design.id);
+      }
+
+      if (!design.cycleId.trim()) {
+        errors.push(`${design.id}: 対象Cycleがありません`);
+      }
+
+      if (
+        design.architectureElement.architectureId !== architecture.id ||
+        !targetElementIds.has(design.architectureElement.elementId)
+      ) {
+        errors.push(
+          `${design.id}: 未知のSoftware Architecture Elementを参照しています`,
+        );
+      } else if (designByElementId.has(design.architectureElement.elementId)) {
+        errors.push(
+          `${architecture.id}:${design.architectureElement.elementId}: Software Element Designが重複しています`,
+        );
+      } else {
+        designByElementId.set(design.architectureElement.elementId, design);
+      }
+
+      for (const [name, values] of [
+        ["data", design.data],
+        ["state", design.state],
+        ["behavior", design.behavior],
+      ] as const) {
+        if (values === undefined) {
+          errors.push(`${design.id}: ${name}設計が未確定です`);
+        } else if (values !== null && values.some((value) => !value.trim())) {
+          errors.push(`${design.id}: ${name}設計が不正です`);
+        }
+      }
+
+      if (design.interfaceIds === undefined) {
+        errors.push(`${design.id}: interface実現方針が未確定です`);
+      } else if (design.interfaceIds !== null) {
+        const uniqueInterfaceIds = new Set(design.interfaceIds);
+        if (uniqueInterfaceIds.size !== design.interfaceIds.length) {
+          errors.push(`${design.id}: interface参照が重複しています`);
+        }
+
+        for (const interfaceId of design.interfaceIds) {
+          if (
+            !interfaceId.trim() ||
+            !architectureInterfaceIds.has(interfaceId)
+          ) {
+            errors.push(
+              `${design.id}: 未知のSoftware interfaceを参照しています`,
+            );
+          }
+        }
+      }
+
+      if (design.rationales === undefined) {
+        errors.push(`${design.id}: design rationaleが未確定です`);
+      } else if (design.rationales !== null) {
+        const rationaleIds = new Set<string>();
+        for (const rationale of design.rationales) {
+          if (
+            !rationale.id.trim() ||
+            rationaleIds.has(rationale.id) ||
+            !rationale.decision.trim() ||
+            !rationale.reason.trim()
+          ) {
+            errors.push(`${design.id}: design rationaleが不正です`);
+          } else {
+            rationaleIds.add(rationale.id);
+          }
+        }
+      }
+
+      if (design.unresolvedDecisions === undefined) {
+        errors.push(`${design.id}: 未解決Design Decisionが未確定です`);
+      } else if (
+        design.unresolvedDecisions !== null &&
+        design.unresolvedDecisions.length > 0
+      ) {
+        errors.push(`${design.id}: 未解決Design Decisionが残っています`);
+      }
+    }
+
+    for (const elementId of targetElementIds) {
+      if (!designByElementId.has(elementId)) {
+        errors.push(
+          `${architecture.id}:${elementId}: Software Element Designがありません`,
+        );
+      }
+    }
+
+    if (implementations.length === 0) {
+      errors.push("Implemented Software Elementsがありません");
+    }
+
+    const implementedDesignIds = new Set<string>();
 
     for (const implementation of implementations) {
       if (!implementation.id.trim()) {
@@ -46,15 +170,15 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
 
       if (implementation.elements === undefined) {
         errors.push(
-          `${implementation.id}: 実装対象Software Elementsが未確定です`,
+          `${implementation.id}: Implemented Software Elementsが未確定です`,
         );
         continue;
       }
 
       if (implementation.elements === null) {
-        if (designElementKeys.size > 0) {
+        if (targetElementIds.size > 0) {
           errors.push(
-            `${implementation.id}: 実装対象のSoftware Elementが存在します`,
+            `${implementation.id}: 実装対象Software Elementが存在します`,
           );
         }
         continue;
@@ -73,24 +197,23 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
           implementationElementIds.add(element.id);
         }
 
-        if (
-          !element.designElement.designId.trim() ||
-          !element.designElement.elementId.trim()
-        ) {
+        if (!element.elementDesign.designId.trim()) {
           errors.push(
-            `${implementation.id}/${element.id}: Software Design参照が不正です`,
+            `${implementation.id}/${element.id}: Software Element Design参照が不正です`,
           );
           continue;
         }
 
-        const designElementKey = `${element.designElement.designId}:${element.designElement.elementId}`;
-
-        if (!designElementKeys.has(designElementKey)) {
+        if (!designIds.has(element.elementDesign.designId)) {
           errors.push(
-            `${implementation.id}/${element.id}: 未知のSoftware Design Elementを参照しています`,
+            `${implementation.id}/${element.id}: 未知のSoftware Element Designを参照しています`,
+          );
+        } else if (implementedDesignIds.has(element.elementDesign.designId)) {
+          errors.push(
+            `${element.elementDesign.designId}: Implementationが重複しています`,
           );
         } else {
-          implementedDesignElementKeys.add(designElementKey);
+          implementedDesignIds.add(element.elementDesign.designId);
         }
 
         if (
@@ -104,16 +227,15 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
 
         if (element.checks === undefined) {
           errors.push(
-            `${implementation.id}/${element.id}: 機械的条件の判定が未確定です`,
+            `${implementation.id}/${element.id}: local check結果が未確定です`,
           );
         } else if (element.checks !== null) {
           for (const check of element.checks) {
             if (!check.name.trim()) {
               errors.push(
-                `${implementation.id}/${element.id}: 実装チェック名がありません`,
+                `${implementation.id}/${element.id}: local check名がありません`,
               );
             }
-
             if (!check.passed) {
               errors.push(
                 `${implementation.id}/${element.id}: ${check.name}が成功していません`,
@@ -150,11 +272,27 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
       }
     }
 
-    for (const designElementKey of designElementKeys) {
-      if (!implementedDesignElementKeys.has(designElementKey)) {
-        errors.push(
-          `${designElementKey}: Implementationへのtraceabilityがありません`,
-        );
+    for (const design of this.elementDesigns) {
+      if (!implementedDesignIds.has(design.id)) {
+        errors.push(`${design.id}: Implementationへのtraceabilityがありません`);
+      }
+    }
+
+    const qualityKeys = new Set<string>();
+    for (const qualityResult of this.qualityResults) {
+      const key = `${qualityResult.designId}:${qualityResult.name}`;
+      if (
+        !designIds.has(qualityResult.designId) ||
+        !qualityResult.name.trim() ||
+        qualityKeys.has(key)
+      ) {
+        errors.push(`${key}: project-defined Quality Guard結果が不正です`);
+        continue;
+      }
+      qualityKeys.add(key);
+
+      if (!qualityResult.passed) {
+        errors.push(`${key}: project-defined Quality Guardが成功していません`);
       }
     }
 

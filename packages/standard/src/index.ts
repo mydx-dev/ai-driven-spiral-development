@@ -12,6 +12,7 @@ export * from "./artifact/Requirement.js";
 export * from "./artifact/RequirementAllocation.js";
 export * from "./artifact/SoftwareArchitectureDescription.js";
 export * from "./artifact/SoftwareDesign.js";
+export * from "./artifact/SoftwareElementDesign.js";
 export * from "./artifact/SoftwareRequirementsSpecification.js";
 export * from "./artifact/StakeholderRequirementsSpecification.js";
 export * from "./artifact/SystemArchitecture.js";
@@ -38,3 +39,5 @@ export * from "./gate/SystemArchitectureDescriptionGate.js";
 export * from "./gate/SystemRequirementsDefinitionGate.js";
 export * from "./gate/ValidationGate.js";
 export * from "./gate/VerificationGate.js";
+
+export * from "./orchestration/SoftwareElementExecutionPlan.js";
