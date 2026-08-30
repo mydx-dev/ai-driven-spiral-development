@@ -11,7 +11,9 @@ export class SoftwareElementExecutionPlan {
       .filter(
         ([elementId, dependencies]) =>
           !completed.has(elementId) &&
-          [...dependencies].every((dependencyId) => completed.has(dependencyId)),
+          [...dependencies].every((dependencyId) =>
+            completed.has(dependencyId),
+          ),
       )
       .map(([elementId]) => elementId);
   }
