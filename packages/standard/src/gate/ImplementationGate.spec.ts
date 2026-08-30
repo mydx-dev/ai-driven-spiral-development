@@ -186,7 +186,9 @@ describe("ImplementationGate", () => {
     if (!result.passed) {
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringContaining("project-defined Quality Guardが成功していません"),
+          expect.stringContaining(
+            "project-defined Quality Guardが成功していません",
+          ),
         ]),
       );
     }
