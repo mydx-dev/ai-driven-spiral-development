@@ -17,11 +17,10 @@ const generatedPaths = [
   "quality.config.mjs",
   "scripts/spiral/main.mjs",
   "scripts/spiral/execution-channel.mjs",
-  ".github/ISSUE_TEMPLATE/spiral-cycle.md",
-  ".github/ISSUE_TEMPLATE/demand.md",
-  ".github/ISSUE_TEMPLATE/feature.md",
+  ".github/ISSUE_TEMPLATE/spiral-artifact.md",
   ".github/pull_request_template.md",
   ".github/workflows/spiral.yml",
+  ".github/workflows/spiral-circulate.yml",
 ];
 
 const init = (cwd) =>
