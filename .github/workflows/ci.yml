@@ -6,27 +6,79 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
-  ci:
+  security:
+    name: Security Gate
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.18.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+
+      - name: Repository security checks
+        run: node scripts/security-gate.mjs
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level high
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+      packages: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@6f5948dfacef28e207b48d0905cf90c03365536d
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@6f5948dfacef28e207b48d0905cf90c03365536d
+
+  ci:
+    needs:
+      - security
+      - codeql
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.18.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Test
         run: pnpm test
@@ -44,7 +96,7 @@ jobs:
         run: pnpm build
 
       - name: Install GitHub package dependencies
-        run: pnpm --dir packages/github install --no-frozen-lockfile
+        run: pnpm --dir packages/github install --no-frozen-lockfile --ignore-scripts
 
       - name: Test GitHub package
         run: pnpm --dir packages/github test
@@ -56,7 +108,7 @@ jobs:
         run: pnpm --dir packages/github build
 
       - name: Install Quality package dependencies
-        run: pnpm --dir packages/quality install --no-frozen-lockfile
+        run: pnpm --dir packages/quality install --no-frozen-lockfile --ignore-scripts
 
       - name: Test Quality package
         run: pnpm --dir packages/quality test
@@ -96,18 +148,18 @@ jobs:
           rm -rf "$VERIFY_ROOT/packages/standard/node_modules" "$VERIFY_ROOT/packages/standard/dist"
 
           cd "$VERIFY_ROOT/packages/standard"
-          pnpm install --no-frozen-lockfile
+          pnpm install --no-frozen-lockfile --ignore-scripts
           pnpm test
           pnpm typecheck
           pnpm build
 
       - name: Build Standard package for Binding
         run: |
-          pnpm --dir packages/standard install --no-frozen-lockfile
+          pnpm --dir packages/standard install --no-frozen-lockfile --ignore-scripts
           pnpm --dir packages/standard build
 
       - name: Install Standard GitHub package dependencies
-        run: pnpm --dir packages/standard-github install --no-frozen-lockfile
+        run: pnpm --dir packages/standard-github install --no-frozen-lockfile --ignore-scripts
 
       - name: Test Standard GitHub package
         run: pnpm --dir packages/standard-github test
@@ -124,3 +176,12 @@ jobs:
           npm pkg fix
           git diff --exit-code -- package.json
           npm pack --dry-run
+
+      - name: Verify all public package contents
+        run: |
+          npm pack --dry-run
+          npm --prefix packages/github pack --dry-run
+          npm --prefix packages/standard pack --dry-run
+          npm --prefix packages/standard-github pack --dry-run
+          npm --prefix packages/quality pack --dry-run
+          npm --prefix packages/cli pack --dry-run
