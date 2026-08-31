@@ -36,7 +36,8 @@ export class StandardCycle extends Cycle {
   feedback(): CycleFeedbackResult {
     return {
       needNextCycle:
-        this.newInformation === "exists" || this.changedInformation === "exists",
+        this.newInformation === "exists" ||
+        this.changedInformation === "exists",
     };
   }
 }
