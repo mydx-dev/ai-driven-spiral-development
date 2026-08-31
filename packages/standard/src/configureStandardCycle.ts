@@ -3,10 +3,7 @@ import type {
   CycleClass,
   Process,
 } from "@mydx-dev/ai-driven-spiral-development";
-import {
-  StandardCycle,
-  type FeedbackChangeState,
-} from "./StandardCycle.js";
+import { StandardCycle, type FeedbackChangeState } from "./StandardCycle.js";
 import type { StandardProcessName } from "./StandardProcess.js";
 
 type ConfiguredStandardCycleClass = CycleClass<
