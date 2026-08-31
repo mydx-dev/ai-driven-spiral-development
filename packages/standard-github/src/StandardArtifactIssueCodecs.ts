@@ -173,15 +173,11 @@ export const integratedSoftwareIssueCodec: StandardArtifactIssueCodec<Integrated
       ),
     traceability: (artifact) =>
       unique([
-        ...(artifact.elements ?? []).map(
-          (element) => element.implementationId,
-        ),
+        ...(artifact.elements ?? []).map((element) => element.implementationId),
         ...(artifact.relationships ?? []).map(
           (relationship) => relationship.architectureId,
         ),
-        ...(artifact.interfaces ?? []).map(
-          (item) => item.architectureId,
-        ),
+        ...(artifact.interfaces ?? []).map((item) => item.architectureId),
       ]),
   };
 
@@ -251,12 +247,18 @@ export const standardArtifactIssueCodecsByStage = {
     softwareRequirementsIssueCodec,
     softwareArchitectureDescriptionIssueCodec,
   ],
-  実装: [softwareElementDesignIssueCodec, implementedSoftwareElementsIssueCodec],
+  実装: [
+    softwareElementDesignIssueCodec,
+    implementedSoftwareElementsIssueCodec,
+  ],
   統合: [integratedSoftwareIssueCodec],
   QA: [verificationResultIssueCodec],
   検収: [validationResultIssueCodec],
   フィードバック: [feedbackStateIssueCodec],
-} as const satisfies Record<StandardStageName, readonly StandardArtifactIssueCodec<StandardArtifact>[]>;
+} as const satisfies Record<
+  StandardStageName,
+  readonly StandardArtifactIssueCodec<StandardArtifact>[]
+>;
 
 export const artifactIssueCodecsForSemanticCompletion = (
   name: StandardStageName,
