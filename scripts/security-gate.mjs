@@ -48,10 +48,7 @@ const secretPatterns = [
 const dangerousSourcePatterns = [
   ["eval", /\beval\s*\(/],
   ["Function constructor", /\bnew\s+Function\s*\(/],
-  [
-    "download-and-execute shell",
-    /\b(?:curl|wget)\b[^\n|]*\|\s*(?:sh|bash)\b/,
-  ],
+  ["download-and-execute shell", /\b(?:curl|wget)\b[^\n|]*\|\s*(?:sh|bash)\b/],
 ];
 
 for (const file of files) {
