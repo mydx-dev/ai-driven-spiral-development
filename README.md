@@ -2,63 +2,39 @@
 
 AIやエージェントを使った反復型のソフトウェア開発を、**Process単位で観測・判定しながら進行制御するためのTypeScriptライブラリ**です。
 
-このライブラリは、LLMやAIエージェントによる生成処理そのものを提供するものではありません。
-
-GitHub、Slack、CI、データベース、AIエージェントなどの外部システムを利用して生成・更新された成果物を `Artifact` として観測し、`ProcessGate` による決定的な完了判定を通じて、`Cycle` と `Spiral` の進行を制御します。
+LLMやAIエージェントによる生成処理そのものではなく、外部システムが生成・更新した成果物を `Artifact` として観測し、`ProcessGate` による決定的な完了判定を通じて `Cycle` と `Spiral` の進行を制御します。
 
 ```text
-非決定的な生成
 AI / Agent / Human / External System
         ↓
 Artifact
         ↓
 ProcessGate
         ↓
-決定的な進行制御
 Cycle / Spiral
 ```
 
-生成処理が非決定的であっても、Process境界では観測可能な成果物を使って構造的完了を判定することが、このライブラリの基本方針です。
-
 ## Installation
 
-```bash
-npm install @mydx-dev/ai-driven-spiral-development
-```
-
-pnpm:
+Core:
 
 ```bash
 pnpm add @mydx-dev/ai-driven-spiral-development
 ```
 
-yarn:
-
-```bash
-yarn add @mydx-dev/ai-driven-spiral-development
-```
-
-Standard Processを利用する場合は、CoreとStandard Process packageを導入します。
+Standard Processも利用する場合:
 
 ```bash
 pnpm add @mydx-dev/ai-driven-spiral-development @mydx-dev/spiral-standard
 ```
 
-### npm package migration
+GitHub Bindingも利用する場合:
 
-旧Core package `ai-driven-spiral-development` は、Portable Distributionへの移行に伴い `@mydx-dev/ai-driven-spiral-development` へ移行します。
-
-```text
-ai-driven-spiral-development
-→ @mydx-dev/ai-driven-spiral-development
-
-ai-driven-spiral-development/standard-process
-→ @mydx-dev/spiral-standard
+```bash
+pnpm add @mydx-dev/spiral-github @mydx-dev/spiral-standard-github
 ```
 
-既存のunscoped packageは直ちにunpublishせず、新しいscoped packageの公開と動作確認後にdeprecatedとして案内します。新規導入では `@mydx-dev/*` packageを使用してください。
-
-## Concepts
+## Core Concepts
 
 ### Artifact
 
@@ -70,612 +46,276 @@ interface Artifact {
 }
 ```
 
-Artifactの保存先はライブラリでは規定しません。
-
-GitHub Issue、Pull Request、Database、File、外部APIなど、任意の状態を `ArtifactRepository` を通してArtifactとして復元できます。
+保存先は規定しません。GitHub Issue / Pull Request、Database、File、外部APIなどを `ArtifactRepository` の実装でArtifactへ復元します。
 
 ### Process
 
-開発工程の1単位です。
-
-Processは以下をまとめます。
+Processは実行・成果物・完了判定の境界です。
 
 ```text
-ArtifactRepository
-ProcessGate
-ProcessExecutor
+Process
+├─ ArtifactRepository
+├─ ProcessGate
+└─ ProcessExecutor
 ```
 
-Process開始時にはExecutorを呼び出し、意味的完了が通知された後にはArtifactをRepositoryから取得してGateを評価します。
-
-### ProcessGate
-
-Artifactを観測して、そのProcessが構造的に完了したかを判定します。
-
-```ts
-type GatePass =
-  | {
-      passed: true;
-    }
-  | {
-      passed: false;
-      errors: string[];
-    };
-```
-
-Gateは外部サービスを直接操作する場所ではありません。
-
-「何が成立すれば完了なのか」を定義します。
-
-### ProcessExecutor
-
-Process開始時やretry時に、外部の実行主体へ処理を依頼します。
-
-実際の実行先は `ExecutionChannel` として利用側が実装します。
-
-例えば以下のようなものを接続できます。
-
-```text
-AI Agent
-Slack
-GitHub
-Queue
-HTTP API
-CLI
-```
-
-### Cycle
-
-複数のProcessを順番に束ねる反復単位です。
-
-```text
-Process A
-↓
-Process B
-↓
-Process C
-↓
-Cycle Completion
-```
-
-`Cycle.route()` によってProcessを登録します。
+AI駆動スパイラルのProcess粒度とISO/IEC/IEEEのEngineering Process粒度は1:1対応しません。一つのStandard Processが複数のISO由来Artifact / Engineering責任を束ねることがあります。
 
 ### SemanticCompletionEvent
 
-Processを実行した主体が、
+実行主体が「意味的には作業が完了した」と通知するイベントです。イベント受信後にGateを評価し、構造的に完了していなければretryします。
 
-> このProcessについて意味的には作業が完了した
+### Cycle / Spiral
 
-と通知するためのイベントです。
-
-Semantic Completion Eventが発生しても、Processが即座に完了するわけではありません。
-
-その後にProcessGateがArtifactを検証し、構造的完了を判定します。
-
-### Spiral
-
-Cycle全体の進行を制御します。
-
-Semantic Completion Eventを受け取り、
-
-- ProcessGateの評価
-- retry
-- 次Processの開始
-- Cycle完了
-- 次Cycleの開始
-
-を制御します。
-
-## Quick Start
-
-以下は、1つのProcessを持つ最小構成です。
-
-```ts
-import {
-  type Artifact,
-  type ArtifactRepository,
-  Cycle,
-  type CycleFeedbackResult,
-  type CycleRepository,
-  Process,
-  ProcessExecutor,
-  type ProcessGate,
-  SemanticCompletionEvent,
-  Spiral,
-} from "@mydx-dev/ai-driven-spiral-development";
-
-class RequirementArtifact implements Artifact {
-  constructor(
-    public readonly id: string,
-    public readonly cycleId: string,
-    public readonly completed: boolean,
-  ) {}
-}
-
-class RequirementArtifactRepository implements ArtifactRepository<RequirementArtifact> {
-  public readonly artifacts: RequirementArtifact[] = [];
-
-  async find(id: string) {
-    return this.artifacts.find((artifact) => artifact.id === id);
-  }
-
-  async findByCycle(cycleId: string) {
-    return this.artifacts.filter((artifact) => artifact.cycleId === cycleId);
-  }
-
-  async save(artifact: RequirementArtifact) {
-    this.artifacts.push(artifact);
-  }
-}
-
-const requirementArtifactRepository = new RequirementArtifactRepository();
-
-const requirementGate: ProcessGate<RequirementArtifact> = {
-  verifyStructuralComplete(artifacts) {
-    if (artifacts.length === 0) {
-      return {
-        passed: false,
-        errors: ["Requirement Artifactが存在しません"],
-      };
-    }
-
-    if (artifacts.some((artifact) => !artifact.completed)) {
-      return {
-        passed: false,
-        errors: ["Requirementが完了していません"],
-      };
-    }
-
-    return {
-      passed: true,
-    };
-  },
-};
-
-const requirementExecutor = new ProcessExecutor<string, RequirementArtifact>({
-  channel: {
-    async send(message) {
-      console.log(message);
-    },
-  },
-
-  createStartMessage(cycleId) {
-    return `Requirement Definitionを開始してください: ${cycleId}`;
-  },
-
-  createRetryMessage(cycleId, errors) {
-    return [
-      `Requirement Definitionを再実行してください: ${cycleId}`,
-      ...errors,
-    ].join("\n");
-  },
-});
-
-const requirementDefinition = new Process({
-  name: "Requirement Definition",
-  artifactRepository: requirementArtifactRepository,
-  gate: requirementGate,
-  executor: requirementExecutor,
-});
-
-class DevelopmentCycle extends Cycle {
-  constructor(public readonly id: string) {
-    super();
-  }
-
-  fallback(_processName: string): this {
-    return this;
-  }
-
-  feedback(): CycleFeedbackResult {
-    return {
-      needNextCycle: false,
-    };
-  }
-}
-
-const CycleDefinition = DevelopmentCycle.route(requirementDefinition);
-
-const cycle = new CycleDefinition("cycle-1");
-
-class InMemoryCycleRepository implements CycleRepository<
-  InstanceType<typeof CycleDefinition>
-> {
-  public readonly cycles = new Map<
-    string,
-    InstanceType<typeof CycleDefinition>
-  >();
-
-  async create() {
-    return new CycleDefinition(crypto.randomUUID());
-  }
-
-  async find(id: string) {
-    return this.cycles.get(id);
-  }
-
-  async save(cycle: InstanceType<typeof CycleDefinition>) {
-    this.cycles.set(cycle.id, cycle);
-  }
-}
-
-const cycleRepository = new InMemoryCycleRepository();
-
-await cycleRepository.save(cycle);
-
-// 最初のProcessを開始する
-await cycle.start();
-
-// 実際にはAI、GitHub、DBなどによってArtifactが生成・更新される
-await requirementArtifactRepository.save(
-  new RequirementArtifact("requirement-1", "cycle-1", true),
-);
-
-// 実行主体から意味的完了を通知する
-const event = new SemanticCompletionEvent({
-  cycleId: "cycle-1",
-  name: "Requirement Definition",
-  cycleDefinition: CycleDefinition,
-});
-
-const spiral = new Spiral<typeof CycleDefinition>({
-  cycleRepository,
-
-  cycleFactory: async () => new CycleDefinition(crypto.randomUUID()),
-});
-
-await spiral.circulate(event);
-```
-
-この例では以下の順序で処理されます。
-
-```text
-cycle.start()
-↓
-Requirement Definition Executor
-↓
-Artifact生成
-↓
-SemanticCompletionEvent
-↓
-RequirementGate
-↓
-passed: true
-↓
-Cycle完了
-```
-
-## Process Lifecycle
-
-Processの進行は、Executorの終了だけでは決まりません。
-
-```text
-Process.start()
-↓
-Executor
-↓
-外部システムが処理
-↓
-Artifact生成・更新
-↓
-Semantic Completion Event
-↓
-ArtifactRepository.findByCycle()
-↓
-ProcessGate
-├─ passed: false
-│    ↓
-│  fallback
-│    ↓
-│  retry
-│
-└─ passed: true
-     ↓
-   次Process開始
-```
-
-重要なのは、**Executor自身が次Processへ進めない**ことです。
-
-Executorは外部の実行主体を呼び出すだけです。
-
-Processの完了は、Artifactを観測したProcessGateによって決定されます。
-
-## Core API
-
-Core APIはpackage rootからimportします。
-
-```ts
-import {
-  Artifact,
-  ArtifactRepository,
-  Process,
-  ProcessGate,
-  ProcessExecutor,
-  ExecutionChannel,
-  Cycle,
-  CycleRepository,
-  Spiral,
-  SemanticCompletionEvent,
-} from "@mydx-dev/ai-driven-spiral-development";
-```
-
-Coreは開発Processそのものを固定しません。
-
-独自のArtifact、Gate、Executor、Cycleを組み合わせるための制御構造を提供します。
+`Cycle.route()` でProcessを順番に登録し、`Spiral` がSemantic Completion、Gate、retry、次Process、次Cycleへの遷移を制御します。
 
 ## Standard Process
 
-AI駆動スパイラル開発の理論で定義した標準Processモデルは、独立した `@mydx-dev/spiral-standard` packageとして提供します。
+`@mydx-dev/spiral-standard` のStandard Processは、AI駆動スパイラル独自の8工程です。
+
+```text
+1. 要求定義
+   → Stakeholder Requirements Specification (StRS)
+
+2. システム要件定義
+   → System Requirements Specification (SyRS)
+   → System Architecture Description
+
+3. ソフトウェア要件定義
+   → Software Requirements Specification (SRS)
+   → Software Architecture Description
+
+4. 実装
+   → Software Element Design
+   → Implemented Software Element
+
+5. 統合
+   → Integrated Software
+
+6. QA
+   → Verification Result
+
+7. 検収
+   → Validation Result
+
+8. フィードバック
+   → Next-cycle decision
+```
+
+この8工程そのものをISO標準Processとは扱いません。Requirements ArtifactはISO/IEC/IEEE 29148、Architecture DescriptionはISO/IEC/IEEE 42010、System / Software Engineering責任は15288 / 12207を基準にしつつ、工程の束ね方、Gate、Feedback、Element単位の反復・並列実行はAI駆動スパイラル独自のorchestrationです。
+
+### Standard API
 
 ```ts
 import {
   StandardCycle,
-  Demand,
-  Requirement,
-  ExternalSpec,
-  Implementation,
-  QAReport,
-  Release,
-  AcceptanceReport,
-  DemandDefinitionGate,
-  RequirementDefinitionGate,
-  ExternalDesignGate,
-  EngineeringGate,
-  QAGate,
-  ReleaseGate,
-  AcceptanceGate,
+  standardStageNames,
+  StakeholderRequirementsSpecification,
+  SystemRequirementsSpecification,
+  SystemArchitectureDescription,
+  SoftwareRequirementsSpecification,
+  SoftwareArchitectureDescription,
+  SoftwareElementDesign,
+  ImplementedSoftwareElements,
+  IntegratedSoftware,
+  VerificationResult,
+  ValidationResult,
+  RequirementsGate,
+  SystemRequirementsGate,
+  SoftwareRequirementsGate,
+  ImplementationGate,
+  IntegrationGate,
+  VerificationGate,
+  ValidationGate,
 } from "@mydx-dev/spiral-standard";
 ```
 
-標準Processは以下の順序を想定しています。
+`standardStageNames` は次の8名称だけをStandard工程名として公開します。
 
-```text
-Demand Definition
-↓
-Requirement Definition
-↓
-External Design
-↓
-Engineering
-↓
-QA
-↓
-Release
-↓
-Acceptance
+```ts
+[
+  "要求定義",
+  "システム要件定義",
+  "ソフトウェア要件定義",
+  "実装",
+  "統合",
+  "QA",
+  "検収",
+  "フィードバック",
+];
 ```
 
-Standard Processは、これらのProcessで利用するArtifactモデルとGateを提供します。
+### Composite Gate
 
-ただし、RepositoryやExecutorは提供しません。
-
-例えばEngineering Processで、
+Standard ProcessではProcessとArtifactは1:1ではありません。
 
 ```text
-Implementation
+要求定義 Gate
+└─ StRS
+
+システム要件定義 Gate
+├─ SyRS
+└─ System Architecture Description
+
+ソフトウェア要件定義 Gate
+├─ SRS
+└─ Software Architecture Description
+
+実装 Gate
+├─ Software Element Design
+├─ Implemented Software Element
+└─ project-defined Quality Guard
+
+統合 Gate
+└─ Integrated Software
+
+QA Gate
+└─ Verification Result
+
+検収 Gate
+└─ Validation Result
 ```
 
-をどのように取得するかは利用側が決定します。
+Requirement Allocationは独立Standard Artifactではありません。System Requirement → System Element、Software Requirement → Software Elementのallocation / traceabilityは、それぞれArchitecture Descriptionの責任として保持します。
 
-GitHubを利用する場合、
+### StandardCycle
 
-```text
-Pull Request
-CI
-Review
-Merge状態
-```
-
-などから `Implementation` を復元するRepositoryを実装できます。
-
-Databaseや別の開発基盤を利用する場合は、その環境に合わせたRepositoryを実装できます。
-
-## StandardCycle
-
-`StandardCycle` は標準的なCycle feedbackモデルを提供します。
+`StandardCycle` のCycle completion名は `フィードバック` です。
 
 ```ts
 import { StandardCycle } from "@mydx-dev/spiral-standard";
-```
 
-```ts
 const cycle = new StandardCycle("cycle-1", "none", "none");
 ```
 
-Demandの追加または変更が存在する場合、次Cycleが必要と判定されます。
+新規情報または変更情報が存在する場合に次Cycleを必要とします。
 
 ```text
-newDemand === "exists"
+newInformation === "exists"
 or
-changedDemand === "exists"
-
+changedInformation === "exists"
 ↓
 needNextCycle: true
 ```
 
-StandardCycleも通常のCycleと同様に、`route()` を使ってProcessを構成します。
+Standard Processは次の順序でrouteします。`フィードバック` はProcessとしてrouteせず、Cycle completion / next-cycle decisionとして扱います。
 
 ```ts
-const CycleDefinition = StandardCycle.route(demandDefinition)
-  .route(requirementDefinition)
-  .route(externalDesign)
-  .route(engineering)
+const CycleDefinition = StandardCycle.route(requirements)
+  .route(systemRequirements)
+  .route(softwareRequirements)
+  .route(implementation)
+  .route(integration)
   .route(qa)
-  .route(release)
-  .route(acceptance);
+  .route(validation);
 ```
 
-Processそのものは利用側でRepository、Gate、Executorを組み合わせて定義します。
-
-## Custom Process
-
-Standard Processの利用は必須ではありません。
-
-独自のProcessを追加、削除、置換できます。
-
-例えば独自のSecurity Review Processを追加できます。
+Semantic Completionも同じ工程名を使います。
 
 ```ts
-import {
-  type Artifact,
-  Process,
-  ProcessExecutor,
-  type ProcessGate,
-} from "@mydx-dev/ai-driven-spiral-development";
-
-class SecurityReview implements Artifact {
-  constructor(
-    public readonly id: string,
-    public readonly approved: boolean,
-  ) {}
-}
-
-const securityReviewGate: ProcessGate<SecurityReview> = {
-  verifyStructuralComplete(artifacts) {
-    if (!artifacts.some((artifact) => artifact.approved)) {
-      return {
-        passed: false,
-        errors: ["Security Reviewが承認されていません"],
-      };
-    }
-
-    return {
-      passed: true,
-    };
-  },
-};
-
-const securityReview = new Process({
-  name: "Security Review",
-  artifactRepository: securityReviewRepository,
-  gate: securityReviewGate,
-  executor: securityReviewExecutor,
+const event = new SemanticCompletionEvent({
+  cycleId: "cycle-1",
+  name: "ソフトウェア要件定義",
+  cycleDefinition: CycleDefinition,
 });
 ```
 
-そして通常のProcessと同じようにCycleへ登録できます。
+Cycle feedbackを実行する場合:
 
 ```ts
-const CycleDefinition = MyCycle.route(engineering)
-  .route(securityReview)
-  .route(qa);
+const event = new SemanticCompletionEvent({
+  cycleId: "cycle-1",
+  name: "フィードバック",
+  cycleDefinition: CycleDefinition,
+});
 ```
 
-標準Processの途中へ独自Processを追加することも、標準Processを使わず完全に独自のCycleを構成することもできます。
+## Software Element Implementation
 
-## Integration Responsibilities
-
-このライブラリはGitHub専用でも、特定のAIエージェント専用でもありません。
-
-責務は次のように分離します。
+Software Architecture Descriptionで識別されたSoftware Elementを実装単位にします。
 
 ```text
-Core / Standard Process
-
-何を成果物として観測するか
-何が成立すればProcess完了なのか
-どの順番でProcessを進めるか
-
-────────────────────────
-
-Repository / Executor / ExecutionChannel
-
-GitHubをどう読むか
-Databaseをどう読むか
-Slackへどう送るか
-AI Agentをどう起動するか
-CIの状態をどう取得するか
+Software Architecture Description
+  ↓ dependency graph
+Software Element
+  ↓
+Software Element Design
+  ↓
+Implementation
+  ↓
+Implemented Software Element
+  ↓
+Local Test / Static Analysis / Quality Guard
 ```
 
-例えば、
+依存関係のないElementは並列実行できます。未完了Elementが存在するのに実行可能Elementが0件になる循環依存は `SoftwareElementExecutionPlan` が明示的に失敗させます。
+
+最終的なSRS適合性は実装Gateでは判定せず、QA / Verificationに残します。
+
+## GitHub Binding
+
+GitHubはArtifactの保存・表示・traceability・execution integrationの一実装です。
 
 ```text
-GitHub Issue
-↓
-ArtifactRepository
-↓
-Artifact
-↓
-ProcessGate
+Core / Standard
+  Artifact / Gate / Cycle
+        ↑
+        │ Binding
+        ↓
+GitHub Issue / PR / Check / Comment
 ```
 
-という構成もできますし、
+`@mydx-dev/spiral-standard-github` のSemantic Completion schemaはStandardと同じ8工程名を使用します。
+
+GitHub上で各8工程ArtifactをどのIssue / PR / Checkへ対応付けるかは、Standard本体とは分離してBinding側で定義します。
+
+## Migration from the legacy Standard Process
+
+旧7工程のStandard Process名は廃止されました。
 
 ```text
-Database
-↓
-ArtifactRepository
-↓
-Artifact
-↓
-ProcessGate
+Demand Definition
+Requirement Definition
+External Design
+Engineering
+QA
+Release
+Acceptance
 ```
 
-でも構いません。
-
-同様にExecutorの実行先も、
+新しいStandard工程名へ移行してください。
 
 ```text
-Slack
-GitHub
-AI Agent
-HTTP API
-Queue
+要求定義
+システム要件定義
+ソフトウェア要件定義
+実装
+統合
+QA
+検収
+フィードバック
 ```
 
-など任意です。
+旧Artifact / Gateは移行期間中のみdeprecated compatibility APIとして残し、`legacy` namespaceからも参照できます。新規実装では8工程のArtifact / Gateを使用してください。
 
-外部サービス固有の処理をCoreへ持ち込まず、Repository / Executor境界で吸収することを想定しています。
+詳細は [8工程Standard Process移行ガイド](docs/migration-standard-8-process.md) を参照してください。
 
-## Architecture
+## Custom Process
 
-全体像は以下です。
+Standard Processの利用は必須ではありません。Core APIを使えば、独自のArtifact、Gate、Executor、Cycleを構成できます。
 
-```text
-                    SemanticCompletionEvent
-                              │
-                              ▼
-                         ┌─────────┐
-                         │ Spiral  │
-                         └────┬────┘
-                              │
-                              ▼
-                         ┌─────────┐
-                         │  Cycle  │
-                         └────┬────┘
-                              │
-              ┌───────────────┴───────────────┐
-              ▼                               ▼
-         ┌─────────┐                    ┌─────────┐
-         │ Process │                    │ Process │
-         └────┬────┘                    └─────────┘
-              │
-      ┌───────┼────────┐
-      ▼       ▼        ▼
- Repository  Gate   Executor
-      │                 │
-      ▼                 ▼
-  Artifact       ExecutionChannel
-                         │
-                         ▼
-                External System
-```
+Standard Processの途中へプロジェクト固有Processを追加することも可能ですが、そのProcessはStandard 8工程とは区別してください。
 
 ## Documentation
-
-READMEは利用開始のためのガイドです。
-
-AI駆動スパイラル開発の背景や理論については `docs/theory` を参照してください。
 
 - [事前準備](docs/theory/0.preparation.md)
 - [AI駆動スパイラル開発](docs/theory/1.spiral-development.md)
 - [サイクルモデル](docs/theory/2.cycle-model.md)
-- [標準プロセスモデル](docs/theory/3.process-model.md)
-- [Engineeringプロセス](docs/theory/4.process-model.md)
-- [QA / Release / Acceptance](docs/theory/5.process-model.md)
+- [System Engineering Process Model](docs/theory/3.process-model.md)
+- [Software Engineering Process Model](docs/theory/4.process-model.md)
+- [QA / 検収 / フィードバック](docs/theory/5.process-model.md)
 - [Change Locality / Context Locality](docs/theory/6.change-context-locality.md)
-
-Portable Distributionのpackage責務と依存方向は [docs/portable-distribution.md](docs/portable-distribution.md) を参照してください。
+- [Portable Distribution](docs/portable-distribution.md)
 
 ## Packages
 
@@ -687,10 +327,6 @@ Portable Distributionのpackage責務と依存方向は [docs/portable-distribut
 @mydx-dev/spiral-quality
 @mydx-dev/spiral
 ```
-
-GitHub:
-
-https://github.com/mydx-dev/ai-driven-spiral-development
 
 ## License
 

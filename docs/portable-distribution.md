@@ -2,11 +2,9 @@
 
 ## 1. 目的
 
-`ai-driven-spiral-development` の実装を、特定のTemplate Repositoryに依存せず、既存の任意Repositoryへ導入可能なPortable Distributionとして提供する。
+`ai-driven-spiral-development` を特定のTemplate Repositoryに依存せず、既存の任意Repositoryへ導入可能なPortable Distributionとして提供する。
 
-Portable Distributionでは、source-level dependencyとinstall-time dependencyの両方で責務境界を維持し、Artifact Adapter、Process preset、Quality Guardを独立してCompositionできることを重視する。
-
-npm packageは `@mydx-dev` scopeへ統一する。
+source-level dependencyとinstall-time dependencyの両方で責務境界を維持し、Artifact Adapter、Process preset、Quality Guardを独立してCompositionできることを重視する。
 
 ## 2. package構成
 
@@ -15,7 +13,7 @@ npm packageは `@mydx-dev` scopeへ統一する。
   = Core
 
 @mydx-dev/spiral-standard
-  = Standard Process
+  = 8工程Standard Process
 
 @mydx-dev/spiral-github
   = GitHub transport / persistence foundation
@@ -30,15 +28,9 @@ npm packageは `@mydx-dev` scopeへ統一する。
   = CLI / Composition Tool
 ```
 
-GitHub Repository自体は分割せず、同一Repository内で各npm packageの責務を分離する。
+## 3. Core
 
-## 3. package責務
-
-### `@mydx-dev/ai-driven-spiral-development`
-
-Core package。
-
-スパイラル開発の抽象モデルと進行制御を提供する。
+`@mydx-dev/ai-driven-spiral-development` はスパイラル開発の抽象モデルと進行制御だけを提供する。
 
 ```text
 Artifact
@@ -53,42 +45,73 @@ SemanticCompletionEvent
 Spiral
 ```
 
-Coreは特定のArtifact保存先、Process preset、GitHub、Quality Guard、CLIを知らない。
+Coreは特定のArtifact保存先、Standard Process、GitHub、Quality Guard、CLIを知らない。
 
-禁止する依存:
+## 4. Standard Process
+
+`@mydx-dev/spiral-standard` はAI駆動スパイラルの8工程で利用するArtifact、Gate、Cycle modelを提供する。
 
 ```text
-Core
--X-> @mydx-dev/spiral-standard
--X-> @mydx-dev/spiral-github
--X-> @mydx-dev/spiral-standard-github
--X-> @mydx-dev/spiral-quality
--X-> @mydx-dev/spiral
+要求定義
+→ StRS
+
+システム要件定義
+→ SyRS
+→ System Architecture Description
+
+ソフトウェア要件定義
+→ SRS
+→ Software Architecture Description
+
+実装
+→ Software Element Design
+→ Implemented Software Element
+
+統合
+→ Integrated Software
+
+QA
+→ Verification Result
+
+検収
+→ Validation Result
+
+フィードバック
+→ StandardCycle.feedback()
 ```
 
-### `@mydx-dev/spiral-standard`
+ProcessとArtifactは1:1ではない。システム要件定義とソフトウェア要件定義は複数Artifactを一体で評価するComposite Gateを持つ。
 
-Standard Process package。
-
-Coreの抽象モデルを利用し、AI駆動スパイラル開発で標準採用するArtifact、Gate、Cycle modelを定義する。
+正規public APIの中心は次の通り。
 
 ```text
 StandardCycle
-Demand
-Requirement
-ExternalSpec
-Implementation
-QAReport
-Release
-AcceptanceReport
-DemandDefinitionGate
-RequirementDefinitionGate
-ExternalDesignGate
-EngineeringGate
-QAGate
-ReleaseGate
-AcceptanceGate
+standardProcessNames
+standardStageNames
+
+StakeholderRequirementsSpecification
+SystemRequirementsSpecification
+SystemArchitectureDescription
+SoftwareRequirementsSpecification
+SoftwareArchitectureDescription
+SoftwareElementDesign
+ImplementedSoftwareElements
+IntegratedSoftware
+VerificationResult
+ValidationResult
+
+RequirementsGate
+SystemRequirementsGate
+SoftwareRequirementsGate
+ImplementationGate
+IntegrationGate
+VerificationGate
+ValidationGate
 ```
+
+Requirement Allocationは独立Standard Artifactではなく、Architecture Descriptionのallocation / traceabilityとして保持する。
+
+旧7工程Artifact / Gateは段階的移行のためdeprecated compatibility APIとして扱い、新しいStandard工程定義には使用しない。
 
 依存方向:
 
@@ -100,11 +123,9 @@ AcceptanceGate
 
 Standard Processは永続化方式を定義しない。
 
-### `@mydx-dev/spiral-github`
+## 5. GitHub foundation
 
-GitHub transport / persistence foundation package。
-
-特定のProcess presetに依存せず、GitHub resourceをArtifact persistenceとして利用するための汎用機能を提供する。
+`@mydx-dev/spiral-github` は特定のProcess presetに依存しないGitHub transport / persistence primitiveを提供する。
 
 ```text
 GitHub client abstraction
@@ -113,8 +134,6 @@ Issue ID mapping
 section parsing / writing
 resource lookup / persistence primitives
 ```
-
-このpackageはStandard Process固有の `Demand`、`ExternalSpec`、`QAReport` 等を知らない。
 
 禁止する依存:
 
@@ -126,20 +145,24 @@ resource lookup / persistence primitives
 -X-> @mydx-dev/spiral
 ```
 
-### `@mydx-dev/spiral-standard-github`
+## 6. Standard × GitHub Binding
 
-Standard ProcessとGitHub persistenceを結合するbinding package。
+`@mydx-dev/spiral-standard-github` はStandard ProcessとGitHub persistenceを結合する。
+
+公開Semantic Completion schemaはStandardと同じ8工程名を使用する。
 
 ```text
-DemandRepository
-RequirementRepository
-ExternalSpecRepository
-ImplementationRepository
-QAReportRepository
-ReleaseRepository
-AcceptanceReportRepository
-StandardCycleRepository
+要求定義
+システム要件定義
+ソフトウェア要件定義
+実装
+統合
+QA
+検収
+フィードバック
 ```
+
+GitHub resourceから各Standard Artifactをどのように復元するかはBindingの責務であり、Standard packageへGitHub依存を持ち込まない。
 
 依存方向:
 
@@ -150,13 +173,9 @@ StandardCycleRepository
         └─→ @mydx-dev/spiral-github
 ```
 
-このpackageはProcess progressionそのものを実行せず、Standard ProcessのArtifact contractとGitHub persistence primitiveを接続する。
+## 7. Quality Guard
 
-### `@mydx-dev/spiral-quality`
-
-Quality Guard package。
-
-生成・変更されたsoftware artifactがquality policyを満たしているかを静的に検査する。
+`@mydx-dev/spiral-quality` は生成・変更されたsoftware artifactがquality policyを満たすかを静的に検査する。
 
 ```text
 dependency direction
@@ -167,17 +186,24 @@ complexity
 architecture constraint
 ```
 
-Quality Guardは `Spiral`、`Cycle`、`Process` のruntime execution graphへ組み込まない。
+Quality GuardはCore runtime execution graphへ依存しない。実装工程ではproject-defined Quality Guard結果を `ImplementationGate` へ注入できる。
 
-### `@mydx-dev/spiral`
+## 8. CLI
 
-CLI / Composition Tool package。
+`@mydx-dev/spiral` はPortable Distribution componentを利用Repositoryへ導入する最外層Composition Rootとする。
 
-Portable Distributionのcomponentを利用Repositoryへ選択的に導入する最外層のComposition Rootとする。
+```bash
+pnpm dlx @mydx-dev/spiral init \
+  --artifact github \
+  --process standard \
+  --quality
+```
 
-CLI自身はCore model、Process、GitHub persistence、binding、Quality analysis logicを再実装しない。
+Standard + GitHub構成で生成するSemantic Completion workflowは8工程名だけを入力候補として公開する。
 
-## 4. dependency graph
+GitHub Artifact mappingの詳細をCLIへ重複実装せず、Binding packageをsource of truthとする。
+
+## 9. dependency graph
 
 ```text
 @mydx-dev/spiral-standard
@@ -209,7 +235,7 @@ Standard-GitHub → Quality / CLI
 runtime package → Quality
 ```
 
-## 5. Composition model
+## 10. Composition model
 
 Artifact AdapterとProcess presetは独立した選択軸とする。
 
@@ -222,8 +248,6 @@ Quality Guard
 ```
 
 Artifact AdapterとProcessの組み合わせに固有mappingが必要な場合は、どちらかへ混在させずbinding packageとして表現する。
-
-標準構成:
 
 ```text
 --artifact github
@@ -239,188 +263,58 @@ github × standard
 → @mydx-dev/spiral-quality
 ```
 
-CLI:
+## 11. public API
 
-```bash
-pnpm dlx @mydx-dev/spiral init \
-  --artifact github \
-  --process standard \
-  --quality
-```
-
-この構成では次を導入する。
-
-```text
-@mydx-dev/ai-driven-spiral-development
-@mydx-dev/spiral-standard
-@mydx-dev/spiral-github
-@mydx-dev/spiral-standard-github
-@mydx-dev/spiral-quality
-```
-
-Custom ProcessとGitHubを組み合わせる場合、`@mydx-dev/spiral-github` 自体はStandard Processを持ち込まない。利用側または独立packageでmappingを提供する。
-
-## 6. install-time dependency boundary
-
-### Coreのみ
-
-```bash
-pnpm add @mydx-dev/ai-driven-spiral-development
-```
-
-### Standard Process
-
-```bash
-pnpm add \
-  @mydx-dev/ai-driven-spiral-development \
-  @mydx-dev/spiral-standard
-```
-
-### GitHub foundation
-
-```bash
-pnpm add @mydx-dev/spiral-github
-```
-
-Standard Processは導入されない。
-
-### Standard Process + GitHub
-
-```bash
-pnpm add \
-  @mydx-dev/ai-driven-spiral-development \
-  @mydx-dev/spiral-standard \
-  @mydx-dev/spiral-github \
-  @mydx-dev/spiral-standard-github
-```
-
-### Quality Guard
-
-```bash
-pnpm add -D @mydx-dev/spiral-quality
-```
-
-## 7. public API
-
-### Core
+Core:
 
 ```ts
 import {
-  Artifact,
-  ArtifactRepository,
   Cycle,
   Process,
   ProcessExecutor,
-  ProcessGate,
   SemanticCompletionEvent,
   Spiral,
 } from "@mydx-dev/ai-driven-spiral-development";
 ```
 
-### Standard Process
+Standard:
 
 ```ts
 import {
   StandardCycle,
-  Demand,
-  Requirement,
-  ExternalSpec,
-  Implementation,
-  QAReport,
-  Release,
-  AcceptanceReport,
+  standardStageNames,
+  RequirementsGate,
+  SystemRequirementsGate,
+  SoftwareRequirementsGate,
+  ImplementationGate,
+  IntegrationGate,
+  VerificationGate,
+  ValidationGate,
 } from "@mydx-dev/spiral-standard";
 ```
 
-### GitHub foundation
+GitHub foundation:
 
 ```ts
 import { GitHubIssue, GitHubIssueId } from "@mydx-dev/spiral-github";
 ```
 
-### Standard Process × GitHub
+Standard × GitHub:
 
 ```ts
 import {
-  DemandRepository,
-  RequirementRepository,
-  ExternalSpecRepository,
-  ImplementationRepository,
-  QAReportRepository,
-  ReleaseRepository,
-  AcceptanceReportRepository,
-  StandardCycleRepository,
+  createStandardGitHubRuntime,
+  standardGitHubStageNames,
 } from "@mydx-dev/spiral-standard-github";
 ```
 
-### Quality Guard
+Quality:
 
 ```ts
 import { runQualityGuard } from "@mydx-dev/spiral-quality";
 ```
 
-### CLI
-
-```bash
-pnpm dlx @mydx-dev/spiral init
-```
-
-## 8. publish単位と順序
-
-publish単位は次の6packageとする。
-
-```text
-@mydx-dev/ai-driven-spiral-development
-@mydx-dev/spiral-standard
-@mydx-dev/spiral-github
-@mydx-dev/spiral-standard-github
-@mydx-dev/spiral-quality
-@mydx-dev/spiral
-```
-
-依存解決を考慮し、初回publishは概ね次の順序で行う。
-
-```text
-1. Core
-2. Standard / GitHub
-3. Standard-GitHub
-4. Quality
-5. CLI
-```
-
-Qualityはruntime dependency graphから独立しているため、実際のrelease automationでは独立publish可能である。
-
-## 9. npm scope migration
-
-Portable Distributionでは `@mydx-dev` scopeを正規scopeとする。
-
-旧Core package:
-
-```text
-ai-driven-spiral-development
-```
-
-新Core package:
-
-```text
-@mydx-dev/ai-driven-spiral-development
-```
-
-旧Coreは新packageとしてscoped Coreを公開した後も直ちにunpublishしない。新Coreの公開・install・import・buildを確認した後、旧packageをdeprecatedとして新packageへ誘導する。
-
-```bash
-npm deprecate ai-driven-spiral-development \
-  "Moved to @mydx-dev/ai-driven-spiral-development"
-```
-
-旧Standard subpathを利用している場合も独立packageへ移行する。
-
-```text
-ai-driven-spiral-development/standard-process
-→ @mydx-dev/spiral-standard
-```
-
-## 10. 利用Repositoryに残す責務
+## 12. 利用Repositoryに残す責務
 
 Portable Distributionはproject固有情報を所有しない。
 
@@ -439,11 +333,9 @@ package側に置くもの:
 
 ```text
 再利用可能なCore model
-Standard Process model
+8工程Standard Process model
 汎用GitHub primitive
 Standard × GitHub mapping
 Quality policy/tooling
 Composition CLI
 ```
-
-この境界により、特定Template Repositoryへ依存せず、既存RepositoryへPortable Distributionを導入できる状態を維持する。

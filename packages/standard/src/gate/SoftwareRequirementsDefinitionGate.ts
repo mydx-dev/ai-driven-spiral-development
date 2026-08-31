@@ -2,9 +2,8 @@ import type {
   GatePass,
   ProcessGate,
 } from "@mydx-dev/ai-driven-spiral-development";
-import type { RequirementAllocation } from "../artifact/RequirementAllocation.js";
 import type { SoftwareRequirementsSpecification } from "../artifact/SoftwareRequirementsSpecification.js";
-import type { SystemArchitecture } from "../artifact/SystemArchitecture.js";
+import type { SystemArchitectureDescription } from "../artifact/SystemArchitectureDescription.js";
 import type {
   SystemRequirement,
   SystemRequirementsSpecification,
@@ -12,8 +11,7 @@ import type {
 
 export class SoftwareRequirementsDefinitionGate implements ProcessGate<SoftwareRequirementsSpecification> {
   constructor(
-    public readonly systemArchitectures: SystemArchitecture[],
-    public readonly requirementAllocations: RequirementAllocation[],
+    public readonly systemArchitectures: SystemArchitectureDescription[],
     public readonly systemRequirementsSpecifications: SystemRequirementsSpecification[],
   ) {}
 
@@ -37,33 +35,31 @@ export class SoftwareRequirementsDefinitionGate implements ProcessGate<SoftwareR
         ),
       ),
     );
-    const softwareElementIds = new Set(
-      this.systemArchitectures.flatMap((architecture) =>
+    const softwareAllocationKeys = new Set<string>();
+
+    for (const architecture of this.systemArchitectures) {
+      if (architecture.elements === undefined) {
+        errors.push(`${architecture.id}: System Elementsが未確定です`);
+        continue;
+      }
+
+      if (architecture.requirementAllocations === undefined) {
+        errors.push(`${architecture.id}: Requirement allocationが未確定です`);
+        continue;
+      }
+
+      const softwareElementIds = new Set(
         (architecture.elements ?? [])
           .filter((element) => element.type === "software")
           .map((element) => element.id),
-      ),
-    );
-    const softwareAllocationKeys = new Set<string>();
+      );
 
-    for (const allocation of this.requirementAllocations) {
-      if (allocation.allocations === undefined) {
-        errors.push(`${allocation.id}: Requirement allocationが未確定です`);
-        continue;
-      }
-
-      if (allocation.allocations === null) {
-        continue;
-      }
-
-      for (const entry of allocation.allocations) {
-        for (const elementId of entry.elementIds) {
-          if (!softwareElementIds.has(elementId)) {
-            continue;
-          }
+      for (const allocation of architecture.requirementAllocations ?? []) {
+        for (const elementId of allocation.elementIds) {
+          if (!softwareElementIds.has(elementId)) continue;
 
           softwareAllocationKeys.add(
-            `${allocation.id}:${entry.requirement.specificationId}:${entry.requirement.requirementId}:${elementId}`,
+            `${architecture.id}:${allocation.requirement.specificationId}:${allocation.requirement.requirementId}:${elementId}`,
           );
         }
       }
@@ -140,31 +136,25 @@ export class SoftwareRequirementsDefinitionGate implements ProcessGate<SoftwareR
 
           if (requirement.tracesTo.length === 0) {
             errors.push(
-              `${specification.id}/${requirement.id}: Requirement Allocationへのtraceabilityがありません`,
+              `${specification.id}/${requirement.id}: System Architecture allocationへのtraceabilityがありません`,
             );
           }
 
           for (const trace of requirement.tracesTo) {
             if (
-              !trace.allocationId.trim() ||
+              !trace.architectureId.trim() ||
               !trace.systemRequirementSpecificationId.trim() ||
               !trace.systemRequirementId.trim() ||
               !trace.softwareElementId.trim()
             ) {
               errors.push(
-                `${specification.id}/${requirement.id}: Allocation traceabilityが不正です`,
+                `${specification.id}/${requirement.id}: System Architecture allocation traceabilityが不正です`,
               );
               continue;
             }
 
             const systemRequirementKey = `${trace.systemRequirementSpecificationId}:${trace.systemRequirementId}`;
-            const allocationKey = `${trace.allocationId}:${systemRequirementKey}:${trace.softwareElementId}`;
-
-            if (!softwareElementIds.has(trace.softwareElementId)) {
-              errors.push(
-                `${specification.id}/${requirement.id}: Software以外のSystem Elementを参照しています`,
-              );
-            }
+            const allocationKey = `${trace.architectureId}:${systemRequirementKey}:${trace.softwareElementId}`;
 
             if (!softwareAllocationKeys.has(allocationKey)) {
               errors.push(

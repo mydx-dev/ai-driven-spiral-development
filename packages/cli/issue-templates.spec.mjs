@@ -15,35 +15,27 @@ const temporaryRepository = () =>
   mkdtempSync(join(tmpdir(), "spiral-cli-template-test-"));
 
 describe("Standard × GitHub Issue Templates", () => {
-  it("github × standardでBinding対応Template群を生成する", () => {
+  it("github × standardでは8工程Artifact用の汎用Templateを生成する", () => {
     const cwd = temporaryRepository();
     try {
       initRepository({ cwd, artifact: "github", process: "standard" });
 
-      expect(
-        existsSync(join(cwd, ".github/ISSUE_TEMPLATE/spiral-cycle.md")),
-      ).toBe(true);
+      const path = join(cwd, ".github/ISSUE_TEMPLATE/spiral-artifact.md");
+      expect(existsSync(path)).toBe(true);
+      expect(readFileSync(path, "utf8")).toContain("## Artifact");
+      expect(readFileSync(path, "utf8")).toContain("- Process:");
       expect(existsSync(join(cwd, ".github/ISSUE_TEMPLATE/demand.md"))).toBe(
-        true,
+        false,
       );
       expect(existsSync(join(cwd, ".github/ISSUE_TEMPLATE/feature.md"))).toBe(
-        true,
+        false,
       );
-      expect(
-        existsSync(join(cwd, ".github/ISSUE_TEMPLATE/spiral-artifact.md")),
-      ).toBe(false);
-      expect(
-        readFileSync(join(cwd, ".github/ISSUE_TEMPLATE/demand.md"), "utf8"),
-      ).toContain("## 要件");
-      expect(
-        readFileSync(join(cwd, ".github/ISSUE_TEMPLATE/feature.md"), "utf8"),
-      ).toContain("## 対象要件");
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
 
-  it("github × customではStandard固有Templateを生成しない", () => {
+  it("github × customでも汎用Artifact Templateを生成する", () => {
     const cwd = temporaryRepository();
     try {
       initRepository({ cwd, artifact: "github", process: "custom" });
@@ -66,13 +58,15 @@ describe("Standard × GitHub Issue Templates", () => {
     const cwd = temporaryRepository();
     try {
       mkdirSync(join(cwd, ".github/ISSUE_TEMPLATE"), { recursive: true });
-      const path = join(cwd, ".github/ISSUE_TEMPLATE/demand.md");
-      writeFileSync(path, "existing demand template\n");
+      const path = join(cwd, ".github/ISSUE_TEMPLATE/spiral-artifact.md");
+      writeFileSync(path, "existing artifact template\n");
 
       expect(() =>
         initRepository({ cwd, artifact: "github", process: "standard" }),
-      ).toThrow("manual decision required: .github/ISSUE_TEMPLATE/demand.md");
-      expect(readFileSync(path, "utf8")).toBe("existing demand template\n");
+      ).toThrow(
+        "manual decision required: .github/ISSUE_TEMPLATE/spiral-artifact.md",
+      );
+      expect(readFileSync(path, "utf8")).toBe("existing artifact template\n");
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
