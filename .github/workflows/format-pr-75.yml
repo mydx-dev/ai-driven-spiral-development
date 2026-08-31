@@ -1,0 +1,32 @@
+name: Format PR 75
+
+on:
+  push:
+    branches:
+      - feature/75-standard-eight-process-api
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/75-standard-eight-process-api
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prettier . --write
+      - run: rm .github/workflows/format-pr-75.yml
+      - run: git config user.name github-actions-bot
+      - run: git config user.email github-actions-bot@users.noreply.github.com
+      - run: git add -A
+      - run: git commit -m "chore: apply prettier 3.9.6"
+      - run: git push origin HEAD:feature/75-standard-eight-process-api
