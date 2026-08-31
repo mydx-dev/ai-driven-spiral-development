@@ -1,5 +1,19 @@
-import type { Artifact, Process } from "@mydx-dev/ai-driven-spiral-development";
-import { StandardCycle } from "./StandardCycle.js";
+import type {
+  Artifact,
+  CycleClass,
+  Process,
+} from "@mydx-dev/ai-driven-spiral-development";
+import {
+  StandardCycle,
+  type FeedbackChangeState,
+} from "./StandardCycle.js";
+import type { StandardProcessName } from "./StandardProcess.js";
+
+type ConfiguredStandardCycleClass = CycleClass<
+  StandardCycle,
+  StandardProcessName,
+  [string, FeedbackChangeState, FeedbackChangeState]
+>;
 
 export const configureStandardCycle = <
   TRequirementsArtifact extends Artifact,
@@ -48,7 +62,7 @@ export const configureStandardCycle = <
   integration: Process<"統合", TIntegrationArtifact, TIntegrationMessage>;
   verification: Process<"QA", TVerificationArtifact, TVerificationMessage>;
   validation: Process<"検収", TValidationArtifact, TValidationMessage>;
-}) => {
+}): ConfiguredStandardCycleClass => {
   class ConfiguredStandardCycle extends StandardCycle {}
 
   return ConfiguredStandardCycle.route(requirements)
