@@ -142,7 +142,7 @@ import {
   "QA",
   "検収",
   "フィードバック",
-]
+];
 ```
 
 ### Composite Gate
