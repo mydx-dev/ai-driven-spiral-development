@@ -7,6 +7,7 @@ import {
   StakeholderRequirementsSpecification,
   SystemArchitectureDescription,
   SystemRequirementsSpecification,
+  type StandardStageName,
   ValidationResult,
   VerificationResult,
 } from "@mydx-dev/spiral-standard";
@@ -255,4 +256,9 @@ export const standardArtifactIssueCodecsByStage = {
   QA: [verificationResultIssueCodec],
   検収: [validationResultIssueCodec],
   フィードバック: [feedbackStateIssueCodec],
-} as const;
+} as const satisfies Record<StandardStageName, readonly StandardArtifactIssueCodec<StandardArtifact>[]>;
+
+export const artifactIssueCodecsForSemanticCompletion = (
+  name: StandardStageName,
+): readonly StandardArtifactIssueCodec<StandardArtifact>[] =>
+  standardArtifactIssueCodecsByStage[name];
