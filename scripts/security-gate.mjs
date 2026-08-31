@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { extname, join, relative } from "node:path";
+import process from "node:process";
 
 const root = process.cwd();
 const ignoredDirectories = new Set([
@@ -112,10 +113,12 @@ for (const manifestPath of packageManifests) {
 }
 
 if (failures.length > 0) {
-  console.error("Security Gate failed:\n" + failures.map((item) => `- ${item}`).join("\n"));
+  process.stderr.write(
+    "Security Gate failed:\n" + failures.map((item) => `- ${item}`).join("\n") + "\n",
+  );
   process.exit(1);
 }
 
-console.log(
-  `Security Gate passed: scanned ${files.length} text files, pinned Actions, lifecycle scripts, and publish allowlists.`,
+process.stdout.write(
+  `Security Gate passed: scanned ${files.length} text files, pinned Actions, lifecycle scripts, and publish allowlists.\n`,
 );
