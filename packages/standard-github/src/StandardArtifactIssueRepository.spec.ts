@@ -1,14 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
 import type { GitHubClient } from "@mydx-dev/spiral-github";
 import {
+  SoftwareArchitectureDescription,
   StakeholderRequirementsSpecification,
   SystemRequirementsSpecification,
 } from "@mydx-dev/spiral-standard";
 import {
+  softwareArchitectureDescriptionIssueCodec,
   stakeholderRequirementsIssueCodec,
+  standardArtifactIssueCodecs,
+  standardArtifactIssueCodecsByStage,
   systemRequirementsIssueCodec,
 } from "./StandardArtifactIssueCodecs.js";
 import { StandardArtifactIssueRepository } from "./StandardArtifactIssueRepository.js";
+import {
+  feedbackStateIssueCodec,
+  StandardFeedbackState,
+} from "./StandardFeedbackState.js";
 
 type StoredIssue = {
   number: number;
@@ -52,9 +60,6 @@ const inMemoryClient = () => {
       createIssue,
       updateIssue,
     } as unknown as GitHubClient,
-    searchIssues,
-    createIssue,
-    updateIssue,
   };
 };
 
@@ -102,6 +107,36 @@ const createSyRs = () =>
     null,
     null,
     null,
+  );
+
+const createSoftwareArchitecture = () =>
+  new SoftwareArchitectureDescription(
+    "software-architecture-order",
+    "cycle-1",
+    [
+      { id: "api", name: "API", responsibilities: ["receive order"] },
+      {
+        id: "repository",
+        name: "Repository",
+        responsibilities: ["persist order"],
+      },
+    ],
+    [
+      {
+        sourceElementId: "api",
+        targetElementId: "repository",
+        type: "dependency",
+        description: "API persists through repository",
+      },
+    ],
+    [],
+    [
+      {
+        requirement: { specificationId: "srs-order", requirementId: "swr-1" },
+        elementIds: ["api"],
+      },
+    ],
+    [],
   );
 
 describe("StandardArtifactIssueRepository", () => {
@@ -154,6 +189,24 @@ describe("StandardArtifactIssueRepository", () => {
     ]);
   });
 
+  it("Software Architecture dependency graphをIssueへ機械可読Artifactとは別に表示する", async () => {
+    const { client, issues } = inMemoryClient();
+    const repository = new StandardArtifactIssueRepository(
+      client,
+      softwareArchitectureDescriptionIssueCodec,
+    );
+
+    await repository.save(createSoftwareArchitecture());
+
+    expect(issues[0].body).toContain("## Dependency Graph");
+    expect(issues[0].body).toContain("`api` -> `repository`");
+    const restored = await repository.find("software-architecture-order");
+    expect(restored).toBeInstanceOf(SoftwareArchitectureDescription);
+    expect(restored?.dependencyGraph().get("api")).toEqual(
+      new Set(["repository"]),
+    );
+  });
+
   it("Gate ResultをIssueへ記録してもArtifact Dataを保持する", async () => {
     const { client, issues } = inMemoryClient();
     const repository = new StandardArtifactIssueRepository(
@@ -172,6 +225,77 @@ describe("StandardArtifactIssueRepository", () => {
     expect((await repository.find("strs-order"))?.requirements?.[0].id).toBe(
       "need-1",
     );
+  });
+
+  it("複数Artifactを持つProcessのComposite Gate Resultを対象Issueすべてへ保存する", async () => {
+    const { client, issues } = inMemoryClient();
+    const repository = new StandardArtifactIssueRepository(
+      client,
+      stakeholderRequirementsIssueCodec,
+    );
+    await repository.save(createStRs());
+    await new StandardArtifactIssueRepository(
+      client,
+      systemRequirementsIssueCodec,
+    ).save(createSyRs());
+
+    await repository.saveCompositeGateResult({
+      processName: "システム要件定義",
+      artifactIds: ["strs-order", "syrs-order"],
+      gateResult: { passed: false, errors: ["Architecture未完了"] },
+    });
+
+    expect(issues[0].body).toContain("## Composite Gate Result");
+    expect(issues[1].body).toContain("## Composite Gate Result");
+    expect(issues[0].body).toContain("`システム要件定義`");
+    expect(issues[1].body).toContain("Architecture未完了");
+  });
+
+  it("Feedback / next-cycle decision stateをCycleに紐づけて復元できる", async () => {
+    const { client, issues } = inMemoryClient();
+    const repository = new StandardArtifactIssueRepository(
+      client,
+      feedbackStateIssueCodec,
+    );
+    const state = new StandardFeedbackState(
+      "feedback-cycle-1",
+      "cycle-1",
+      "exists",
+      "none",
+      true,
+    );
+
+    await repository.save(state);
+
+    expect(issues[0].body).toContain("## Next-cycle Decision");
+    expect(issues[0].body).toContain("Start next Cycle");
+    expect(await repository.find("feedback-cycle-1")).toEqual(state);
+  });
+
+  it("8工程mappingに旧RequirementAllocation / SoftwareDesign schemaを残さない", () => {
+    expect(Object.keys(standardArtifactIssueCodecs)).toEqual([
+      "stakeholderRequirements",
+      "systemRequirements",
+      "systemArchitectureDescription",
+      "softwareRequirements",
+      "softwareArchitectureDescription",
+      "softwareElementDesign",
+      "implementedSoftwareElements",
+      "integratedSoftware",
+      "verificationResult",
+      "validationResult",
+      "feedbackState",
+    ]);
+    expect(Object.keys(standardArtifactIssueCodecsByStage)).toEqual([
+      "要求定義",
+      "システム要件定義",
+      "ソフトウェア要件定義",
+      "実装",
+      "統合",
+      "QA",
+      "検収",
+      "フィードバック",
+    ]);
   });
 
   it("同一Artifact IDが複数Issueへmappingされていれば復元を拒否する", async () => {
