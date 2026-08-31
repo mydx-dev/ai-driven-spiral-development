@@ -48,7 +48,10 @@ const secretPatterns = [
 const dangerousSourcePatterns = [
   ["eval", /\beval\s*\(/],
   ["Function constructor", /\bnew\s+Function\s*\(/],
-  ["download-and-execute shell", /\b(?:curl|wget)\b[^\n|]*\|\s*(?:sh|bash)\b/],
+  [
+    "download-and-execute shell",
+    /\b(?:curl|wget)\b[^\n|]*\|\s*(?:sh|bash)\b/,
+  ],
 ];
 
 for (const file of files) {
@@ -104,17 +107,23 @@ for (const manifestPath of packageManifests) {
   const manifest = JSON.parse(await readFile(join(root, manifestPath), "utf8"));
   for (const scriptName of Object.keys(manifest.scripts ?? {})) {
     if (lifecycleScripts.has(scriptName)) {
-      failures.push(`${manifestPath}: lifecycle script ${scriptName} is not allowed`);
+      failures.push(
+        `${manifestPath}: lifecycle script ${scriptName} is not allowed`,
+      );
     }
   }
   if (!Array.isArray(manifest.files) || manifest.files.length === 0) {
-    failures.push(`${manifestPath}: public package must declare an explicit files allowlist`);
+    failures.push(
+      `${manifestPath}: public package must declare an explicit files allowlist`,
+    );
   }
 }
 
 if (failures.length > 0) {
   process.stderr.write(
-    "Security Gate failed:\n" + failures.map((item) => `- ${item}`).join("\n") + "\n",
+    "Security Gate failed:\n" +
+      failures.map((item) => `- ${item}`).join("\n") +
+      "\n",
   );
   process.exit(1);
 }
