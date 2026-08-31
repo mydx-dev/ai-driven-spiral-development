@@ -51,8 +51,7 @@ export type StandardGitHubExecutionMessage =
     };
 
 export type StandardGitHubCirculateResult =
-  | { readonly status: "processed" }
-  | { readonly status: "duplicate" };
+  { readonly status: "processed" } | { readonly status: "duplicate" };
 
 type IssueComment = {
   readonly body: string | null;
@@ -228,11 +227,7 @@ export const createStandardGitHubRuntime = ({
         name: "システム要件定義",
         artifactRepository: repositories.demandRepository,
         gate: new RequirementDefinitionGate(),
-        executor: createExecutor<Demand>(
-          "システム要件定義",
-          eventId,
-          channel,
-        ),
+        executor: createExecutor<Demand>("システム要件定義", eventId, channel),
       });
       const softwareRequirements = new Process({
         name: "ソフトウェア要件定義",
