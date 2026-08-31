@@ -1,9 +1,11 @@
 import {
-  RequirementAllocation,
-  SoftwareDesign,
+  ImplementedSoftwareElements,
+  IntegratedSoftware,
+  SoftwareArchitectureDescription,
+  SoftwareElementDesign,
   SoftwareRequirementsSpecification,
   StakeholderRequirementsSpecification,
-  SystemArchitecture,
+  SystemArchitectureDescription,
   SystemRequirementsSpecification,
   ValidationResult,
   VerificationResult,
@@ -56,38 +58,24 @@ export const systemRequirementsIssueCodec: StandardArtifactIssueCodec<SystemRequ
       ),
   };
 
-export const systemArchitectureIssueCodec: StandardArtifactIssueCodec<SystemArchitecture> =
+export const systemArchitectureDescriptionIssueCodec: StandardArtifactIssueCodec<SystemArchitectureDescription> =
   {
-    artifactType: "system-architecture",
-    title: (artifact) => `[System Architecture] ${artifact.id}`,
+    artifactType: "system-architecture-description",
+    title: (artifact) => `[System Architecture Description] ${artifact.id}`,
     restore: (payload) =>
-      restoreWithPrototype<SystemArchitecture>(
-        SystemArchitecture.prototype,
+      restoreWithPrototype<SystemArchitectureDescription>(
+        SystemArchitectureDescription.prototype,
         payload,
       ),
     traceability: (artifact) =>
-      unique(
-        (artifact.decisions ?? []).flatMap((decision) =>
-          decision.tracesTo.map((trace) => trace.specificationId),
-        ),
-      ),
-  };
-
-export const requirementAllocationIssueCodec: StandardArtifactIssueCodec<RequirementAllocation> =
-  {
-    artifactType: "requirement-allocation",
-    title: (artifact) => `[Requirement Allocation] ${artifact.id}`,
-    restore: (payload) =>
-      restoreWithPrototype<RequirementAllocation>(
-        RequirementAllocation.prototype,
-        payload,
-      ),
-    traceability: (artifact) =>
-      unique(
-        (artifact.allocations ?? []).map(
+      unique([
+        ...(artifact.requirementAllocations ?? []).map(
           (allocation) => allocation.requirement.specificationId,
         ),
-      ),
+        ...(artifact.decisions ?? []).flatMap((decision) =>
+          decision.tracesTo.map((trace) => trace.specificationId),
+        ),
+      ]),
   };
 
 export const softwareRequirementsIssueCodec: StandardArtifactIssueCodec<SoftwareRequirementsSpecification> =
@@ -103,25 +91,96 @@ export const softwareRequirementsIssueCodec: StandardArtifactIssueCodec<Software
       unique(
         (artifact.requirements ?? []).flatMap((requirement) =>
           requirement.tracesTo.flatMap((trace) => [
-            trace.allocationId,
+            trace.architectureId,
             trace.systemRequirementSpecificationId,
           ]),
         ),
       ),
   };
 
-export const softwareDesignIssueCodec: StandardArtifactIssueCodec<SoftwareDesign> =
+export const softwareArchitectureDescriptionIssueCodec: StandardArtifactIssueCodec<SoftwareArchitectureDescription> =
   {
-    artifactType: "software-design",
-    title: (artifact) => `[Software Design] ${artifact.id}`,
+    artifactType: "software-architecture-description",
+    title: (artifact) => `[Software Architecture Description] ${artifact.id}`,
     restore: (payload) =>
-      restoreWithPrototype<SoftwareDesign>(SoftwareDesign.prototype, payload),
+      restoreWithPrototype<SoftwareArchitectureDescription>(
+        SoftwareArchitectureDescription.prototype,
+        payload,
+      ),
     traceability: (artifact) =>
-      unique(
-        (artifact.requirementAllocations ?? []).map(
+      unique([
+        ...(artifact.requirementAllocations ?? []).map(
           (allocation) => allocation.requirement.specificationId,
         ),
+        ...(artifact.decisions ?? []).flatMap((decision) =>
+          decision.tracesTo.map((trace) => trace.specificationId),
+        ),
+      ]),
+    sections: (artifact) => [
+      {
+        heading: "## Dependency Graph",
+        body:
+          (artifact.relationships ?? [])
+            .filter((relationship) => relationship.type === "dependency")
+            .map(
+              (relationship) =>
+                `- \`${relationship.sourceElementId}\` -> \`${relationship.targetElementId}\``,
+            )
+            .join("\n") || "- None",
+      },
+    ],
+  };
+
+export const softwareElementDesignIssueCodec: StandardArtifactIssueCodec<SoftwareElementDesign> =
+  {
+    artifactType: "software-element-design",
+    title: (artifact) => `[Software Element Design] ${artifact.id}`,
+    restore: (payload) =>
+      restoreWithPrototype<SoftwareElementDesign>(
+        SoftwareElementDesign.prototype,
+        payload,
       ),
+    traceability: (artifact) => [artifact.architectureElement.architectureId],
+  };
+
+export const implementedSoftwareElementsIssueCodec: StandardArtifactIssueCodec<ImplementedSoftwareElements> =
+  {
+    artifactType: "implemented-software-elements",
+    title: (artifact) => `[Implemented Software Elements] ${artifact.id}`,
+    restore: (payload) =>
+      restoreWithPrototype<ImplementedSoftwareElements>(
+        ImplementedSoftwareElements.prototype,
+        payload,
+      ),
+    traceability: (artifact) =>
+      unique(
+        (artifact.elements ?? []).map(
+          (element) => element.elementDesign.designId,
+        ),
+      ),
+  };
+
+export const integratedSoftwareIssueCodec: StandardArtifactIssueCodec<IntegratedSoftware> =
+  {
+    artifactType: "integrated-software",
+    title: (artifact) => `[Integrated Software] ${artifact.id}`,
+    restore: (payload) =>
+      restoreWithPrototype<IntegratedSoftware>(
+        IntegratedSoftware.prototype,
+        payload,
+      ),
+    traceability: (artifact) =>
+      unique([
+        ...(artifact.elements ?? []).map(
+          (element) => element.implementationId,
+        ),
+        ...(artifact.relationships ?? []).map(
+          (relationship) => relationship.architectureId,
+        ),
+        ...(artifact.interfaces ?? []).map(
+          (item) => item.architectureId,
+        ),
+      ]),
   };
 
 export const verificationResultIssueCodec: StandardArtifactIssueCodec<VerificationResult> =
@@ -169,10 +228,28 @@ export const validationResultIssueCodec: StandardArtifactIssueCodec<ValidationRe
 export const standardArtifactIssueCodecs = {
   stakeholderRequirements: stakeholderRequirementsIssueCodec,
   systemRequirements: systemRequirementsIssueCodec,
-  systemArchitecture: systemArchitectureIssueCodec,
-  requirementAllocation: requirementAllocationIssueCodec,
+  systemArchitectureDescription: systemArchitectureDescriptionIssueCodec,
   softwareRequirements: softwareRequirementsIssueCodec,
-  softwareDesign: softwareDesignIssueCodec,
+  softwareArchitectureDescription: softwareArchitectureDescriptionIssueCodec,
+  softwareElementDesign: softwareElementDesignIssueCodec,
+  implementedSoftwareElements: implementedSoftwareElementsIssueCodec,
+  integratedSoftware: integratedSoftwareIssueCodec,
   verificationResult: verificationResultIssueCodec,
   validationResult: validationResultIssueCodec,
+} as const;
+
+export const standardArtifactIssueCodecsByStage = {
+  要求定義: [stakeholderRequirementsIssueCodec],
+  システム要件定義: [
+    systemRequirementsIssueCodec,
+    systemArchitectureDescriptionIssueCodec,
+  ],
+  ソフトウェア要件定義: [
+    softwareRequirementsIssueCodec,
+    softwareArchitectureDescriptionIssueCodec,
+  ],
+  実装: [softwareElementDesignIssueCodec, implementedSoftwareElementsIssueCodec],
+  統合: [integratedSoftwareIssueCodec],
+  QA: [verificationResultIssueCodec],
+  検収: [validationResultIssueCodec],
 } as const;
