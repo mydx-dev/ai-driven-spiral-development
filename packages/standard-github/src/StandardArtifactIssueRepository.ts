@@ -7,11 +7,23 @@ import { GitHubIssue, type GitHubClient } from "@mydx-dev/spiral-github";
 
 export type StandardArtifact = Artifact & { readonly cycleId: string };
 
+export type StandardArtifactIssueSection = {
+  readonly heading: `## ${string}`;
+  readonly body: string;
+};
+
 export type StandardArtifactIssueCodec<TArtifact extends StandardArtifact> = {
   readonly artifactType: string;
   title(artifact: TArtifact): string;
   restore(payload: unknown): TArtifact;
   traceability(artifact: TArtifact): string[];
+  sections?(artifact: TArtifact): readonly StandardArtifactIssueSection[];
+};
+
+export type CompositeGateResult = {
+  readonly processName: string;
+  readonly artifactIds: readonly string[];
+  readonly gateResult: GatePass;
 };
 
 type Issue = {
@@ -27,6 +39,13 @@ const artifactMarker = (id: string) => `<!-- spiral-artifact-id: ${id} -->`;
 const cycleMarker = (cycleId: string) => `<!-- spiral-cycle-id: ${cycleId} -->`;
 const typeMarker = (artifactType: string) =>
   `<!-- spiral-artifact-type: ${artifactType} -->`;
+
+const gateResultBody = (gateResult: GatePass) =>
+  gateResult.passed
+    ? "- [x] PASS"
+    : ["- [ ] FAIL", ...gateResult.errors.map((error) => `  - ${error}`)].join(
+        "\n",
+      );
 
 export class StandardArtifactIssueRepository<
   TArtifact extends StandardArtifact,
@@ -79,14 +98,47 @@ export class StandardArtifactIssueRepository<
 
     const body = new GitHubIssue(issue.body ?? "").writeSection(
       "## Gate Result",
-      gateResult.passed
-        ? "- [x] PASS"
-        : [
-            "- [ ] FAIL",
-            ...gateResult.errors.map((error) => `  - ${error}`),
-          ].join("\n"),
+      gateResultBody(gateResult),
     );
     await this.client.updateIssue(issue.number, { body });
+  }
+
+  async saveCompositeGateResult({
+    processName,
+    artifactIds,
+    gateResult,
+  }: CompositeGateResult): Promise<void> {
+    const uniqueArtifactIds = [...new Set(artifactIds)];
+    if (uniqueArtifactIds.length === 0) {
+      throw new Error("Composite Gate Result requires at least one Artifact.");
+    }
+
+    const issues = await Promise.all(
+      uniqueArtifactIds.map(async (artifactId) => {
+        const issue = await this.findAnyArtifactIssue(artifactId);
+        if (!issue) {
+          throw new Error(`Standard Artifact Issue not found: ${artifactId}`);
+        }
+        return issue;
+      }),
+    );
+
+    const result = [
+      `- Process: \`${processName}\``,
+      `- Artifacts: ${uniqueArtifactIds.map((id) => `\`${id}\``).join(", ")}`,
+      gateResultBody(gateResult),
+    ].join("\n");
+
+    await Promise.all(
+      issues.map((issue) =>
+        this.client.updateIssue(issue.number, {
+          body: new GitHubIssue(issue.body ?? "").writeSection(
+            "## Composite Gate Result",
+            result,
+          ),
+        }),
+      ),
+    );
   }
 
   async findIssueByArtifactId(id: string): Promise<Issue | undefined> {
@@ -141,6 +193,15 @@ export class StandardArtifactIssueRepository<
     const gateResult = currentBody
       ? new GitHubIssue(currentBody).readSection("## Gate Result", true)
       : "- [ ] Not evaluated";
+    const compositeGateResult = currentBody
+      ? new GitHubIssue(currentBody).readSection(
+          "## Composite Gate Result",
+          true,
+        )
+      : "- [ ] Not evaluated";
+    const codecSections = (this.codec.sections?.(artifact) ?? []).flatMap(
+      ({ heading, body }) => [heading, "", body, ""],
+    );
 
     return [
       artifactMarker(artifact.id),
@@ -157,6 +218,7 @@ export class StandardArtifactIssueRepository<
       "",
       links.length > 0 ? links.join("\n") : "- None",
       "",
+      ...codecSections,
       "## Artifact Data",
       "",
       "```json",
@@ -166,6 +228,10 @@ export class StandardArtifactIssueRepository<
       "## Gate Result",
       "",
       gateResult || "- [ ] Not evaluated",
+      "",
+      "## Composite Gate Result",
+      "",
+      compositeGateResult || "- [ ] Not evaluated",
       "",
     ].join("\n");
   }
