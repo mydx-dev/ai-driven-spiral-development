@@ -30,8 +30,7 @@ export class SemanticCompletionEvent<
 
     this.cycleId = cycleId;
     this.name = name as
-      | InferCycleCompletionName<TCycleClass>
-      | InferProcessNames<TCycleClass>;
+      InferCycleCompletionName<TCycleClass> | InferProcessNames<TCycleClass>;
     this.completionName = completionName;
   }
 
@@ -40,8 +39,7 @@ export class SemanticCompletionEvent<
   public readonly cycleId: string;
 
   public readonly name:
-    | InferCycleCompletionName<TCycleClass>
-    | InferProcessNames<TCycleClass>;
+    InferCycleCompletionName<TCycleClass> | InferProcessNames<TCycleClass>;
 
   private readonly completionName: string;
 
