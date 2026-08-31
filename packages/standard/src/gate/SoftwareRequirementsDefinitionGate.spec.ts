@@ -100,7 +100,10 @@ const createSRS = () =>
   );
 
 const createGate = () =>
-  new SoftwareRequirementsDefinitionGate([createArchitecture()], [createSyRS()]);
+  new SoftwareRequirementsDefinitionGate(
+    [createArchitecture()],
+    [createSyRS()],
+  );
 
 describe("SoftwareRequirementsDefinitionGate", () => {
   it("System Architecture上のSoftware allocationをSRSへ追跡できればPASSする", () => {
@@ -212,7 +215,9 @@ describe("SoftwareRequirementsDefinitionGate", () => {
     if (!result.passed) {
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringContaining("System Architecture allocationへのtraceability"),
+          expect.stringContaining(
+            "System Architecture allocationへのtraceability",
+          ),
           expect.stringContaining("SRSへのtraceability"),
         ]),
       );
@@ -247,7 +252,9 @@ describe("SoftwareRequirementsDefinitionGate", () => {
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
-        expect.arrayContaining([expect.stringContaining("未知のSoftware allocation")]),
+        expect.arrayContaining([
+          expect.stringContaining("未知のSoftware allocation"),
+        ]),
       );
     }
   });
