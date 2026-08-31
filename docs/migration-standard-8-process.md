@@ -35,31 +35,31 @@ cycle
 
 ## Artifact移行
 
-| 旧API | 8工程で利用するArtifact |
-| --- | --- |
-| Demand / Requirement | Stakeholder Requirements Specification (StRS) |
-| ExternalSpec | SRS + Software Architecture Description |
-| SystemArchitecture + RequirementAllocation | System Architecture Description |
-| SoftwareDesign | Software Architecture Description + Software Element Design |
-| Implementation | Software Element Design + Implemented Software Element |
-| QAReport | Verification Result |
-| Release | 独立Standard Process Artifactとしては廃止 |
-| AcceptanceReport | Validation Result |
+| 旧API                                      | 8工程で利用するArtifact                                     |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| Demand / Requirement                       | Stakeholder Requirements Specification (StRS)               |
+| ExternalSpec                               | SRS + Software Architecture Description                     |
+| SystemArchitecture + RequirementAllocation | System Architecture Description                             |
+| SoftwareDesign                             | Software Architecture Description + Software Element Design |
+| Implementation                             | Software Element Design + Implemented Software Element      |
+| QAReport                                   | Verification Result                                         |
+| Release                                    | 独立Standard Process Artifactとしては廃止                   |
+| AcceptanceReport                           | Validation Result                                           |
 
 Requirement Allocationは独立Standard Artifactではなく、Architecture Descriptionのallocation / traceabilityとして保持します。
 
 ## Gate移行
 
-| 8工程 | Gate |
-| --- | --- |
-| 要求定義 | RequirementsGate |
-| システム要件定義 | SystemRequirementsGate |
+| 8工程                | Gate                     |
+| -------------------- | ------------------------ |
+| 要求定義             | RequirementsGate         |
+| システム要件定義     | SystemRequirementsGate   |
 | ソフトウェア要件定義 | SoftwareRequirementsGate |
-| 実装 | ImplementationGate |
-| 統合 | IntegrationGate |
-| QA | VerificationGate |
-| 検収 | ValidationGate |
-| フィードバック | StandardCycle.feedback() |
+| 実装                 | ImplementationGate       |
+| 統合                 | IntegrationGate          |
+| QA                   | VerificationGate         |
+| 検収                 | ValidationGate           |
+| フィードバック       | StandardCycle.feedback() |
 
 システム要件定義とソフトウェア要件定義はComposite Gateです。1 Artifact = 1 Processではありません。
 
