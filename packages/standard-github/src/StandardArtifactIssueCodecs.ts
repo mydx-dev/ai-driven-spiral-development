@@ -14,6 +14,7 @@ import type {
   StandardArtifact,
   StandardArtifactIssueCodec,
 } from "./StandardArtifactIssueRepository.js";
+import { feedbackStateIssueCodec } from "./StandardFeedbackState.js";
 
 const restoreWithPrototype = <TArtifact extends StandardArtifact>(
   prototype: object,
@@ -236,6 +237,7 @@ export const standardArtifactIssueCodecs = {
   integratedSoftware: integratedSoftwareIssueCodec,
   verificationResult: verificationResultIssueCodec,
   validationResult: validationResultIssueCodec,
+  feedbackState: feedbackStateIssueCodec,
 } as const;
 
 export const standardArtifactIssueCodecsByStage = {
@@ -252,4 +254,5 @@ export const standardArtifactIssueCodecsByStage = {
   統合: [integratedSoftwareIssueCodec],
   QA: [verificationResultIssueCodec],
   検収: [validationResultIssueCodec],
+  フィードバック: [feedbackStateIssueCodec],
 } as const;
