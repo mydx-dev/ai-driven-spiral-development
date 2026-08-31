@@ -128,7 +128,8 @@ describe("Standard GitHub Runtime", () => {
     expect(messages).toEqual([
       {
         type: "retry",
-        idempotencyKey: "event-1:retry:%231:%E8%A6%81%E6%B1%82%E5%AE%9A%E7%BE%A9",
+        idempotencyKey:
+          "event-1:retry:%231:%E8%A6%81%E6%B1%82%E5%AE%9A%E7%BE%A9",
         cycleId: "#1",
         processName: "要求定義",
         errors: ["Demandが1件も存在しません"],
@@ -216,6 +217,8 @@ describe("Standard GitHub Runtime", () => {
         name: "Demand Definition",
         eventId: "legacy-event",
       }),
-    ).rejects.toThrow("Invalid semantic completion event name: Demand Definition");
+    ).rejects.toThrow(
+      "Invalid semantic completion event name: Demand Definition",
+    );
   });
 });
