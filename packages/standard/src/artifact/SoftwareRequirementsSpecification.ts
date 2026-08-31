@@ -1,12 +1,7 @@
 import type { Artifact } from "@mydx-dev/ai-driven-spiral-development";
 
 export type SoftwareRequirementCategory =
-  | "functional"
-  | "interface"
-  | "data"
-  | "quality"
-  | "security"
-  | "other";
+  "functional" | "interface" | "data" | "quality" | "security" | "other";
 
 export type SystemArchitectureAllocationReference = {
   readonly architectureId: string;
