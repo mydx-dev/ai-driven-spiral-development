@@ -31,7 +31,10 @@ export { Requirement } from "./artifact/Requirement.js";
 /** @deprecated Use SoftwareRequirementsSpecification and SoftwareArchitectureDescription. */
 export { ExternalSpec, Feature } from "./artifact/ExternalSpec.js";
 /** @deprecated Use SoftwareElementDesign and ImplementedSoftwareElements. */
-export { Implementation, ImplementedFeature } from "./artifact/Implementation.js";
+export {
+  Implementation,
+  ImplementedFeature,
+} from "./artifact/Implementation.js";
 /** @deprecated Use VerificationResult. */
 export { QAReport, RequirementVerification } from "./artifact/QAReport.js";
 /** @deprecated Release is not a Standard Process artifact in the 8-stage model. */
