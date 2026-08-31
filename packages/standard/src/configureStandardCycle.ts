@@ -1,7 +1,4 @@
-import type {
-  Artifact,
-  Process,
-} from "@mydx-dev/ai-driven-spiral-development";
+import type { Artifact, Process } from "@mydx-dev/ai-driven-spiral-development";
 import { StandardCycle } from "./StandardCycle.js";
 
 export const configureStandardCycle = <
@@ -43,7 +40,11 @@ export const configureStandardCycle = <
     TSoftwareRequirementsArtifact,
     TSoftwareRequirementsMessage
   >;
-  implementation: Process<"実装", TImplementationArtifact, TImplementationMessage>;
+  implementation: Process<
+    "実装",
+    TImplementationArtifact,
+    TImplementationMessage
+  >;
   integration: Process<"統合", TIntegrationArtifact, TIntegrationMessage>;
   verification: Process<"QA", TVerificationArtifact, TVerificationMessage>;
   validation: Process<"検収", TValidationArtifact, TValidationMessage>;
