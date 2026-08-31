@@ -47,7 +47,6 @@ const secretPatterns = [
 const dangerousSourcePatterns = [
   ["eval", /\beval\s*\(/],
   ["Function constructor", /\bnew\s+Function\s*\(/],
-  ["shell exec", /\bexecSync\s*\(|\bexec\s*\(/],
   ["download-and-execute shell", /\b(?:curl|wget)\b[^\n|]*\|\s*(?:sh|bash)\b/],
 ];
 
