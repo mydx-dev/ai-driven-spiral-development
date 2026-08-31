@@ -26,10 +26,9 @@ export class SystemRequirementsGate implements ProcessGate<Artifact> {
       );
     if (!requirementsResult.passed) errors.push(...requirementsResult.errors);
 
-    const architectureResult =
-      new SystemArchitectureDescriptionGate(specifications).verifyStructuralComplete(
-        architectures,
-      );
+    const architectureResult = new SystemArchitectureDescriptionGate(
+      specifications,
+    ).verifyStructuralComplete(architectures);
     if (!architectureResult.passed) errors.push(...architectureResult.errors);
 
     return errors.length === 0 ? { passed: true } : { passed: false, errors };
