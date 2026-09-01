@@ -255,14 +255,16 @@ jobs:
           test -f "$TARGET_DIR/scripts/spiral/main.mjs"
           test -f "$TARGET_DIR/scripts/spiral/execution-channel.mjs"
           test ! -e "$TARGET_DIR/src/spiral"
-          test -f "$TARGET_DIR/.github/ISSUE_TEMPLATE/spiral-cycle.md"
-          test -f "$TARGET_DIR/.github/ISSUE_TEMPLATE/demand.md"
-          test -f "$TARGET_DIR/.github/ISSUE_TEMPLATE/feature.md"
-          test ! -e "$TARGET_DIR/.github/ISSUE_TEMPLATE/spiral-artifact.md"
-          grep -F '## 要件' "$TARGET_DIR/.github/ISSUE_TEMPLATE/demand.md"
-          grep -F '## 対象要件' "$TARGET_DIR/.github/ISSUE_TEMPLATE/feature.md"
-          grep -F '## Release' "$TARGET_DIR/.github/ISSUE_TEMPLATE/spiral-cycle.md"
+          test -f "$TARGET_DIR/.github/ISSUE_TEMPLATE/spiral-artifact.md"
+          test -f "$TARGET_DIR/.github/workflows/spiral-circulate.yml"
+          test ! -e "$TARGET_DIR/.github/ISSUE_TEMPLATE/demand.md"
+          test ! -e "$TARGET_DIR/.github/ISSUE_TEMPLATE/feature.md"
+          grep -F 'createStandardGitHubRuntime' "$TARGET_DIR/scripts/spiral/main.mjs"
+          grep -F '"binding": "@mydx-dev/spiral-standard-github"' "$TARGET_DIR/spiral.config.mjs"
           grep -F '"executionChannel": "./scripts/spiral/execution-channel.mjs"' "$TARGET_DIR/spiral.config.mjs"
+          for PROCESS_NAME in 要求定義 システム要件定義 ソフトウェア要件定義 実装 統合 QA 検収 フィードバック; do
+            grep -F -- "- $PROCESS_NAME" "$TARGET_DIR/.github/workflows/spiral-circulate.yml"
+          done
 
           node - "$TARGET_DIR/package.json" <<'NODE'
           const fs = require('node:fs');
@@ -291,10 +293,9 @@ jobs:
             "$TARGET_DIR/quality.config.mjs" \
             "$TARGET_DIR/scripts/spiral/main.mjs" \
             "$TARGET_DIR/scripts/spiral/execution-channel.mjs" \
-            "$TARGET_DIR/.github/ISSUE_TEMPLATE/spiral-cycle.md" \
-            "$TARGET_DIR/.github/ISSUE_TEMPLATE/demand.md" \
-            "$TARGET_DIR/.github/ISSUE_TEMPLATE/feature.md" \
+            "$TARGET_DIR/.github/ISSUE_TEMPLATE/spiral-artifact.md" \
             "$TARGET_DIR/.github/pull_request_template.md" \
+            "$TARGET_DIR/.github/workflows/spiral-circulate.yml" \
             "$TARGET_DIR/.github/workflows/spiral.yml"
 
           SECOND_RUN=$(pnpm dlx "@mydx-dev/spiral@${CLI_VERSION}" init \
@@ -310,5 +311,6 @@ jobs:
             --process custom \
             --cwd "$CUSTOM_DIR"
           test -f "$CUSTOM_DIR/.github/ISSUE_TEMPLATE/spiral-artifact.md"
+          test ! -e "$CUSTOM_DIR/.github/workflows/spiral-circulate.yml"
           test ! -e "$CUSTOM_DIR/.github/ISSUE_TEMPLATE/demand.md"
           test ! -e "$CUSTOM_DIR/.github/ISSUE_TEMPLATE/feature.md"
