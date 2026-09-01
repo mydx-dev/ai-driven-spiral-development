@@ -30,8 +30,8 @@ type RuntimeState = {
   integrations: IntegratedSoftware[];
   verifications: VerificationResult[];
   validations: ValidationResult[];
-  cycle: CycleState;
-  nextCycle: CycleState;
+  cycle: CycleState | null;
+  nextCycle: CycleState | null;
   comments: IssueComment[];
   gateWrites: Array<{ kind: string; process?: string; artifactId?: string }>;
 };
@@ -46,8 +46,8 @@ const state = vi.hoisted<RuntimeState>(() => ({
   integrations: [],
   verifications: [],
   validations: [],
-  cycle: new StandardCycle("#1", "none", "none"),
-  nextCycle: new StandardCycle("#2", "none", "none"),
+  cycle: null,
+  nextCycle: null,
   comments: [],
   gateWrites: [],
 }));
@@ -119,10 +119,10 @@ vi.mock("./RuntimeRepositories.js", () => {
       ),
       feedbackStateRepository: empty,
       cycleRepository: {
-        create: async () => state.cycle,
-        find: async () => state.cycle,
+        create: async () => state.cycle!,
+        find: async () => state.cycle!,
         save: async () => {},
-        createNext: async () => state.nextCycle,
+        createNext: async () => state.nextCycle!,
       },
     }),
   };
