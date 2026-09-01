@@ -27,12 +27,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
@@ -73,17 +73,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.18.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
@@ -91,7 +91,7 @@ jobs:
 
       - name: Install root dependencies
         if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' || needs.check-versions.outputs.publish-cli == 'true' }}
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build Core
         if: ${{ needs.check-versions.outputs.publish-core == 'true' || needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
@@ -107,7 +107,7 @@ jobs:
 
       - name: Install GitHub dependencies
         if: ${{ needs.check-versions.outputs.publish-github == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
-        run: pnpm --dir packages/github install --no-frozen-lockfile
+        run: pnpm --dir packages/github install --no-frozen-lockfile --ignore-scripts
 
       - name: Build GitHub
         if: ${{ needs.check-versions.outputs.publish-github == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
@@ -125,7 +125,7 @@ jobs:
 
       - name: Install Standard dependencies
         if: ${{ needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
-        run: pnpm --dir packages/standard install --no-frozen-lockfile
+        run: pnpm --dir packages/standard install --no-frozen-lockfile --ignore-scripts
 
       - name: Build Standard
         if: ${{ needs.check-versions.outputs.publish-standard == 'true' || needs.check-versions.outputs.publish-standard-github == 'true' }}
@@ -143,7 +143,7 @@ jobs:
 
       - name: Install Standard GitHub dependencies
         if: ${{ needs.check-versions.outputs.publish-standard-github == 'true' }}
-        run: pnpm --dir packages/standard-github install --no-frozen-lockfile
+        run: pnpm --dir packages/standard-github install --no-frozen-lockfile --ignore-scripts
 
       - name: Build Standard GitHub
         if: ${{ needs.check-versions.outputs.publish-standard-github == 'true' }}
@@ -161,7 +161,7 @@ jobs:
 
       - name: Install Quality dependencies
         if: ${{ needs.check-versions.outputs.publish-quality == 'true' }}
-        run: pnpm --dir packages/quality install --no-frozen-lockfile
+        run: pnpm --dir packages/quality install --no-frozen-lockfile --ignore-scripts
 
       - name: Build Quality
         if: ${{ needs.check-versions.outputs.publish-quality == 'true' }}
@@ -203,17 +203,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.18.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
@@ -283,7 +283,7 @@ jobs:
           }
           NODE
 
-          pnpm --dir "$TARGET_DIR" install --no-frozen-lockfile
+          pnpm --dir "$TARGET_DIR" install --no-frozen-lockfile --ignore-scripts
 
           pnpm dlx prettier@3.9.6 --write --single-quote --tab-width 4 \
             "$TARGET_DIR/package.json" \
