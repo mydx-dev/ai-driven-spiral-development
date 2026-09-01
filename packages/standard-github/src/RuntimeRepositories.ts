@@ -21,7 +21,10 @@ import {
   GitHubIssueId,
   type GitHubClient,
 } from "@mydx-dev/spiral-github";
-import { StandardCycleIssue, StandardCycleIssueTemplate } from "./IssueMappings.js";
+import {
+  StandardCycleIssue,
+  StandardCycleIssueTemplate,
+} from "./IssueMappings.js";
 import {
   feedbackStateIssueCodec,
   implementedSoftwareElementsIssueCodec,
@@ -74,13 +77,13 @@ export class CompositeArtifactRepository implements ArtifactRepository<Artifact>
         return;
       }
     }
-    throw new Error(`Composite Artifact Repository cannot route save: ${artifact.id}`);
+    throw new Error(
+      `Composite Artifact Repository cannot route save: ${artifact.id}`,
+    );
   }
 }
 
-export class StandardRuntimeCycleRepository
-  implements CycleRepository<StandardCycle>
-{
+export class StandardRuntimeCycleRepository implements CycleRepository<StandardCycle> {
   constructor(
     public readonly client: GitHubClient,
     public readonly feedbackRepository: ArtifactRepository<StandardFeedbackState>,
@@ -95,7 +98,8 @@ export class StandardRuntimeCycleRepository
     try {
       await this.client.getIssue<Issue>(issueNumber);
     } catch (error) {
-      if (error instanceof GitHubApiError && error.status === 404) return undefined;
+      if (error instanceof GitHubApiError && error.status === 404)
+        return undefined;
       throw error;
     }
 
