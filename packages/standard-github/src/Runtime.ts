@@ -3,7 +3,6 @@ import {
   type ArtifactRepository,
   type CycleRepository,
   type ExecutionChannel,
-  type GatePass,
   Process,
   ProcessExecutor,
   type ProcessGate,
@@ -247,6 +246,7 @@ export const createStandardGitHubRuntime = ({
         implementations,
         integrations,
         verifications,
+        validations,
       ] = await Promise.all([
         repositories.stakeholderRequirementsRepository.findByCycle(cycleId),
         repositories.systemRequirementsRepository.findByCycle(cycleId),
@@ -261,6 +261,7 @@ export const createStandardGitHubRuntime = ({
         repositories.implementedSoftwareElementsRepository.findByCycle(cycleId),
         repositories.integratedSoftwareRepository.findByCycle(cycleId),
         repositories.verificationResultRepository.findByCycle(cycleId),
+        repositories.validationResultRepository.findByCycle(cycleId),
       ]);
 
       const requirementsGate = new RequirementsGate();
@@ -375,52 +376,33 @@ export const createStandardGitHubRuntime = ({
         cycleDefinition: CycleDefinition,
       });
 
-      if (!event.isCycleCompletion()) {
+      const stageArtifacts: Record<StandardGitHubProcessName, readonly Artifact[]> = {
+        要求定義: stakeholderSpecifications,
+        システム要件定義: [...systemSpecifications, ...systemArchitectures],
+        ソフトウェア要件定義: [
+          ...softwareSpecifications,
+          ...softwareArchitectures,
+        ],
+        実装: [...elementDesigns, ...implementations],
+        統合: integrations,
+        QA: verifications,
+        検収: validations,
+      };
+
+      const { cycleRepository, cycleFactory } = routedCycleRepository(
+        repositories.cycleRepository,
+        CycleDefinition,
+      );
+      const spiral = new Spiral<typeof CycleDefinition>({
+        cycleRepository,
+        cycleFactory,
+      });
+
+      const proceedResult = await spiral.circulate(event);
+
+      if (!event.isCycleCompletion() && proceedResult) {
         const stage = event.name as StandardGitHubProcessName;
-        const stageEvaluation: Record<
-          StandardGitHubProcessName,
-          {
-            readonly artifacts: readonly Artifact[];
-            readonly gate: ProcessGate<Artifact>;
-          }
-        > = {
-          要求定義: {
-            artifacts: stakeholderSpecifications,
-            gate: requirementsGate,
-          },
-          システム要件定義: {
-            artifacts: [...systemSpecifications, ...systemArchitectures],
-            gate: systemRequirementsGate,
-          },
-          ソフトウェア要件定義: {
-            artifacts: [...softwareSpecifications, ...softwareArchitectures],
-            gate: softwareRequirementsGate,
-          },
-          実装: {
-            artifacts: [...elementDesigns, ...implementations],
-            gate: implementationGate,
-          },
-          統合: {
-            artifacts: integrations,
-            gate: artifactGate(IntegratedSoftware, integrationGate),
-          },
-          QA: {
-            artifacts: verifications,
-            gate: artifactGate(VerificationResult, verificationGate),
-          },
-          検収: {
-            artifacts:
-              await repositories.validationResultRepository.findByCycle(
-                cycleId,
-              ),
-            gate: artifactGate(ValidationResult, validationGate),
-          },
-        };
-        const evaluation = stageEvaluation[stage];
-        const gateResult: GatePass = evaluation.gate.verifyStructuralComplete([
-          ...evaluation.artifacts,
-        ]);
-        const artifactIds = evaluation.artifacts.map(({ id }) => id);
+        const artifactIds = stageArtifacts[stage].map(({ id }) => id);
 
         if (artifactIds.length > 0) {
           if (standardArtifactIssueCodecsByStage[stage].length > 1) {
@@ -428,7 +410,7 @@ export const createStandardGitHubRuntime = ({
               {
                 processName: stage,
                 artifactIds,
-                gateResult,
+                gateResult: proceedResult.gateResult,
               },
             );
           } else {
@@ -441,7 +423,7 @@ export const createStandardGitHubRuntime = ({
             if (writer) {
               await Promise.all(
                 artifactIds.map((artifactId) =>
-                  writer.saveGateResult(artifactId, gateResult),
+                  writer.saveGateResult(artifactId, proceedResult.gateResult),
                 ),
               );
             }
@@ -449,16 +431,6 @@ export const createStandardGitHubRuntime = ({
         }
       }
 
-      const { cycleRepository, cycleFactory } = routedCycleRepository(
-        repositories.cycleRepository,
-        CycleDefinition,
-      );
-      const spiral = new Spiral<typeof CycleDefinition>({
-        cycleRepository,
-        cycleFactory,
-      });
-
-      await spiral.circulate(event);
       await recordSemanticCompletion(client, issueNumber, marker, name);
       return { status: "processed" };
     },
