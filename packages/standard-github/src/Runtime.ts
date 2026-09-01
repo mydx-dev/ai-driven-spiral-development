@@ -17,18 +17,13 @@ import {
   IntegrationGate,
   IntegratedSoftware,
   RequirementsGate,
-  SoftwareArchitectureDescription,
-  SoftwareElementDesign,
   SoftwareRequirementsGate,
-  SoftwareRequirementsSpecification,
   StakeholderRequirementsSpecification,
   StandardCycle,
   standardFeedbackName,
   standardProcessNames,
   standardStageNames,
-  SystemArchitectureDescription,
   SystemRequirementsGate,
-  SystemRequirementsSpecification,
   ValidationGate,
   ValidationResult,
   VerificationGate,
@@ -432,13 +427,6 @@ export const createStandardGitHubRuntime = ({
               },
             );
           } else {
-            await Promise.all(
-              artifactIds.map((artifactId) =>
-                repositories.stakeholderRequirementsRepository.findAnyArtifactIssue(
-                  artifactId,
-                ),
-              ),
-            );
             const writer = {
               要求定義: repositories.stakeholderRequirementsRepository,
               統合: repositories.integratedSoftwareRepository,
