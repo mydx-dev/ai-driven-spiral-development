@@ -18,7 +18,6 @@ import {
 } from "@mydx-dev/spiral-standard";
 import {
   GitHubApiError,
-  GitHubIssue,
   GitHubIssueId,
   type GitHubClient,
 } from "@mydx-dev/spiral-github";
@@ -167,7 +166,7 @@ export class StandardRuntimeCycleRepository
     previousIssueNumber: number,
   ): Promise<number | undefined> {
     const response = await this.client.searchIssues<SearchIssues>(
-      `is:issue \"#${previousIssueNumber}\" in:body`,
+      `is:issue "#${previousIssueNumber}" in:body`,
     );
     const candidates = response.items.filter(
       (item) =>
