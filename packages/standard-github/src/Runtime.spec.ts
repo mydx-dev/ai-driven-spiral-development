@@ -60,7 +60,11 @@ vi.mock("./RuntimeRepositories.js", () => {
     saveGateResult: async (artifactId: string) => {
       state.gateWrites.push({ kind, artifactId });
     },
-    saveCompositeGateResult: async ({ processName }: { processName: string }) => {
+    saveCompositeGateResult: async ({
+      processName,
+    }: {
+      processName: string;
+    }) => {
       state.gateWrites.push({ kind: "composite", process: processName });
     },
     findAnyArtifactIssue: async () => ({ number: 1, title: "", body: "" }),
@@ -69,7 +73,11 @@ vi.mock("./RuntimeRepositories.js", () => {
 
   return {
     CompositeArtifactRepository: class {
-      constructor(readonly repositories: Array<{ findByCycle(cycleId: string): Promise<unknown[]> }>) {}
+      constructor(
+        readonly repositories: Array<{
+          findByCycle(cycleId: string): Promise<unknown[]>;
+        }>,
+      ) {}
       async find() {
         return undefined;
       }
@@ -200,7 +208,14 @@ const populatePassingArtifacts = () => {
     ),
   ];
   state.software = [
-    new SoftwareRequirementsSpecification("srs-1", "#1", null, null, null, null),
+    new SoftwareRequirementsSpecification(
+      "srs-1",
+      "#1",
+      null,
+      null,
+      null,
+      null,
+    ),
   ];
   state.softwareArchitecture = [
     new SoftwareArchitectureDescription(
