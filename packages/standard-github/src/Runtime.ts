@@ -376,7 +376,10 @@ export const createStandardGitHubRuntime = ({
         cycleDefinition: CycleDefinition,
       });
 
-      const stageArtifacts: Record<StandardGitHubProcessName, readonly Artifact[]> = {
+      const stageArtifacts: Record<
+        StandardGitHubProcessName,
+        readonly Artifact[]
+      > = {
         要求定義: stakeholderSpecifications,
         システム要件定義: [...systemSpecifications, ...systemArchitectures],
         ソフトウェア要件定義: [
