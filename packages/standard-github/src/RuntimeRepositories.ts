@@ -26,7 +26,6 @@ import {
   StandardCycleIssueTemplate,
 } from "./IssueMappings.js";
 import {
-  feedbackStateIssueCodec,
   implementedSoftwareElementsIssueCodec,
   integratedSoftwareIssueCodec,
   softwareArchitectureDescriptionIssueCodec,
@@ -39,7 +38,10 @@ import {
   verificationResultIssueCodec,
 } from "./StandardArtifactIssueCodecs.js";
 import { StandardArtifactIssueRepository } from "./StandardArtifactIssueRepository.js";
-import { StandardFeedbackState } from "./StandardFeedbackState.js";
+import {
+  feedbackStateIssueCodec,
+  StandardFeedbackState,
+} from "./StandardFeedbackState.js";
 
 type Issue = {
   readonly number: number;
