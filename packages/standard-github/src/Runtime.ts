@@ -250,9 +250,13 @@ export const createStandardGitHubRuntime = ({
       ] = await Promise.all([
         repositories.stakeholderRequirementsRepository.findByCycle(cycleId),
         repositories.systemRequirementsRepository.findByCycle(cycleId),
-        repositories.systemArchitectureDescriptionRepository.findByCycle(cycleId),
+        repositories.systemArchitectureDescriptionRepository.findByCycle(
+          cycleId,
+        ),
         repositories.softwareRequirementsRepository.findByCycle(cycleId),
-        repositories.softwareArchitectureDescriptionRepository.findByCycle(cycleId),
+        repositories.softwareArchitectureDescriptionRepository.findByCycle(
+          cycleId,
+        ),
         repositories.softwareElementDesignRepository.findByCycle(cycleId),
         repositories.implementedSoftwareElementsRepository.findByCycle(cycleId),
         repositories.integratedSoftwareRepository.findByCycle(cycleId),
@@ -405,9 +409,10 @@ export const createStandardGitHubRuntime = ({
             gate: artifactGate(VerificationResult, verificationGate),
           },
           検収: {
-            artifacts: await repositories.validationResultRepository.findByCycle(
-              cycleId,
-            ),
+            artifacts:
+              await repositories.validationResultRepository.findByCycle(
+                cycleId,
+              ),
             gate: artifactGate(ValidationResult, validationGate),
           },
         };
