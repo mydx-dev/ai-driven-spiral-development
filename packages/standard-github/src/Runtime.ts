@@ -1,31 +1,45 @@
 import {
   type Artifact,
+  type ArtifactRepository,
   type CycleRepository,
   type ExecutionChannel,
+  type GatePass,
   Process,
   ProcessExecutor,
+  type ProcessGate,
   SemanticCompletionEvent,
   Spiral,
 } from "@mydx-dev/ai-driven-spiral-development";
 import {
-  AcceptanceGate,
-  type AcceptanceReport,
-  DemandDefinitionGate,
-  type Demand,
-  EngineeringGate,
-  type ExternalSpec,
-  ExternalDesignGate,
-  type Implementation,
-  QAGate,
-  type QAReport,
-  RequirementDefinitionGate,
+  configureStandardCycle,
+  ImplementationGate,
+  ImplementedSoftwareElements,
+  IntegrationGate,
+  IntegratedSoftware,
+  RequirementsGate,
+  SoftwareArchitectureDescription,
+  SoftwareElementDesign,
+  SoftwareRequirementsGate,
+  SoftwareRequirementsSpecification,
+  StakeholderRequirementsSpecification,
   StandardCycle,
   standardFeedbackName,
   standardProcessNames,
   standardStageNames,
+  SystemArchitectureDescription,
+  SystemRequirementsGate,
+  SystemRequirementsSpecification,
+  ValidationGate,
+  ValidationResult,
+  VerificationGate,
+  VerificationResult,
 } from "@mydx-dev/spiral-standard";
 import type { GitHubClient } from "@mydx-dev/spiral-github";
-import { createStandardGitHubRepositories } from "./Repositories.js";
+import {
+  CompositeArtifactRepository,
+  createStandardRuntimeRepositories,
+} from "./RuntimeRepositories.js";
+import { standardArtifactIssueCodecsByStage } from "./StandardArtifactIssueCodecs.js";
 
 export const standardGitHubProcessNames = standardProcessNames;
 export const standardGitHubStageNames = standardStageNames;
@@ -100,10 +114,7 @@ const createExecutor = <TArtifact extends Artifact>(
   });
 
 const routedCycleRepository = <TCycle extends StandardCycle>(
-  repository: {
-    create(): Promise<StandardCycle>;
-    find(id: string): Promise<StandardCycle | undefined>;
-    save(cycle: StandardCycle): Promise<void>;
+  repository: CycleRepository<StandardCycle> & {
     createNext(previousCycle: StandardCycle): Promise<StandardCycle>;
   },
   CycleDefinition: new (
@@ -186,6 +197,23 @@ const recordSemanticCompletion = (
     },
   );
 
+const artifactGate = <TArtifact extends Artifact>(
+  ArtifactDefinition: new (...args: never[]) => TArtifact,
+  gate: ProcessGate<TArtifact>,
+): ProcessGate<Artifact> => ({
+  verifyStructuralComplete: (artifacts) =>
+    gate.verifyStructuralComplete(
+      artifacts.filter(
+        (artifact): artifact is TArtifact =>
+          artifact instanceof ArtifactDefinition,
+      ),
+    ),
+});
+
+const compositeRepository = (
+  ...repositories: ArtifactRepository<Artifact>[]
+): CompositeArtifactRepository => new CompositeArtifactRepository(repositories);
+
 export const createStandardGitHubRuntime = ({
   client,
   channel,
@@ -193,7 +221,7 @@ export const createStandardGitHubRuntime = ({
   client: GitHubClient;
   channel: ExecutionChannel<StandardGitHubExecutionMessage>;
 }) => {
-  const repositories = createStandardGitHubRepositories(client);
+  const repositories = createStandardRuntimeRepositories(client);
 
   return {
     repositories,
@@ -214,26 +242,94 @@ export const createStandardGitHubRuntime = ({
         return { status: "duplicate" };
       }
 
-      // The concrete GitHub Artifact mapping remains a compatibility layer until
-      // Issue #58 replaces it with the 8-stage Artifact repositories. Public
-      // Process names and Semantic Completion schema already use the 8-stage model.
+      const [
+        stakeholderSpecifications,
+        systemSpecifications,
+        systemArchitectures,
+        softwareSpecifications,
+        softwareArchitectures,
+        elementDesigns,
+        implementations,
+        integrations,
+        verifications,
+      ] = await Promise.all([
+        repositories.stakeholderRequirementsRepository.findByCycle(cycleId),
+        repositories.systemRequirementsRepository.findByCycle(cycleId),
+        repositories.systemArchitectureDescriptionRepository.findByCycle(cycleId),
+        repositories.softwareRequirementsRepository.findByCycle(cycleId),
+        repositories.softwareArchitectureDescriptionRepository.findByCycle(cycleId),
+        repositories.softwareElementDesignRepository.findByCycle(cycleId),
+        repositories.implementedSoftwareElementsRepository.findByCycle(cycleId),
+        repositories.integratedSoftwareRepository.findByCycle(cycleId),
+        repositories.verificationResultRepository.findByCycle(cycleId),
+      ]);
+
+      const requirementsGate = new RequirementsGate();
+      const systemRequirementsGate = new SystemRequirementsGate();
+      const softwareRequirementsGate = new SoftwareRequirementsGate(
+        systemArchitectures,
+        systemSpecifications,
+      );
+      const implementationGate = artifactGate(
+        ImplementedSoftwareElements,
+        new ImplementationGate(softwareArchitectures, elementDesigns),
+      );
+      const integrationGate = new IntegrationGate(
+        softwareArchitectures,
+        elementDesigns,
+        implementations,
+      );
+      const verificationGate = new VerificationGate(
+        softwareSpecifications,
+        integrations,
+      );
+      const validationGate = new ValidationGate(
+        stakeholderSpecifications,
+        systemSpecifications,
+        softwareSpecifications,
+        verifications,
+      );
+
+      const requirementsRepository =
+        repositories.stakeholderRequirementsRepository;
+      const systemRequirementsRepository = compositeRepository(
+        repositories.systemRequirementsRepository,
+        repositories.systemArchitectureDescriptionRepository,
+      );
+      const softwareRequirementsRepository = compositeRepository(
+        repositories.softwareRequirementsRepository,
+        repositories.softwareArchitectureDescriptionRepository,
+      );
+      const implementationRepository = compositeRepository(
+        repositories.softwareElementDesignRepository,
+        repositories.implementedSoftwareElementsRepository,
+      );
+
       const requirements = new Process({
         name: "要求定義",
-        artifactRepository: repositories.demandRepository,
-        gate: new DemandDefinitionGate(),
-        executor: createExecutor<Demand>("要求定義", eventId, channel),
+        artifactRepository: requirementsRepository,
+        gate: requirementsGate,
+        executor: createExecutor<StakeholderRequirementsSpecification>(
+          "要求定義",
+          eventId,
+          channel,
+        ),
       });
       const systemRequirements = new Process({
         name: "システム要件定義",
-        artifactRepository: repositories.demandRepository,
-        gate: new RequirementDefinitionGate(),
-        executor: createExecutor<Demand>("システム要件定義", eventId, channel),
+        artifactRepository: systemRequirementsRepository,
+        gate: systemRequirementsGate,
+        executor: createExecutor<Artifact>(
+          "システム要件定義",
+          eventId,
+          channel,
+        ),
       });
       const softwareRequirements = new Process({
         name: "ソフトウェア要件定義",
-        artifactRepository: repositories.externalSpecRepository,
-        gate: new ExternalDesignGate(),
-        executor: createExecutor<ExternalSpec>(
+        artifactRepository: softwareRequirementsRepository,
+        gate: softwareRequirementsGate,
+        executor: createExecutor<Artifact>(
           "ソフトウェア要件定義",
           eventId,
           channel,
@@ -241,38 +337,124 @@ export const createStandardGitHubRuntime = ({
       });
       const implementation = new Process({
         name: "実装",
-        artifactRepository: repositories.implementationRepository,
-        gate: new EngineeringGate(),
-        executor: createExecutor<Implementation>("実装", eventId, channel),
+        artifactRepository: implementationRepository,
+        gate: implementationGate,
+        executor: createExecutor<Artifact>("実装", eventId, channel),
       });
       const integration = new Process({
         name: "統合",
-        artifactRepository: repositories.implementationRepository,
-        gate: new EngineeringGate(),
-        executor: createExecutor<Implementation>("統合", eventId, channel),
+        artifactRepository: repositories.integratedSoftwareRepository,
+        gate: integrationGate,
+        executor: createExecutor<IntegratedSoftware>("統合", eventId, channel),
       });
       const qa = new Process({
         name: "QA",
-        artifactRepository: repositories.qaReportRepository,
-        gate: new QAGate(),
-        executor: createExecutor<QAReport>("QA", eventId, channel),
+        artifactRepository: repositories.verificationResultRepository,
+        gate: verificationGate,
+        executor: createExecutor<VerificationResult>("QA", eventId, channel),
       });
       const validation = new Process({
         name: "検収",
-        artifactRepository: repositories.acceptanceReportRepository,
-        gate: new AcceptanceGate(),
-        executor: createExecutor<AcceptanceReport>("検収", eventId, channel),
+        artifactRepository: repositories.validationResultRepository,
+        gate: validationGate,
+        executor: createExecutor<ValidationResult>("検収", eventId, channel),
       });
 
-      class StandardGitHubCycle extends StandardCycle {}
+      const CycleDefinition = configureStandardCycle({
+        requirements,
+        systemRequirements,
+        softwareRequirements,
+        implementation,
+        integration,
+        verification: qa,
+        validation,
+      });
 
-      const CycleDefinition = StandardGitHubCycle.route(requirements)
-        .route(systemRequirements)
-        .route(softwareRequirements)
-        .route(implementation)
-        .route(integration)
-        .route(qa)
-        .route(validation);
+      const event = new SemanticCompletionEvent({
+        cycleId,
+        name,
+        cycleDefinition: CycleDefinition,
+      });
+
+      if (!event.isCycleCompletion()) {
+        const stage = event.name as StandardGitHubProcessName;
+        const stageEvaluation: Record<
+          StandardGitHubProcessName,
+          {
+            readonly artifacts: readonly Artifact[];
+            readonly gate: ProcessGate<Artifact>;
+          }
+        > = {
+          要求定義: {
+            artifacts: stakeholderSpecifications,
+            gate: requirementsGate,
+          },
+          システム要件定義: {
+            artifacts: [...systemSpecifications, ...systemArchitectures],
+            gate: systemRequirementsGate,
+          },
+          ソフトウェア要件定義: {
+            artifacts: [...softwareSpecifications, ...softwareArchitectures],
+            gate: softwareRequirementsGate,
+          },
+          実装: {
+            artifacts: [...elementDesigns, ...implementations],
+            gate: implementationGate,
+          },
+          統合: {
+            artifacts: integrations,
+            gate: artifactGate(IntegratedSoftware, integrationGate),
+          },
+          QA: {
+            artifacts: verifications,
+            gate: artifactGate(VerificationResult, verificationGate),
+          },
+          検収: {
+            artifacts: await repositories.validationResultRepository.findByCycle(
+              cycleId,
+            ),
+            gate: artifactGate(ValidationResult, validationGate),
+          },
+        };
+        const evaluation = stageEvaluation[stage];
+        const gateResult: GatePass = evaluation.gate.verifyStructuralComplete([
+          ...evaluation.artifacts,
+        ]);
+        const artifactIds = evaluation.artifacts.map(({ id }) => id);
+
+        if (artifactIds.length > 0) {
+          if (standardArtifactIssueCodecsByStage[stage].length > 1) {
+            await repositories.stakeholderRequirementsRepository.saveCompositeGateResult(
+              {
+                processName: stage,
+                artifactIds,
+                gateResult,
+              },
+            );
+          } else {
+            await Promise.all(
+              artifactIds.map((artifactId) =>
+                repositories.stakeholderRequirementsRepository.findAnyArtifactIssue(
+                  artifactId,
+                ),
+              ),
+            );
+            const writer = {
+              要求定義: repositories.stakeholderRequirementsRepository,
+              統合: repositories.integratedSoftwareRepository,
+              QA: repositories.verificationResultRepository,
+              検収: repositories.validationResultRepository,
+            }[stage as "要求定義" | "統合" | "QA" | "検収"];
+            if (writer) {
+              await Promise.all(
+                artifactIds.map((artifactId) =>
+                  writer.saveGateResult(artifactId, gateResult),
+                ),
+              );
+            }
+          }
+        }
+      }
 
       const { cycleRepository, cycleFactory } = routedCycleRepository(
         repositories.cycleRepository,
@@ -281,11 +463,6 @@ export const createStandardGitHubRuntime = ({
       const spiral = new Spiral<typeof CycleDefinition>({
         cycleRepository,
         cycleFactory,
-      });
-      const event = new SemanticCompletionEvent({
-        cycleId,
-        name,
-        cycleDefinition: CycleDefinition,
       });
 
       await spiral.circulate(event);
