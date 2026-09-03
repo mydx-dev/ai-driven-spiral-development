@@ -53,7 +53,9 @@ const architecture = new SoftwareArchitectureDescription(
 describe("GitHubImplementedSoftwareElementsRepository", () => {
   it("Designに対応するPR・source・commit・checksをDomain Artifactへ射影する", async () => {
     const client = {
-      searchPullRequests: async () => ({ items: [{ number: 10, pull_request: {} }] }),
+      searchPullRequests: async () => ({
+        items: [{ number: 10, pull_request: {} }],
+      }),
       getPullRequest: async () => ({
         number: 10,
         state: "closed",
@@ -96,7 +98,11 @@ describe("GitHubImplementedSoftwareElementsRepository", () => {
     });
     expect(artifact.elements?.[0].checks).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ name: "unit test", kind: "local", passed: true }),
+        expect.objectContaining({
+          name: "unit test",
+          kind: "local",
+          passed: true,
+        }),
         expect.objectContaining({
           name: "lint",
           kind: "quality-guard",
@@ -127,7 +133,8 @@ describe("GitHubIntegratedSoftwareRepository", () => {
     const client = {
       request: async (_method: string, path: string) => {
         if (path === "repos/example/repo") return { default_branch: "main" };
-        if (path.endsWith("/branches/main")) return { commit: { sha: "main-sha" } };
+        if (path.endsWith("/branches/main"))
+          return { commit: { sha: "main-sha" } };
         throw new Error(`Unexpected request: ${path}`);
       },
       repositoryPath: (path: string) => `repos/example/repo${path}`,
