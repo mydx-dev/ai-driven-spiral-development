@@ -29,9 +29,7 @@ const inMemoryClient = () => {
   const searchIssues = vi.fn(async (query: string) => {
     const marker = query.match(/"([^"]+)"/)?.[1];
     return {
-      items: marker
-        ? issues.filter((issue) => issue.body.includes(marker))
-        : [],
+      items: marker ? issues.filter((issue) => issue.body.includes(marker)) : [],
     };
   });
   const createIssue = vi.fn(async (input: { title: string; body?: string }) => {
@@ -55,11 +53,7 @@ const inMemoryClient = () => {
 
   return {
     issues,
-    client: {
-      searchIssues,
-      createIssue,
-      updateIssue,
-    } as unknown as GitHubClient,
+    client: { searchIssues, createIssue, updateIssue } as unknown as GitHubClient,
   };
 };
 
@@ -97,10 +91,7 @@ const createSyRs = () =>
         statement: "注文を受け付ける",
         category: "functional",
         tracesTo: [
-          {
-            specificationId: "strs-order",
-            requirementId: "need-1",
-          },
+          { specificationId: "strs-order", requirementId: "need-1" },
         ],
       },
     ],
@@ -146,9 +137,7 @@ describe("StandardArtifactIssueRepository", () => {
       client,
       stakeholderRequirementsIssueCodec,
     );
-
     await repository.save(createStRs());
-
     expect(issues[0].number).toBe(100);
     expect(issues[0].body).toContain("spiral-artifact-id: strs-order");
     expect(issues[0].body).toContain("spiral-cycle-id: cycle-1");
@@ -164,9 +153,7 @@ describe("StandardArtifactIssueRepository", () => {
       stakeholderRequirementsIssueCodec,
     );
     await repository.save(createStRs());
-
     const artifacts = await repository.findByCycle("cycle-1");
-
     expect(artifacts).toHaveLength(1);
     expect(artifacts[0].id).toBe("strs-order");
   });
@@ -177,12 +164,10 @@ describe("StandardArtifactIssueRepository", () => {
       client,
       stakeholderRequirementsIssueCodec,
     ).save(createStRs());
-
     await new StandardArtifactIssueRepository(
       client,
       systemRequirementsIssueCodec,
     ).save(createSyRs());
-
     expect(issues[1].body).toContain("- #100 — `strs-order`");
     expect(systemRequirementsIssueCodec.traceability(createSyRs())).toEqual([
       "strs-order",
@@ -195,9 +180,7 @@ describe("StandardArtifactIssueRepository", () => {
       client,
       softwareArchitectureDescriptionIssueCodec,
     );
-
     await repository.save(createSoftwareArchitecture());
-
     expect(issues[0].body).toContain("## Dependency Graph");
     expect(issues[0].body).toContain("`api` -> `repository`");
     const restored = await repository.find("software-architecture-order");
@@ -214,12 +197,10 @@ describe("StandardArtifactIssueRepository", () => {
       stakeholderRequirementsIssueCodec,
     );
     await repository.save(createStRs());
-
     await repository.saveGateResult("strs-order", {
       passed: false,
       errors: ["Stakeholder Requirementが未確定です"],
     });
-
     expect(issues[0].body).toContain("- [ ] FAIL");
     expect(issues[0].body).toContain("Stakeholder Requirementが未確定です");
     expect((await repository.find("strs-order"))?.requirements?.[0].id).toBe(
@@ -238,13 +219,11 @@ describe("StandardArtifactIssueRepository", () => {
       client,
       systemRequirementsIssueCodec,
     ).save(createSyRs());
-
     await repository.saveCompositeGateResult({
       processName: "システム要件定義",
       artifactIds: ["strs-order", "syrs-order"],
       gateResult: { passed: false, errors: ["Architecture未完了"] },
     });
-
     expect(issues[0].body).toContain("## Composite Gate Result");
     expect(issues[1].body).toContain("## Composite Gate Result");
     expect(issues[0].body).toContain("`システム要件定義`");
@@ -264,15 +243,13 @@ describe("StandardArtifactIssueRepository", () => {
       "none",
       true,
     );
-
     await repository.save(state);
-
     expect(issues[0].body).toContain("## Next-cycle Decision");
     expect(issues[0].body).toContain("Start next Cycle");
     expect(await repository.find("feedback-cycle-1")).toEqual(state);
   });
 
-  it("8工程mappingに旧RequirementAllocation / SoftwareDesign schemaを残さない", () => {
+  it("Issue codec mappingにはIssue-backed / Runtime-managed Artifactだけを含める", () => {
     expect(Object.keys(standardArtifactIssueCodecs)).toEqual([
       "stakeholderRequirements",
       "systemRequirements",
@@ -280,22 +257,14 @@ describe("StandardArtifactIssueRepository", () => {
       "softwareRequirements",
       "softwareArchitectureDescription",
       "softwareElementDesign",
-      "implementedSoftwareElements",
-      "integratedSoftware",
       "verificationResult",
       "validationResult",
       "feedbackState",
     ]);
-    expect(Object.keys(standardArtifactIssueCodecsByStage)).toEqual([
-      "要求定義",
-      "システム要件定義",
-      "ソフトウェア要件定義",
-      "実装",
-      "統合",
-      "QA",
-      "検収",
-      "フィードバック",
+    expect(standardArtifactIssueCodecsByStage.実装).toEqual([
+      expect.objectContaining({ artifactType: "software-element-design" }),
     ]);
+    expect(standardArtifactIssueCodecsByStage.統合).toEqual([]);
   });
 
   it("同一Artifact IDが複数Issueへmappingされていれば復元を拒否する", async () => {
@@ -306,7 +275,6 @@ describe("StandardArtifactIssueRepository", () => {
     );
     await repository.save(createStRs());
     issues.push({ ...issues[0], number: 101 });
-
     await expect(repository.find("strs-order")).rejects.toThrow(
       "mapped to multiple GitHub Issues",
     );
