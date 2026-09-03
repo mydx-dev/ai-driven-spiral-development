@@ -226,11 +226,12 @@ export const standardGitHubArtifactIssueTemplatesByKey = Object.fromEntries(
 export const renderStandardGitHubArtifactIssueTemplate = (template) => {
   const id = template.artifactData.id;
   const cycleId = template.artifactData.cycleId;
+  const about = `${template.stage}の${template.name.replace("Spiral: ", "")}を記録する`;
   return [
     "---",
-    `name: ${template.name}`,
-    `about: ${template.stage}の${template.name.replace("Spiral: ", "")}を記録する`,
-    `title: '${template.titlePrefix} '`,
+    `name: ${JSON.stringify(template.name)}`,
+    `about: ${JSON.stringify(about)}`,
+    `title: ${JSON.stringify(`${template.titlePrefix} `)}`,
     'labels: ""',
     'assignees: ""',
     "---",
