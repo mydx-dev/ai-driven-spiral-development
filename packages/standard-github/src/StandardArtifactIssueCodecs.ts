@@ -1,6 +1,4 @@
 import {
-  ImplementedSoftwareElements,
-  IntegratedSoftware,
   SoftwareArchitectureDescription,
   SoftwareElementDesign,
   SoftwareRequirementsSpecification,
@@ -11,7 +9,7 @@ import {
   ValidationResult,
   VerificationResult,
 } from "@mydx-dev/spiral-standard";
-import { standardGitHubArtifactIssueTemplatesByKey } from "./IssueTemplates.mjs";
+import { standardGitHubArtifactIssueMappingsByKey } from "./IssueTemplates.mjs";
 import type {
   StandardArtifact,
   StandardArtifactIssueCodec,
@@ -32,13 +30,13 @@ const unique = (ids: Array<string | undefined>): string[] => [
   ...new Set(ids.filter((id): id is string => Boolean(id?.trim()))),
 ];
 
-const template = standardGitHubArtifactIssueTemplatesByKey;
+const mapping = standardGitHubArtifactIssueMappingsByKey;
 
 export const stakeholderRequirementsIssueCodec: StandardArtifactIssueCodec<StakeholderRequirementsSpecification> =
   {
-    artifactType: template.stakeholderRequirements.artifactType,
+    artifactType: mapping.stakeholderRequirements.artifactType,
     title: (artifact) =>
-      `${template.stakeholderRequirements.titlePrefix} ${artifact.id}`,
+      `${mapping.stakeholderRequirements.titlePrefix} ${artifact.id}`,
     restore: (payload) =>
       restoreWithPrototype<StakeholderRequirementsSpecification>(
         StakeholderRequirementsSpecification.prototype,
@@ -49,9 +47,9 @@ export const stakeholderRequirementsIssueCodec: StandardArtifactIssueCodec<Stake
 
 export const systemRequirementsIssueCodec: StandardArtifactIssueCodec<SystemRequirementsSpecification> =
   {
-    artifactType: template.systemRequirements.artifactType,
+    artifactType: mapping.systemRequirements.artifactType,
     title: (artifact) =>
-      `${template.systemRequirements.titlePrefix} ${artifact.id}`,
+      `${mapping.systemRequirements.titlePrefix} ${artifact.id}`,
     restore: (payload) =>
       restoreWithPrototype<SystemRequirementsSpecification>(
         SystemRequirementsSpecification.prototype,
@@ -67,9 +65,9 @@ export const systemRequirementsIssueCodec: StandardArtifactIssueCodec<SystemRequ
 
 export const systemArchitectureDescriptionIssueCodec: StandardArtifactIssueCodec<SystemArchitectureDescription> =
   {
-    artifactType: template.systemArchitectureDescription.artifactType,
+    artifactType: mapping.systemArchitectureDescription.artifactType,
     title: (artifact) =>
-      `${template.systemArchitectureDescription.titlePrefix} ${artifact.id}`,
+      `${mapping.systemArchitectureDescription.titlePrefix} ${artifact.id}`,
     restore: (payload) =>
       restoreWithPrototype<SystemArchitectureDescription>(
         SystemArchitectureDescription.prototype,
@@ -88,9 +86,9 @@ export const systemArchitectureDescriptionIssueCodec: StandardArtifactIssueCodec
 
 export const softwareRequirementsIssueCodec: StandardArtifactIssueCodec<SoftwareRequirementsSpecification> =
   {
-    artifactType: template.softwareRequirements.artifactType,
+    artifactType: mapping.softwareRequirements.artifactType,
     title: (artifact) =>
-      `${template.softwareRequirements.titlePrefix} ${artifact.id}`,
+      `${mapping.softwareRequirements.titlePrefix} ${artifact.id}`,
     restore: (payload) =>
       restoreWithPrototype<SoftwareRequirementsSpecification>(
         SoftwareRequirementsSpecification.prototype,
@@ -109,9 +107,9 @@ export const softwareRequirementsIssueCodec: StandardArtifactIssueCodec<Software
 
 export const softwareArchitectureDescriptionIssueCodec: StandardArtifactIssueCodec<SoftwareArchitectureDescription> =
   {
-    artifactType: template.softwareArchitectureDescription.artifactType,
+    artifactType: mapping.softwareArchitectureDescription.artifactType,
     title: (artifact) =>
-      `${template.softwareArchitectureDescription.titlePrefix} ${artifact.id}`,
+      `${mapping.softwareArchitectureDescription.titlePrefix} ${artifact.id}`,
     restore: (payload) =>
       restoreWithPrototype<SoftwareArchitectureDescription>(
         SoftwareArchitectureDescription.prototype,
@@ -143,9 +141,9 @@ export const softwareArchitectureDescriptionIssueCodec: StandardArtifactIssueCod
 
 export const softwareElementDesignIssueCodec: StandardArtifactIssueCodec<SoftwareElementDesign> =
   {
-    artifactType: template.softwareElementDesign.artifactType,
+    artifactType: mapping.softwareElementDesign.artifactType,
     title: (artifact) =>
-      `${template.softwareElementDesign.titlePrefix} ${artifact.id}`,
+      `${mapping.softwareElementDesign.titlePrefix} ${artifact.id}`,
     restore: (payload) =>
       restoreWithPrototype<SoftwareElementDesign>(
         SoftwareElementDesign.prototype,
@@ -154,49 +152,11 @@ export const softwareElementDesignIssueCodec: StandardArtifactIssueCodec<Softwar
     traceability: (artifact) => [artifact.architectureElement.architectureId],
   };
 
-export const implementedSoftwareElementsIssueCodec: StandardArtifactIssueCodec<ImplementedSoftwareElements> =
-  {
-    artifactType: template.implementedSoftwareElements.artifactType,
-    title: (artifact) =>
-      `${template.implementedSoftwareElements.titlePrefix} ${artifact.id}`,
-    restore: (payload) =>
-      restoreWithPrototype<ImplementedSoftwareElements>(
-        ImplementedSoftwareElements.prototype,
-        payload,
-      ),
-    traceability: (artifact) =>
-      unique(
-        (artifact.elements ?? []).map(
-          (element) => element.elementDesign.designId,
-        ),
-      ),
-  };
-
-export const integratedSoftwareIssueCodec: StandardArtifactIssueCodec<IntegratedSoftware> =
-  {
-    artifactType: template.integratedSoftware.artifactType,
-    title: (artifact) =>
-      `${template.integratedSoftware.titlePrefix} ${artifact.id}`,
-    restore: (payload) =>
-      restoreWithPrototype<IntegratedSoftware>(
-        IntegratedSoftware.prototype,
-        payload,
-      ),
-    traceability: (artifact) =>
-      unique([
-        ...(artifact.elements ?? []).map((element) => element.implementationId),
-        ...(artifact.relationships ?? []).map(
-          (relationship) => relationship.architectureId,
-        ),
-        ...(artifact.interfaces ?? []).map((item) => item.architectureId),
-      ]),
-  };
-
+/** Runtime-managed QA result. No human Issue Template is distributed. */
 export const verificationResultIssueCodec: StandardArtifactIssueCodec<VerificationResult> =
   {
-    artifactType: template.verificationResult.artifactType,
-    title: (artifact) =>
-      `${template.verificationResult.titlePrefix} ${artifact.id}`,
+    artifactType: mapping.verificationResult.artifactType,
+    title: (artifact) => `${mapping.verificationResult.titlePrefix} ${artifact.id}`,
     restore: (payload) =>
       restoreWithPrototype<VerificationResult>(
         VerificationResult.prototype,
@@ -211,16 +171,13 @@ export const verificationResultIssueCodec: StandardArtifactIssueCodec<Verificati
       ),
   };
 
+/** Runtime-managed validation result. No human Issue Template is distributed. */
 export const validationResultIssueCodec: StandardArtifactIssueCodec<ValidationResult> =
   {
-    artifactType: template.validationResult.artifactType,
-    title: (artifact) =>
-      `${template.validationResult.titlePrefix} ${artifact.id}`,
+    artifactType: mapping.validationResult.artifactType,
+    title: (artifact) => `${mapping.validationResult.titlePrefix} ${artifact.id}`,
     restore: (payload) =>
-      restoreWithPrototype<ValidationResult>(
-        ValidationResult.prototype,
-        payload,
-      ),
+      restoreWithPrototype<ValidationResult>(ValidationResult.prototype, payload),
     traceability: (artifact) =>
       unique(
         (artifact.results ?? []).flatMap((result) => [
@@ -243,8 +200,6 @@ export const standardArtifactIssueCodecs = {
   softwareRequirements: softwareRequirementsIssueCodec,
   softwareArchitectureDescription: softwareArchitectureDescriptionIssueCodec,
   softwareElementDesign: softwareElementDesignIssueCodec,
-  implementedSoftwareElements: implementedSoftwareElementsIssueCodec,
-  integratedSoftware: integratedSoftwareIssueCodec,
   verificationResult: verificationResultIssueCodec,
   validationResult: validationResultIssueCodec,
   feedbackState: feedbackStateIssueCodec,
@@ -260,11 +215,8 @@ export const standardArtifactIssueCodecsByStage = {
     softwareRequirementsIssueCodec,
     softwareArchitectureDescriptionIssueCodec,
   ],
-  実装: [
-    softwareElementDesignIssueCodec,
-    implementedSoftwareElementsIssueCodec,
-  ],
-  統合: [integratedSoftwareIssueCodec],
+  実装: [softwareElementDesignIssueCodec],
+  統合: [],
   QA: [verificationResultIssueCodec],
   検収: [validationResultIssueCodec],
   フィードバック: [feedbackStateIssueCodec],
