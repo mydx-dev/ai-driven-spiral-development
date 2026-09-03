@@ -52,7 +52,7 @@ const state = vi.hoisted<RuntimeState>(() => ({
   gateWrites: [],
 }));
 
-vi.mock("./RuntimeRepositories.js", () => {
+vi.mock("./StandardRuntimeRepositories.js", () => {
   const repository = <T>(values: () => T[], kind: string) => ({
     find: async () => values()[0],
     findByCycle: async () => values(),
@@ -72,24 +72,6 @@ vi.mock("./RuntimeRepositories.js", () => {
   const empty = repository(() => [], "empty");
 
   return {
-    CompositeArtifactRepository: class {
-      constructor(
-        readonly repositories: Array<{
-          findByCycle(cycleId: string): Promise<unknown[]>;
-        }>,
-      ) {}
-      async find() {
-        return undefined;
-      }
-      async findByCycle(cycleId: string) {
-        return (
-          await Promise.all(
-            this.repositories.map((item) => item.findByCycle(cycleId)),
-          )
-        ).flat();
-      }
-      async save() {}
-    },
     createStandardRuntimeRepositories: () => ({
       stakeholderRequirementsRepository: repository(
         () => state.stakeholder,
