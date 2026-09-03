@@ -263,7 +263,7 @@ const normalizeMarkdown = (value) => {
       }
     }
 
-    if (lines[index] === "" && normalized.at(-1) === "") continue;
+    if (lines[index] === "") continue;
     normalized.push(lines[index]);
   }
 
