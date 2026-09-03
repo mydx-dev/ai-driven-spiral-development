@@ -1,5 +1,5 @@
 import type { FeedbackChangeState } from "@mydx-dev/spiral-standard";
-import { standardGitHubArtifactIssueTemplatesByKey } from "./IssueTemplates.mjs";
+import { standardGitHubArtifactIssueMappingsByKey } from "./IssueTemplates.mjs";
 import type {
   StandardArtifact,
   StandardArtifactIssueCodec,
@@ -15,13 +15,13 @@ export class StandardFeedbackState implements StandardArtifact {
   ) {}
 }
 
-const feedbackTemplate =
-  standardGitHubArtifactIssueTemplatesByKey.feedbackState;
+const feedbackMapping = standardGitHubArtifactIssueMappingsByKey.feedbackState;
 
+/** Runtime-managed feedback state. No human Issue Template is distributed. */
 export const feedbackStateIssueCodec: StandardArtifactIssueCodec<StandardFeedbackState> =
   {
-    artifactType: feedbackTemplate.artifactType,
-    title: (state) => `${feedbackTemplate.titlePrefix} ${state.cycleId}`,
+    artifactType: feedbackMapping.artifactType,
+    title: (state) => `${feedbackMapping.titlePrefix} ${state.cycleId}`,
     restore: (payload) => {
       if (!payload || typeof payload !== "object") {
         throw new Error("Feedback state payload must be an object.");
