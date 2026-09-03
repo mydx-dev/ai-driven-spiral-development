@@ -220,14 +220,20 @@ export const standardGitHubArtifactIssueTemplates = [
 ];
 
 export const standardGitHubArtifactIssueTemplatesByKey = Object.fromEntries(
-  standardGitHubArtifactIssueTemplates.map((template) => [template.key, template]),
+  standardGitHubArtifactIssueTemplates.map((template) => [
+    template.key,
+    template,
+  ]),
 );
 
 /** @param {(typeof standardGitHubArtifactIssueTemplates)[number]} template */
 export const renderStandardGitHubArtifactIssueTemplate = (template) => {
   const id = template.artifactData.id;
   const cycleId = template.artifactData.cycleId;
-  const about = `${template.stage}の${template.name.replace("Spiral: ", "")}を記録する`;
+  const about = `${template.stage}の${template.name.replace(
+    "Spiral: ",
+    "",
+  )}を記録する`;
   return [
     "---",
     `name: ${JSON.stringify(template.name)}`,
