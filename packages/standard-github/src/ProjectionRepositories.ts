@@ -49,7 +49,8 @@ const implementationId = (cycleId: string) =>
 const integrationId = (cycleId: string) => `${cycleId}-integrated-software`;
 const passed = (conclusion: string | null) => conclusion === "success";
 const checkKind = (name: string) => {
-  if (/(unit|local|test)/i.test(name)) return "local" as const;
+  if (/(integration|e2e|contract)/i.test(name)) return "ci" as const;
+  if (/(unit|local)/i.test(name)) return "local" as const;
   if (/(lint|typecheck|static|quality|complexity|guard)/i.test(name)) {
     return "quality-guard" as const;
   }
@@ -57,7 +58,9 @@ const checkKind = (name: string) => {
   return "ci" as const;
 };
 
-export class GitHubImplementedSoftwareElementsRepository implements ImplementedSoftwareElementsRepository {
+export class GitHubImplementedSoftwareElementsRepository
+  implements ImplementedSoftwareElementsRepository
+{
   constructor(
     public readonly client: GitHubClient,
     public readonly designs: SoftwareElementDesignRepository,
@@ -143,7 +146,9 @@ export class GitHubImplementedSoftwareElementsRepository implements ImplementedS
   }
 }
 
-export class GitHubIntegratedSoftwareRepository implements IntegratedSoftwareRepository {
+export class GitHubIntegratedSoftwareRepository
+  implements IntegratedSoftwareRepository
+{
   constructor(
     public readonly client: GitHubClient,
     public readonly implementations: ImplementedSoftwareElementsRepository,
@@ -196,8 +201,83 @@ export class GitHubIntegratedSoftwareRepository implements IntegratedSoftwareRep
       ...buildChecks.map((check) => `build:${check.name}:success`),
       ...successfulRuns.map((run) => `workflow:${run.name}:success`),
     ];
-    const relationshipEvidence =
-      evidence.length > 0 ? evidence : [`commit:${branch.commit.sha}`];
+    const implementedElementIds = new Set(
+      (implementation.elements ?? []).map((element) => element.id),
+    );
+    const relationshipCandidates = (architecture.relationships ?? []).filter(
+      (relationship) =>
+        implementedElementIds.has(relationship.sourceElementId) &&
+        implementedElementIds.has(relationship.targetElementId),
+    );
+    const interfaceCandidates = (architecture.interfaces ?? []).filter(
+      (softwareInterface) =>
+        implementedElementIds.has(softwareInterface.providedByElementId) ||
+        softwareInterface.consumedByElementIds.some((elementId) =>
+          implementedElementIds.has(elementId),
+        ),
+    );
+    const integratedRelationships = relationshipCandidates.flatMap(
+      (relationship) => {
+        const marker = `relationship:${relationship.sourceElementId}->${relationship.targetElementId}:${relationship.type}`;
+        const matchedChecks = integrationTests.filter((check) =>
+          check.name.toLowerCase().includes(marker.toLowerCase()),
+        );
+        return matchedChecks.length === 0
+          ? []
+          : [
+              {
+                architectureId: architecture.id,
+                sourceElementId: relationship.sourceElementId,
+                targetElementId: relationship.targetElementId,
+                type: relationship.type,
+                evidence: matchedChecks.map(
+                  (check) => `integration-test:${check.name}:success`,
+                ),
+              },
+            ];
+      },
+    );
+    const integratedInterfaces = interfaceCandidates.flatMap(
+      (softwareInterface) => {
+        const marker = `interface:${softwareInterface.id}`;
+        const matchedChecks = integrationTests.filter((check) =>
+          check.name.toLowerCase().includes(marker.toLowerCase()),
+        );
+        return matchedChecks.length === 0
+          ? []
+          : [
+              {
+                architectureId: architecture.id,
+                interfaceId: softwareInterface.id,
+                evidence: matchedChecks.map(
+                  (check) => `integration-test:${check.name}:success`,
+                ),
+              },
+            ];
+      },
+    );
+    const unresolvedRelationshipEvidence = relationshipCandidates
+      .filter((relationship) => {
+        const marker = `relationship:${relationship.sourceElementId}->${relationship.targetElementId}:${relationship.type}`;
+        return !integrationTests.some((check) =>
+          check.name.toLowerCase().includes(marker.toLowerCase()),
+        );
+      })
+      .map(
+        (relationship) =>
+          `relationship integration evidence not found: ${relationship.sourceElementId} -> ${relationship.targetElementId} (${relationship.type})`,
+      );
+    const unresolvedInterfaceEvidence = interfaceCandidates
+      .filter((softwareInterface) => {
+        const marker = `interface:${softwareInterface.id}`;
+        return !integrationTests.some((check) =>
+          check.name.toLowerCase().includes(marker.toLowerCase()),
+        );
+      })
+      .map(
+        (softwareInterface) =>
+          `interface integration evidence not found: ${softwareInterface.id}`,
+      );
 
     return [
       new IntegratedSoftware(
@@ -207,18 +287,8 @@ export class GitHubIntegratedSoftwareRepository implements IntegratedSoftwareRep
           implementationId: implementation.id,
           elementId: element.id,
         })),
-        (architecture.relationships ?? []).map((relationship) => ({
-          architectureId: architecture.id,
-          sourceElementId: relationship.sourceElementId,
-          targetElementId: relationship.targetElementId,
-          type: relationship.type,
-          evidence: relationshipEvidence,
-        })),
-        (architecture.interfaces ?? []).map((softwareInterface) => ({
-          architectureId: architecture.id,
-          interfaceId: softwareInterface.id,
-          evidence: relationshipEvidence,
-        })),
+        integratedRelationships,
+        integratedInterfaces,
         [
           `branch:${repository.default_branch}@${branch.commit.sha}`,
           ...successfulRuns.map((run) => `workflow-run:${run.id}`),
@@ -231,6 +301,8 @@ export class GitHubIntegratedSoftwareRepository implements IntegratedSoftwareRep
           ...(buildChecks.length === 0
             ? ["integrated build evidence not found"]
             : []),
+          ...unresolvedRelationshipEvidence,
+          ...unresolvedInterfaceEvidence,
         ],
       ),
     ];
