@@ -58,7 +58,11 @@ try {
       throw new Error(`Packed CLI did not generate ${template.filename}`);
     }
     const body = readFileSync(path, "utf8");
-    if (!body.includes(`<!-- spiral-artifact-type: ${template.artifactType} -->`)) {
+    if (
+      !body.includes(
+        `<!-- spiral-artifact-type: ${template.artifactType} -->`,
+      )
+    ) {
       throw new Error(
         `Packed CLI generated an invalid Artifact type for ${template.filename}`,
       );
