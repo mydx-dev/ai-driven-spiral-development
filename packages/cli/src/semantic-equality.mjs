@@ -216,15 +216,44 @@ const normalizeJavaScriptTokens = (tokens) => {
 
 const normalizeMarkdown = (value) => {
   const lines = normalizeText(value).split("\n");
-  if (lines[0] !== "---") return lines.join("\n");
-  const frontMatterEnd = lines.indexOf("---", 1);
-  if (frontMatterEnd < 0) return lines.join("\n");
-
-  for (let index = 1; index < frontMatterEnd; index += 1) {
-    lines[index] = lines[index].replace(/^(\s*[^:]+:\s*)'([^']*)'$/, '$1"$2"');
+  if (lines[0] === "---") {
+    const frontMatterEnd = lines.indexOf("---", 1);
+    if (frontMatterEnd >= 0) {
+      for (let index = 1; index < frontMatterEnd; index += 1) {
+        lines[index] = lines[index].replace(
+          /^(\s*[^:]+:\s*)'([^']*)'$/,
+          '$1"$2"',
+        );
+      }
+    }
   }
 
-  return lines.join("\n");
+  const normalized = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    if (lines[index].trim() !== "```json") {
+      normalized.push(lines[index]);
+      continue;
+    }
+
+    const close = lines.findIndex(
+      (line, candidate) => candidate > index && line.trim() === "```",
+    );
+    if (close < 0) {
+      normalized.push(lines[index]);
+      continue;
+    }
+
+    const json = lines.slice(index + 1, close).join("\n");
+    try {
+      normalized.push("```json", JSON.stringify(JSON.parse(json)), "```");
+      index = close;
+    } catch {
+      normalized.push(...lines.slice(index, close + 1));
+      index = close;
+    }
+  }
+
+  return normalized.join("\n");
 };
 
 const normalizeYaml = (value) => {
