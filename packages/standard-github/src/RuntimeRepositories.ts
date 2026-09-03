@@ -61,9 +61,7 @@ export class CompositeArtifactRepository implements ArtifactRepository<Artifact>
   }
 }
 
-export class StandardRuntimeCycleRepository
-  implements CycleRepository<StandardCycle>
-{
+export class StandardRuntimeCycleRepository implements CycleRepository<StandardCycle> {
   constructor(
     public readonly client: GitHubClient,
     public readonly feedbackRepository: ArtifactRepository<StandardFeedbackState>,

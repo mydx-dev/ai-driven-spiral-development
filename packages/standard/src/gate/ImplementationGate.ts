@@ -31,8 +31,8 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
       (architecture.elements ?? []).map((element) => element.id),
     );
     const architectureInterfaceIds = new Set(
-      (architecture.interfaces ?? []).map((softwareInterface) =>
-        softwareInterface.id,
+      (architecture.interfaces ?? []).map(
+        (softwareInterface) => softwareInterface.id,
       ),
     );
     if (architecture.elements === undefined) {
@@ -50,7 +50,8 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
       } else {
         designIds.add(design.id);
       }
-      if (!design.cycleId.trim()) errors.push(`${design.id}: 対象Cycleがありません`);
+      if (!design.cycleId.trim())
+        errors.push(`${design.id}: 対象Cycleがありません`);
       if (
         design.architectureElement.architectureId !== architecture.id ||
         !targetElementIds.has(design.architectureElement.elementId)
@@ -82,7 +83,9 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
       } else {
         for (const interfaceId of design.interfaceIds ?? []) {
           if (!architectureInterfaceIds.has(interfaceId)) {
-            errors.push(`${design.id}: 未知のSoftware interfaceを参照しています`);
+            errors.push(
+              `${design.id}: 未知のSoftware interfaceを参照しています`,
+            );
           }
         }
       }
@@ -114,7 +117,9 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
         errors.push(`${implementation.id}: 対象Cycleがありません`);
       }
       if (implementation.elements === undefined) {
-        errors.push(`${implementation.id}: Implemented Software Elementsが未確定です`);
+        errors.push(
+          `${implementation.id}: Implemented Software Elementsが未確定です`,
+        );
         continue;
       }
 
@@ -129,7 +134,9 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
 
         const designId = element.elementDesign.designId;
         if (!designIds.has(designId)) {
-          errors.push(`${prefix}: 未知のSoftware Element Designを参照しています`);
+          errors.push(
+            `${prefix}: 未知のSoftware Element Designを参照しています`,
+          );
         } else if (implementedDesignIds.has(designId)) {
           errors.push(`${designId}: Implementationが重複しています`);
         } else {
@@ -151,7 +158,8 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
             !checks.some(
               (check) =>
                 check.kind === "local" ||
-                (check.kind === undefined && /(unit|local|test)/i.test(check.name)),
+                (check.kind === undefined &&
+                  /(unit|local|test)/i.test(check.name)),
             )
           ) {
             errors.push(`${prefix}: local check結果がありません`);
@@ -173,7 +181,9 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
         if (element.knownConstraints === undefined) {
           errors.push(`${prefix}: 既知の制約が未確定です`);
         } else if (
-          (element.knownConstraints ?? []).some((constraint) => !constraint.trim())
+          (element.knownConstraints ?? []).some(
+            (constraint) => !constraint.trim(),
+          )
         ) {
           errors.push(`${prefix}: 既知の制約が不正です`);
         }

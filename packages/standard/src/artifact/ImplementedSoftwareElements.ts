@@ -5,10 +5,7 @@ export type SoftwareElementDesignReference = {
 };
 
 export type ImplementationCheckKind =
-  | "local"
-  | "quality-guard"
-  | "build"
-  | "ci";
+  "local" | "quality-guard" | "build" | "ci";
 
 export type ImplementationCheckResult = {
   readonly name: string;

@@ -29,7 +29,9 @@ const inMemoryClient = () => {
   const searchIssues = vi.fn(async (query: string) => {
     const marker = query.match(/"([^"]+)"/)?.[1];
     return {
-      items: marker ? issues.filter((issue) => issue.body.includes(marker)) : [],
+      items: marker
+        ? issues.filter((issue) => issue.body.includes(marker))
+        : [],
     };
   });
   const createIssue = vi.fn(async (input: { title: string; body?: string }) => {
@@ -53,7 +55,11 @@ const inMemoryClient = () => {
 
   return {
     issues,
-    client: { searchIssues, createIssue, updateIssue } as unknown as GitHubClient,
+    client: {
+      searchIssues,
+      createIssue,
+      updateIssue,
+    } as unknown as GitHubClient,
   };
 };
 
@@ -90,9 +96,7 @@ const createSyRs = () =>
         id: "sys-1",
         statement: "注文を受け付ける",
         category: "functional",
-        tracesTo: [
-          { specificationId: "strs-order", requirementId: "need-1" },
-        ],
+        tracesTo: [{ specificationId: "strs-order", requirementId: "need-1" }],
       },
     ],
     null,

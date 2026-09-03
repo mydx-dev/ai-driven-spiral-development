@@ -20,7 +20,8 @@ export type SoftwareRequirementsRepository =
   ArtifactRepository<SoftwareRequirementsSpecification>;
 export type SoftwareArchitectureDescriptionRepository =
   ArtifactRepository<SoftwareArchitectureDescription>;
-export type SoftwareElementDesignRepository = ArtifactRepository<SoftwareElementDesign>;
+export type SoftwareElementDesignRepository =
+  ArtifactRepository<SoftwareElementDesign>;
 
 export interface ImplementedSoftwareElementsRepository {
   find(id: string): Promise<ImplementedSoftwareElements | undefined>;
@@ -33,6 +34,7 @@ export interface IntegratedSoftwareRepository {
 }
 
 /** Runtime-produced verification evidence. It is not a human-authored template. */
-export type VerificationResultRepository = ArtifactRepository<VerificationResult>;
+export type VerificationResultRepository =
+  ArtifactRepository<VerificationResult>;
 /** Runtime-produced validation evidence. It is not a human-authored template. */
 export type ValidationResultRepository = ArtifactRepository<ValidationResult>;

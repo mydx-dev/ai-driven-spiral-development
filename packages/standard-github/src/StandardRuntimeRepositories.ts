@@ -1,5 +1,8 @@
 import { StandardArtifactIssueRepository } from "./StandardArtifactIssueRepository.js";
-import { feedbackStateIssueCodec, StandardFeedbackState } from "./StandardFeedbackState.js";
+import {
+  feedbackStateIssueCodec,
+  StandardFeedbackState,
+} from "./StandardFeedbackState.js";
 import type { GitHubClient } from "@mydx-dev/spiral-github";
 import {
   GitHubSoftwareArchitectureDescriptionRepository,
@@ -20,10 +23,13 @@ import { StandardRuntimeCycleRepository } from "./RuntimeRepositories.js";
 export const createStandardRuntimeRepositories = (client: GitHubClient) => {
   const stakeholderRequirementsRepository =
     new GitHubStakeholderRequirementsRepository(client);
-  const systemRequirementsRepository = new GitHubSystemRequirementsRepository(client);
+  const systemRequirementsRepository = new GitHubSystemRequirementsRepository(
+    client,
+  );
   const systemArchitectureDescriptionRepository =
     new GitHubSystemArchitectureDescriptionRepository(client);
-  const softwareRequirementsRepository = new GitHubSoftwareRequirementsRepository(client);
+  const softwareRequirementsRepository =
+    new GitHubSoftwareRequirementsRepository(client);
   const softwareArchitectureDescriptionRepository =
     new GitHubSoftwareArchitectureDescriptionRepository(client);
   const softwareElementDesignRepository =
@@ -38,8 +44,12 @@ export const createStandardRuntimeRepositories = (client: GitHubClient) => {
     implementedSoftwareElementsRepository,
     softwareArchitectureDescriptionRepository,
   );
-  const verificationResultRepository = new GitHubVerificationResultRepository(client);
-  const validationResultRepository = new GitHubValidationResultRepository(client);
+  const verificationResultRepository = new GitHubVerificationResultRepository(
+    client,
+  );
+  const validationResultRepository = new GitHubValidationResultRepository(
+    client,
+  );
   const feedbackStateRepository =
     new StandardArtifactIssueRepository<StandardFeedbackState>(
       client,

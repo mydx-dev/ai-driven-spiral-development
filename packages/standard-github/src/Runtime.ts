@@ -56,8 +56,7 @@ export type StandardGitHubExecutionMessage =
     };
 
 export type StandardGitHubCirculateResult =
-  | { readonly status: "processed" }
-  | { readonly status: "duplicate" };
+  { readonly status: "processed" } | { readonly status: "duplicate" };
 
 type IssueComment = { readonly body: string | null };
 type ProjectionRepository<TArtifact extends Artifact> = {
@@ -231,7 +230,9 @@ export const createStandardGitHubRuntime = ({
     }): Promise<StandardGitHubCirculateResult> {
       const marker = semanticCompletionMarker(eventId);
       const issueNumber = cycleIssueNumber(cycleId);
-      if (await semanticCompletionAlreadyProcessed(client, issueNumber, marker)) {
+      if (
+        await semanticCompletionAlreadyProcessed(client, issueNumber, marker)
+      ) {
         return { status: "duplicate" };
       }
 
@@ -249,9 +250,13 @@ export const createStandardGitHubRuntime = ({
       ] = await Promise.all([
         repositories.stakeholderRequirementsRepository.findByCycle(cycleId),
         repositories.systemRequirementsRepository.findByCycle(cycleId),
-        repositories.systemArchitectureDescriptionRepository.findByCycle(cycleId),
+        repositories.systemArchitectureDescriptionRepository.findByCycle(
+          cycleId,
+        ),
         repositories.softwareRequirementsRepository.findByCycle(cycleId),
-        repositories.softwareArchitectureDescriptionRepository.findByCycle(cycleId),
+        repositories.softwareArchitectureDescriptionRepository.findByCycle(
+          cycleId,
+        ),
         repositories.softwareElementDesignRepository.findByCycle(cycleId),
         repositories.implementedSoftwareElementsRepository.findByCycle(cycleId),
         repositories.integratedSoftwareRepository.findByCycle(cycleId),
@@ -295,7 +300,9 @@ export const createStandardGitHubRuntime = ({
       );
       const implementationRepository = compositeRepository(
         repositories.softwareElementDesignRepository,
-        projectionRepository(repositories.implementedSoftwareElementsRepository),
+        projectionRepository(
+          repositories.implementedSoftwareElementsRepository,
+        ),
       );
 
       const requirements = new Process({
@@ -312,13 +319,21 @@ export const createStandardGitHubRuntime = ({
         name: "システム要件定義",
         artifactRepository: systemRequirementsRepository,
         gate: systemRequirementsGate,
-        executor: createExecutor<Artifact>("システム要件定義", eventId, channel),
+        executor: createExecutor<Artifact>(
+          "システム要件定義",
+          eventId,
+          channel,
+        ),
       });
       const softwareRequirements = new Process({
         name: "ソフトウェア要件定義",
         artifactRepository: softwareRequirementsRepository,
         gate: softwareRequirementsGate,
-        executor: createExecutor<Artifact>("ソフトウェア要件定義", eventId, channel),
+        executor: createExecutor<Artifact>(
+          "ソフトウェア要件定義",
+          eventId,
+          channel,
+        ),
       });
       const implementation = new Process({
         name: "実装",
@@ -383,27 +398,35 @@ export const createStandardGitHubRuntime = ({
             ),
           );
         } else if (stage === "システム要件定義") {
-          await repositories.systemRequirementsRepository.saveCompositeGateResult({
-            processName: stage,
-            artifactIds: [...systemSpecifications, ...systemArchitectures].map(
-              ({ id }) => id,
-            ),
-            gateResult: proceedResult.gateResult,
-          });
+          await repositories.systemRequirementsRepository.saveCompositeGateResult(
+            {
+              processName: stage,
+              artifactIds: [
+                ...systemSpecifications,
+                ...systemArchitectures,
+              ].map(({ id }) => id),
+              gateResult: proceedResult.gateResult,
+            },
+          );
         } else if (stage === "ソフトウェア要件定義") {
-          await repositories.softwareRequirementsRepository.saveCompositeGateResult({
-            processName: stage,
-            artifactIds: [...softwareSpecifications, ...softwareArchitectures].map(
-              ({ id }) => id,
-            ),
-            gateResult: proceedResult.gateResult,
-          });
+          await repositories.softwareRequirementsRepository.saveCompositeGateResult(
+            {
+              processName: stage,
+              artifactIds: [
+                ...softwareSpecifications,
+                ...softwareArchitectures,
+              ].map(({ id }) => id),
+              gateResult: proceedResult.gateResult,
+            },
+          );
         } else if (stage === "実装") {
-          await repositories.softwareElementDesignRepository.saveCompositeGateResult({
-            processName: stage,
-            artifactIds: elementDesigns.map(({ id }) => id),
-            gateResult: proceedResult.gateResult,
-          });
+          await repositories.softwareElementDesignRepository.saveCompositeGateResult(
+            {
+              processName: stage,
+              artifactIds: elementDesigns.map(({ id }) => id),
+              gateResult: proceedResult.gateResult,
+            },
+          );
         } else if (stage === "QA") {
           await Promise.all(
             verifications.map(({ id }) =>

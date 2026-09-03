@@ -57,9 +57,7 @@ const checkKind = (name: string) => {
   return "ci" as const;
 };
 
-export class GitHubImplementedSoftwareElementsRepository
-  implements ImplementedSoftwareElementsRepository
-{
+export class GitHubImplementedSoftwareElementsRepository implements ImplementedSoftwareElementsRepository {
   constructor(
     public readonly client: GitHubClient,
     public readonly designs: SoftwareElementDesignRepository,
@@ -83,7 +81,9 @@ export class GitHubImplementedSoftwareElementsRepository
         const pullRequests = await Promise.all(
           response.items
             .filter((item) => item.pull_request)
-            .map(({ number }) => this.client.getPullRequest<PullRequest>(number)),
+            .map(({ number }) =>
+              this.client.getPullRequest<PullRequest>(number),
+            ),
         );
         const candidates = pullRequests.filter(
           (pullRequest) =>
@@ -97,7 +97,9 @@ export class GitHubImplementedSoftwareElementsRepository
             artifactReferences: [],
             checks: [],
             knownConstraints: [],
-            unimplementedItems: ["Pull Request / implementation evidence not found"],
+            unimplementedItems: [
+              "Pull Request / implementation evidence not found",
+            ],
           };
         }
 
@@ -124,20 +126,24 @@ export class GitHubImplementedSoftwareElementsRepository
           })),
           knownConstraints: [],
           unimplementedItems:
-            pullRequest.merged_at === null ? ["implementation PR is not merged"] : [],
+            pullRequest.merged_at === null
+              ? ["implementation PR is not merged"]
+              : [],
         };
       }),
     );
 
     return [
-      new ImplementedSoftwareElements(implementationId(cycleId), cycleId, elements),
+      new ImplementedSoftwareElements(
+        implementationId(cycleId),
+        cycleId,
+        elements,
+      ),
     ];
   }
 }
 
-export class GitHubIntegratedSoftwareRepository
-  implements IntegratedSoftwareRepository
-{
+export class GitHubIntegratedSoftwareRepository implements IntegratedSoftwareRepository {
   constructor(
     public readonly client: GitHubClient,
     public readonly implementations: ImplementedSoftwareElementsRepository,
