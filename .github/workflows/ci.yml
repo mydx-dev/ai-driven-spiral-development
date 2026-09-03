@@ -117,7 +117,27 @@ jobs:
         run: pnpm lint
 
       - name: Format check
-        run: pnpm format:check
+        run: |
+          if pnpm format:check; then
+            exit 0
+          fi
+          pnpm exec prettier . --write
+          git diff -- \
+            packages/cli/issue-templates.spec.mjs \
+            packages/cli/scripts/smoke-packed-standard-templates.mjs \
+            packages/cli/src/generated/standard-github-issue-templates.mjs \
+            packages/standard-github/src/IssueTemplates.mjs \
+            packages/standard-github/src/ProjectionRepositories.spec.ts \
+            packages/standard-github/src/ProjectionRepositories.ts \
+            packages/standard-github/src/Runtime.ts \
+            packages/standard-github/src/RuntimeRepositories.ts \
+            packages/standard-github/src/StandardArtifactIssueCodecs.ts \
+            packages/standard-github/src/StandardArtifactIssueRepository.spec.ts \
+            packages/standard-github/src/StandardRuntimeRepositories.ts \
+            packages/standard/src/artifact/ImplementedSoftwareElements.ts \
+            packages/standard/src/gate/ImplementationGate.ts \
+            packages/standard/src/repository/Repositories.ts
+          exit 1
 
       - name: Build Core
         run: pnpm build
