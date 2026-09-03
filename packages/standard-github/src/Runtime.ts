@@ -29,11 +29,8 @@ import {
   VerificationResult,
 } from "@mydx-dev/spiral-standard";
 import type { GitHubClient } from "@mydx-dev/spiral-github";
-import {
-  CompositeArtifactRepository,
-  createStandardRuntimeRepositories,
-} from "./RuntimeRepositories.js";
-import { standardArtifactIssueCodecsByStage } from "./StandardArtifactIssueCodecs.js";
+import { CompositeArtifactRepository } from "./RuntimeRepositories.js";
+import { createStandardRuntimeRepositories } from "./StandardRuntimeRepositories.js";
 
 export const standardGitHubProcessNames = standardProcessNames;
 export const standardGitHubStageNames = standardStageNames;
@@ -59,10 +56,13 @@ export type StandardGitHubExecutionMessage =
     };
 
 export type StandardGitHubCirculateResult =
-  { readonly status: "processed" } | { readonly status: "duplicate" };
+  | { readonly status: "processed" }
+  | { readonly status: "duplicate" };
 
-type IssueComment = {
-  readonly body: string | null;
+type IssueComment = { readonly body: string | null };
+type ProjectionRepository<TArtifact extends Artifact> = {
+  find(id: string): Promise<TArtifact | undefined>;
+  findByCycle(cycleId: string): Promise<TArtifact[]>;
 };
 
 const executionIdempotencyKey = (
@@ -116,34 +116,29 @@ const routedCycleRepository = <TCycle extends StandardCycle>(
     newInformation: StandardCycle["newInformation"],
     changedInformation: StandardCycle["changedInformation"],
   ) => TCycle,
-): {
-  cycleRepository: CycleRepository<TCycle>;
-  cycleFactory: (previousCycle: TCycle) => Promise<TCycle>;
-} => {
+) => {
   const restore = (cycle: StandardCycle) =>
     new CycleDefinition(
       cycle.id,
       cycle.newInformation,
       cycle.changedInformation,
     );
-
   return {
     cycleRepository: {
       create: async () => restore(await repository.create()),
-      find: async (id) => {
+      find: async (id: string) => {
         const cycle = await repository.find(id);
         return cycle ? restore(cycle) : undefined;
       },
-      save: (cycle) => repository.save(cycle),
-    },
-    cycleFactory: async (previousCycle) =>
+      save: (cycle: TCycle) => repository.save(cycle),
+    } satisfies CycleRepository<TCycle>,
+    cycleFactory: async (previousCycle: TCycle) =>
       restore(await repository.createNext(previousCycle)),
   };
 };
 
 const cycleIssueNumber = (cycleId: string) => {
-  const normalized = cycleId.replace(/^#/, "");
-  const issueNumber = Number(normalized);
+  const issueNumber = Number(cycleId.replace(/^#/, ""));
   if (!Number.isSafeInteger(issueNumber) || issueNumber < 1) {
     throw new Error(`Invalid Standard GitHub cycle id: ${cycleId}`);
   }
@@ -152,12 +147,8 @@ const cycleIssueNumber = (cycleId: string) => {
 
 const semanticCompletionMarker = (eventId: string) => {
   const normalized = eventId.trim();
-  if (!normalized) {
-    throw new Error("Semantic Completion event id is required.");
-  }
-  return `<!-- spiral-semantic-completion:${encodeURIComponent(
-    normalized,
-  )} -->`;
+  if (!normalized) throw new Error("Semantic Completion event id is required.");
+  return `<!-- spiral-semantic-completion:${encodeURIComponent(normalized)} -->`;
 };
 
 const semanticCompletionAlreadyProcessed = async (
@@ -186,9 +177,7 @@ const recordSemanticCompletion = (
   client.request(
     "POST",
     client.repositoryPath(`/issues/${issueNumber}/comments`),
-    {
-      body: `${marker}\nSemantic Completion processed: \`${name}\``,
-    },
+    { body: `${marker}\nSemantic Completion processed: \`${name}\`` },
   );
 
 const artifactGate = <TArtifact extends Artifact>(
@@ -207,6 +196,18 @@ const artifactGate = <TArtifact extends Artifact>(
 const compositeRepository = (
   ...repositories: ArtifactRepository<Artifact>[]
 ): CompositeArtifactRepository => new CompositeArtifactRepository(repositories);
+
+const projectionRepository = <TArtifact extends Artifact>(
+  repository: ProjectionRepository<TArtifact>,
+): ArtifactRepository<TArtifact> => ({
+  find: (id) => repository.find(id),
+  findByCycle: (cycleId) => repository.findByCycle(cycleId),
+  save: async () => {
+    throw new Error(
+      "Projected Standard Artifact is read-only; update the underlying GitHub implementation/integration evidence instead.",
+    );
+  },
+});
 
 export const createStandardGitHubRuntime = ({
   client,
@@ -230,9 +231,7 @@ export const createStandardGitHubRuntime = ({
     }): Promise<StandardGitHubCirculateResult> {
       const marker = semanticCompletionMarker(eventId);
       const issueNumber = cycleIssueNumber(cycleId);
-      if (
-        await semanticCompletionAlreadyProcessed(client, issueNumber, marker)
-      ) {
+      if (await semanticCompletionAlreadyProcessed(client, issueNumber, marker)) {
         return { status: "duplicate" };
       }
 
@@ -250,13 +249,9 @@ export const createStandardGitHubRuntime = ({
       ] = await Promise.all([
         repositories.stakeholderRequirementsRepository.findByCycle(cycleId),
         repositories.systemRequirementsRepository.findByCycle(cycleId),
-        repositories.systemArchitectureDescriptionRepository.findByCycle(
-          cycleId,
-        ),
+        repositories.systemArchitectureDescriptionRepository.findByCycle(cycleId),
         repositories.softwareRequirementsRepository.findByCycle(cycleId),
-        repositories.softwareArchitectureDescriptionRepository.findByCycle(
-          cycleId,
-        ),
+        repositories.softwareArchitectureDescriptionRepository.findByCycle(cycleId),
         repositories.softwareElementDesignRepository.findByCycle(cycleId),
         repositories.implementedSoftwareElementsRepository.findByCycle(cycleId),
         repositories.integratedSoftwareRepository.findByCycle(cycleId),
@@ -290,8 +285,6 @@ export const createStandardGitHubRuntime = ({
         verifications,
       );
 
-      const requirementsRepository =
-        repositories.stakeholderRequirementsRepository;
       const systemRequirementsRepository = compositeRepository(
         repositories.systemRequirementsRepository,
         repositories.systemArchitectureDescriptionRepository,
@@ -302,12 +295,12 @@ export const createStandardGitHubRuntime = ({
       );
       const implementationRepository = compositeRepository(
         repositories.softwareElementDesignRepository,
-        repositories.implementedSoftwareElementsRepository,
+        projectionRepository(repositories.implementedSoftwareElementsRepository),
       );
 
       const requirements = new Process({
         name: "要求定義",
-        artifactRepository: requirementsRepository,
+        artifactRepository: repositories.stakeholderRequirementsRepository,
         gate: requirementsGate,
         executor: createExecutor<StakeholderRequirementsSpecification>(
           "要求定義",
@@ -319,21 +312,13 @@ export const createStandardGitHubRuntime = ({
         name: "システム要件定義",
         artifactRepository: systemRequirementsRepository,
         gate: systemRequirementsGate,
-        executor: createExecutor<Artifact>(
-          "システム要件定義",
-          eventId,
-          channel,
-        ),
+        executor: createExecutor<Artifact>("システム要件定義", eventId, channel),
       });
       const softwareRequirements = new Process({
         name: "ソフトウェア要件定義",
         artifactRepository: softwareRequirementsRepository,
         gate: softwareRequirementsGate,
-        executor: createExecutor<Artifact>(
-          "ソフトウェア要件定義",
-          eventId,
-          channel,
-        ),
+        executor: createExecutor<Artifact>("ソフトウェア要件定義", eventId, channel),
       });
       const implementation = new Process({
         name: "実装",
@@ -343,7 +328,9 @@ export const createStandardGitHubRuntime = ({
       });
       const integration = new Process({
         name: "統合",
-        artifactRepository: repositories.integratedSoftwareRepository,
+        artifactRepository: projectionRepository(
+          repositories.integratedSoftwareRepository,
+        ),
         gate: integrationGate,
         executor: createExecutor<IntegratedSoftware>("統合", eventId, channel),
       });
@@ -369,29 +356,11 @@ export const createStandardGitHubRuntime = ({
         verification: qa,
         validation,
       });
-
       const event = new SemanticCompletionEvent({
         cycleId,
         name,
         cycleDefinition: CycleDefinition,
       });
-
-      const stageArtifacts: Record<
-        StandardGitHubProcessName,
-        readonly Artifact[]
-      > = {
-        要求定義: stakeholderSpecifications,
-        システム要件定義: [...systemSpecifications, ...systemArchitectures],
-        ソフトウェア要件定義: [
-          ...softwareSpecifications,
-          ...softwareArchitectures,
-        ],
-        実装: [...elementDesigns, ...implementations],
-        統合: integrations,
-        QA: verifications,
-        検収: validations,
-      };
-
       const { cycleRepository, cycleFactory } = routedCycleRepository(
         repositories.cycleRepository,
         CycleDefinition,
@@ -400,37 +369,59 @@ export const createStandardGitHubRuntime = ({
         cycleRepository,
         cycleFactory,
       });
-
       const proceedResult = await spiral.circulate(event);
 
       if (!event.isCycleCompletion() && proceedResult) {
         const stage = event.name as StandardGitHubProcessName;
-        const artifactIds = stageArtifacts[stage].map(({ id }) => id);
-
-        if (artifactIds.length > 0) {
-          if (standardArtifactIssueCodecsByStage[stage].length > 1) {
-            await repositories.stakeholderRequirementsRepository.saveCompositeGateResult(
-              {
-                processName: stage,
-                artifactIds,
-                gateResult: proceedResult.gateResult,
-              },
-            );
-          } else {
-            const writer = {
-              要求定義: repositories.stakeholderRequirementsRepository,
-              統合: repositories.integratedSoftwareRepository,
-              QA: repositories.verificationResultRepository,
-              検収: repositories.validationResultRepository,
-            }[stage as "要求定義" | "統合" | "QA" | "検収"];
-            if (writer) {
-              await Promise.all(
-                artifactIds.map((artifactId) =>
-                  writer.saveGateResult(artifactId, proceedResult.gateResult),
-                ),
-              );
-            }
-          }
+        if (stage === "要求定義") {
+          await Promise.all(
+            stakeholderSpecifications.map(({ id }) =>
+              repositories.stakeholderRequirementsRepository.saveGateResult(
+                id,
+                proceedResult.gateResult,
+              ),
+            ),
+          );
+        } else if (stage === "システム要件定義") {
+          await repositories.systemRequirementsRepository.saveCompositeGateResult({
+            processName: stage,
+            artifactIds: [...systemSpecifications, ...systemArchitectures].map(
+              ({ id }) => id,
+            ),
+            gateResult: proceedResult.gateResult,
+          });
+        } else if (stage === "ソフトウェア要件定義") {
+          await repositories.softwareRequirementsRepository.saveCompositeGateResult({
+            processName: stage,
+            artifactIds: [...softwareSpecifications, ...softwareArchitectures].map(
+              ({ id }) => id,
+            ),
+            gateResult: proceedResult.gateResult,
+          });
+        } else if (stage === "実装") {
+          await repositories.softwareElementDesignRepository.saveCompositeGateResult({
+            processName: stage,
+            artifactIds: elementDesigns.map(({ id }) => id),
+            gateResult: proceedResult.gateResult,
+          });
+        } else if (stage === "QA") {
+          await Promise.all(
+            verifications.map(({ id }) =>
+              repositories.verificationResultRepository.saveGateResult(
+                id,
+                proceedResult.gateResult,
+              ),
+            ),
+          );
+        } else if (stage === "検収") {
+          await Promise.all(
+            validations.map(({ id }) =>
+              repositories.validationResultRepository.saveGateResult(
+                id,
+                proceedResult.gateResult,
+              ),
+            ),
+          );
         }
       }
 
