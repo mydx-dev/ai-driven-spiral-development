@@ -1,42 +1,21 @@
 /**
- * @param {string} key
- * @param {string} stage
- * @param {string} artifactType
- * @param {string} filename
- * @param {string} name
- * @param {string} titlePrefix
- * @param {Record<string, unknown>} artifactData
- * @param {string[]} [sections]
+ * Standard GitHub Artifact/Issue mapping.
+ *
+ * `template: true` means humans/agents author the Artifact as an Issue.
+ * Runtime-managed Issue Artifacts intentionally have `template: false`.
+ * ImplementedSoftwareElements and IntegratedSoftware are not listed here because
+ * they are projections of GitHub implementation/integration evidence, not Issues.
  */
-const artifact = (
-  key,
-  stage,
-  artifactType,
-  filename,
-  name,
-  titlePrefix,
-  artifactData,
-  sections = [],
-) => ({
-  key,
-  stage,
-  artifactType,
-  filename,
-  name,
-  titlePrefix,
-  artifactData,
-  sections,
-});
-
-export const standardGitHubArtifactIssueTemplates = [
-  artifact(
-    "stakeholderRequirements",
-    "要求定義",
-    "stakeholder-requirements-specification",
-    "spiral-stakeholder-requirements-specification.md",
-    "Spiral: Stakeholder Requirements Specification",
-    "[StRS]",
-    {
+export const standardGitHubArtifactIssueMappings = [
+  {
+    key: "stakeholderRequirements",
+    stage: "要求定義",
+    artifactType: "stakeholder-requirements-specification",
+    filename: "spiral-stakeholder-requirements-specification.md",
+    name: "Spiral: Stakeholder Requirements Specification",
+    titlePrefix: "[StRS]",
+    template: true,
+    artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
       stakeholders: [],
@@ -49,15 +28,16 @@ export const standardGitHubArtifactIssueTemplates = [
       scenarios: [],
       unresolvedItems: [],
     },
-  ),
-  artifact(
-    "systemRequirements",
-    "システム要件定義",
-    "system-requirements-specification",
-    "spiral-system-requirements-specification.md",
-    "Spiral: System Requirements Specification",
-    "[SyRS]",
-    {
+  },
+  {
+    key: "systemRequirements",
+    stage: "システム要件定義",
+    artifactType: "system-requirements-specification",
+    filename: "spiral-system-requirements-specification.md",
+    name: "Spiral: System Requirements Specification",
+    titlePrefix: "[SyRS]",
+    template: true,
+    artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
       purpose: "",
@@ -68,15 +48,16 @@ export const standardGitHubArtifactIssueTemplates = [
       dependencies: [],
       unresolvedItems: [],
     },
-  ),
-  artifact(
-    "systemArchitectureDescription",
-    "システム要件定義",
-    "system-architecture-description",
-    "spiral-system-architecture-description.md",
-    "Spiral: System Architecture Description",
-    "[System Architecture Description]",
-    {
+  },
+  {
+    key: "systemArchitectureDescription",
+    stage: "システム要件定義",
+    artifactType: "system-architecture-description",
+    filename: "spiral-system-architecture-description.md",
+    name: "Spiral: System Architecture Description",
+    titlePrefix: "[System Architecture Description]",
+    template: true,
+    artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
       boundary: "",
@@ -86,15 +67,16 @@ export const standardGitHubArtifactIssueTemplates = [
       requirementAllocations: [],
       decisions: [],
     },
-  ),
-  artifact(
-    "softwareRequirements",
-    "ソフトウェア要件定義",
-    "software-requirements-specification",
-    "spiral-software-requirements-specification.md",
-    "Spiral: Software Requirements Specification",
-    "[SRS]",
-    {
+  },
+  {
+    key: "softwareRequirements",
+    stage: "ソフトウェア要件定義",
+    artifactType: "software-requirements-specification",
+    filename: "spiral-software-requirements-specification.md",
+    name: "Spiral: Software Requirements Specification",
+    titlePrefix: "[SRS]",
+    template: true,
+    artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
       purpose: "",
@@ -102,15 +84,17 @@ export const standardGitHubArtifactIssueTemplates = [
       requirements: [],
       unresolvedItems: [],
     },
-  ),
-  artifact(
-    "softwareArchitectureDescription",
-    "ソフトウェア要件定義",
-    "software-architecture-description",
-    "spiral-software-architecture-description.md",
-    "Spiral: Software Architecture Description",
-    "[Software Architecture Description]",
-    {
+  },
+  {
+    key: "softwareArchitectureDescription",
+    stage: "ソフトウェア要件定義",
+    artifactType: "software-architecture-description",
+    filename: "spiral-software-architecture-description.md",
+    name: "Spiral: Software Architecture Description",
+    titlePrefix: "[Software Architecture Description]",
+    template: true,
+    sections: ["## Dependency Graph"],
+    artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
       elements: [],
@@ -119,16 +103,16 @@ export const standardGitHubArtifactIssueTemplates = [
       requirementAllocations: [],
       decisions: [],
     },
-    ["## Dependency Graph"],
-  ),
-  artifact(
-    "softwareElementDesign",
-    "実装",
-    "software-element-design",
-    "spiral-software-element-design.md",
-    "Spiral: Software Element Design",
-    "[Software Element Design]",
-    {
+  },
+  {
+    key: "softwareElementDesign",
+    stage: "実装",
+    artifactType: "software-element-design",
+    filename: "spiral-software-element-design.md",
+    name: "Spiral: Software Element Design",
+    titlePrefix: "[Software Element Design]",
+    template: true,
+    artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
       architectureElement: {
@@ -142,97 +126,47 @@ export const standardGitHubArtifactIssueTemplates = [
       rationales: [],
       unresolvedDecisions: [],
     },
-  ),
-  artifact(
-    "implementedSoftwareElements",
-    "実装",
-    "implemented-software-elements",
-    "spiral-implemented-software-elements.md",
-    "Spiral: Implemented Software Elements",
-    "[Implemented Software Elements]",
-    {
-      id: "TODO-artifact-id",
-      cycleId: "#TODO-cycle",
-      elements: [],
-    },
-  ),
-  artifact(
-    "integratedSoftware",
-    "統合",
-    "integrated-software",
-    "spiral-integrated-software.md",
-    "Spiral: Integrated Software",
-    "[Integrated Software]",
-    {
-      id: "TODO-artifact-id",
-      cycleId: "#TODO-cycle",
-      elements: [],
-      relationships: [],
-      interfaces: [],
-      artifactReferences: [],
-      evidence: [],
-      unresolvedItems: [],
-    },
-  ),
-  artifact(
-    "verificationResult",
-    "QA",
-    "verification-result",
-    "spiral-verification-result.md",
-    "Spiral: Verification Result",
-    "[Verification]",
-    {
-      id: "TODO-artifact-id",
-      cycleId: "#TODO-cycle",
-      results: [],
-    },
-  ),
-  artifact(
-    "validationResult",
-    "検収",
-    "validation-result",
-    "spiral-validation-result.md",
-    "Spiral: Validation Result",
-    "[Validation]",
-    {
-      id: "TODO-artifact-id",
-      cycleId: "#TODO-cycle",
-      results: [],
-    },
-  ),
-  artifact(
-    "feedbackState",
-    "フィードバック",
-    "feedback-state",
-    "spiral-standard-feedback-state.md",
-    "Spiral: Standard Feedback State",
-    "[Feedback]",
-    {
-      id: "TODO-artifact-id",
-      cycleId: "#TODO-cycle",
-      newInformation: "none",
-      changedInformation: "none",
-      needNextCycle: false,
-    },
-    ["## Next-cycle Decision"],
-  ),
+  },
+  {
+    key: "verificationResult",
+    stage: "QA",
+    artifactType: "verification-result",
+    titlePrefix: "[Verification]",
+    template: false,
+  },
+  {
+    key: "validationResult",
+    stage: "検収",
+    artifactType: "validation-result",
+    titlePrefix: "[Validation]",
+    template: false,
+  },
+  {
+    key: "feedbackState",
+    stage: "フィードバック",
+    artifactType: "feedback-state",
+    titlePrefix: "[Feedback]",
+    template: false,
+    sections: ["## Next-cycle Decision"],
+  },
 ];
 
+export const standardGitHubArtifactIssueMappingsByKey = Object.fromEntries(
+  standardGitHubArtifactIssueMappings.map((mapping) => [mapping.key, mapping]),
+);
+
+export const standardGitHubArtifactIssueTemplates =
+  standardGitHubArtifactIssueMappings.filter((mapping) => mapping.template);
+
 export const standardGitHubArtifactIssueTemplatesByKey = Object.fromEntries(
-  standardGitHubArtifactIssueTemplates.map((template) => [
-    template.key,
-    template,
-  ]),
+  standardGitHubArtifactIssueTemplates.map((template) => [template.key, template]),
 );
 
 /** @param {(typeof standardGitHubArtifactIssueTemplates)[number]} template */
 export const renderStandardGitHubArtifactIssueTemplate = (template) => {
   const id = template.artifactData.id;
   const cycleId = template.artifactData.cycleId;
-  const about = `${template.stage}の${template.name.replace(
-    "Spiral: ",
-    "",
-  )}を記録する`;
+  const about = `${template.stage}の${template.name.replace("Spiral: ", "")}を記録する`;
   return [
     "---",
     `name: ${JSON.stringify(template.name)}`,
@@ -258,7 +192,12 @@ export const renderStandardGitHubArtifactIssueTemplate = (template) => {
     "<!-- Artifact Data内の参照IDと一致する上位Artifact IDを記載してください。 -->",
     "- None",
     "",
-    ...template.sections.flatMap((heading) => [heading, "", "- None", ""]),
+    ...(template.sections ?? []).flatMap((heading) => [
+      heading,
+      "",
+      "- None",
+      "",
+    ]),
     "## Artifact Data",
     "",
     "<!-- TODO値を置換し、JSONを対象Artifactの構造に従って編集してください。 -->",
