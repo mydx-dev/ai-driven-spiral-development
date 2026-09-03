@@ -1,5 +1,24 @@
 // Generated from packages/standard-github/src/IssueTemplates.mjs. Do not edit directly.
-const artifact = (key, stage, artifactType, filename, name, titlePrefix, artifactData, sections = []) => ({
+/**
+ * @param {string} key
+ * @param {string} stage
+ * @param {string} artifactType
+ * @param {string} filename
+ * @param {string} name
+ * @param {string} titlePrefix
+ * @param {Record<string, unknown>} artifactData
+ * @param {string[]} [sections]
+ */
+const artifact = (
+  key,
+  stage,
+  artifactType,
+  filename,
+  name,
+  titlePrefix,
+  artifactData,
+  sections = [],
+) => ({
   key,
   stage,
   artifactType,
@@ -202,6 +221,7 @@ export const standardGitHubArtifactIssueTemplatesByKey = Object.fromEntries(
   standardGitHubArtifactIssueTemplates.map((template) => [template.key, template]),
 );
 
+/** @param {(typeof standardGitHubArtifactIssueTemplates)[number]} template */
 export const renderStandardGitHubArtifactIssueTemplate = (template) => {
   const id = template.artifactData.id;
   const cycleId = template.artifactData.cycleId;
