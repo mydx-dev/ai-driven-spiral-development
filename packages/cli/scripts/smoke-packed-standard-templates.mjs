@@ -12,6 +12,16 @@ import { standardGitHubArtifactIssueTemplates } from "../src/generated/standard-
 
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const temporaryRoot = mkdtempSync(join(tmpdir(), "spiral-cli-pack-smoke-"));
+const excludedTemplates = [
+  "demand.md",
+  "feature.md",
+  "requirement-allocation.md",
+  "spiral-implemented-software-elements.md",
+  "spiral-integrated-software.md",
+  "spiral-verification-result.md",
+  "spiral-validation-result.md",
+  "spiral-standard-feedback-state.md",
+];
 
 try {
   const pack = spawnSync(
@@ -52,6 +62,11 @@ try {
     throw new Error(`packed CLI init failed:\n${init.stderr || init.stdout}`);
   }
 
+  if (standardGitHubArtifactIssueTemplates.length !== 6) {
+    throw new Error(
+      `Packed CLI expected 6 human-authored templates, got ${standardGitHubArtifactIssueTemplates.length}`,
+    );
+  }
   for (const template of standardGitHubArtifactIssueTemplates) {
     const path = join(target, ".github", "ISSUE_TEMPLATE", template.filename);
     if (!existsSync(path)) {
@@ -69,11 +84,10 @@ try {
     }
   }
 
-  if (existsSync(join(target, ".github", "ISSUE_TEMPLATE", "demand.md"))) {
-    throw new Error("Packed CLI generated legacy demand.md");
-  }
-  if (existsSync(join(target, ".github", "ISSUE_TEMPLATE", "feature.md"))) {
-    throw new Error("Packed CLI generated legacy feature.md");
+  for (const filename of excludedTemplates) {
+    if (existsSync(join(target, ".github", "ISSUE_TEMPLATE", filename))) {
+      throw new Error(`Packed CLI generated excluded template ${filename}`);
+    }
   }
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });
