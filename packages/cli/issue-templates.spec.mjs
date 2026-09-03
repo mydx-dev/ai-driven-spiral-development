@@ -29,7 +29,9 @@ describe("Standard × GitHub Issue Templates", () => {
         const path = join(cwd, ".github/ISSUE_TEMPLATE", template.filename);
         expect(existsSync(path)).toBe(true);
         const content = readFileSync(path, "utf8");
-        expect(content).toBe(renderStandardGitHubArtifactIssueTemplate(template));
+        expect(content).toBe(
+          renderStandardGitHubArtifactIssueTemplate(template),
+        );
         expect(content).toContain(
           `<!-- spiral-artifact-type: ${template.artifactType} -->`,
         );
