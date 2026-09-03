@@ -147,7 +147,13 @@ export class ImplementationGate implements ProcessGate<ImplementedSoftwareElemen
           errors.push(`${prefix}: local check / Quality Guard結果が未確定です`);
         } else {
           const checks = element.checks ?? [];
-          if (!checks.some((check) => check.kind === "local")) {
+          if (
+            !checks.some(
+              (check) =>
+                check.kind === "local" ||
+                (check.kind === undefined && /(unit|local|test)/i.test(check.name)),
+            )
+          ) {
             errors.push(`${prefix}: local check結果がありません`);
           }
           for (const check of checks) {
