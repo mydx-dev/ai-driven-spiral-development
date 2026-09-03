@@ -12,7 +12,7 @@ export type ImplementationCheckKind =
 
 export type ImplementationCheckResult = {
   readonly name: string;
-  readonly kind: ImplementationCheckKind;
+  readonly kind?: ImplementationCheckKind;
   readonly passed: boolean;
   readonly details: string | null;
 };
