@@ -25,7 +25,6 @@ try {
 
   const [{ filename }] = JSON.parse(pack.stdout);
   const archive = join(temporaryRoot, filename);
-  const extracted = join(temporaryRoot, "extracted");
   const untar = spawnSync("tar", ["-xzf", archive, "-C", temporaryRoot], {
     encoding: "utf8",
   });
