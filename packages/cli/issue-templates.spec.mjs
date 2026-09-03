@@ -74,18 +74,18 @@ describe("Standard × GitHub Issue Templates", () => {
   });
 
   it("Verification / Validation / FeedbackはRuntime管理でTemplate対象外と明示する", () => {
-    expect(standardGitHubArtifactIssueMappingsByKey.verificationResult.template).toBe(
-      false,
-    );
-    expect(standardGitHubArtifactIssueMappingsByKey.validationResult.template).toBe(
-      false,
-    );
-    expect(standardGitHubArtifactIssueMappingsByKey.feedbackState.template).toBe(
-      false,
-    );
-    expect(standardGitHubArtifactIssueMappingsByKey.implementedSoftwareElements).toBe(
-      undefined,
-    );
+    expect(
+      standardGitHubArtifactIssueMappingsByKey.verificationResult.template,
+    ).toBe(false);
+    expect(
+      standardGitHubArtifactIssueMappingsByKey.validationResult.template,
+    ).toBe(false);
+    expect(
+      standardGitHubArtifactIssueMappingsByKey.feedbackState.template,
+    ).toBe(false);
+    expect(
+      standardGitHubArtifactIssueMappingsByKey.implementedSoftwareElements,
+    ).toBe(undefined);
     expect(standardGitHubArtifactIssueMappingsByKey.integratedSoftware).toBe(
       undefined,
     );
