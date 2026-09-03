@@ -15,7 +15,8 @@ export class StandardFeedbackState implements StandardArtifact {
   ) {}
 }
 
-const feedbackTemplate = standardGitHubArtifactIssueTemplatesByKey.feedbackState;
+const feedbackTemplate =
+  standardGitHubArtifactIssueTemplatesByKey.feedbackState;
 
 export const feedbackStateIssueCodec: StandardArtifactIssueCodec<StandardFeedbackState> =
   {
