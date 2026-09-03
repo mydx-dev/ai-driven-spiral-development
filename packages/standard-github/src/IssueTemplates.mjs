@@ -189,7 +189,10 @@ export const standardGitHubArtifactIssueTemplates =
   standardGitHubArtifactIssueMappings.filter((mapping) => mapping.template);
 
 export const standardGitHubArtifactIssueTemplatesByKey = Object.fromEntries(
-  standardGitHubArtifactIssueTemplates.map((template) => [template.key, template]),
+  standardGitHubArtifactIssueTemplates.map((template) => [
+    template.key,
+    template,
+  ]),
 );
 
 /** @param {(typeof standardGitHubArtifactIssueTemplates)[number]} template */
