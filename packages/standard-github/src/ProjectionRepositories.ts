@@ -78,7 +78,7 @@ export class GitHubImplementedSoftwareElementsRepository
     const elements = await Promise.all(
       designs.map(async (design) => {
         const response = await this.client.searchPullRequests<SearchIssues>(
-          `\"${design.id}\" in:body`,
+          `"${design.id}" in:body`,
         );
         const pullRequests = await Promise.all(
           response.items
@@ -129,7 +129,9 @@ export class GitHubImplementedSoftwareElementsRepository
       }),
     );
 
-    return [new ImplementedSoftwareElements(implementationId(cycleId), cycleId, elements)];
+    return [
+      new ImplementedSoftwareElements(implementationId(cycleId), cycleId, elements),
+    ];
   }
 }
 
@@ -160,27 +162,36 @@ export class GitHubIntegratedSoftwareRepository
     const architecture = architectures[0];
     const branch = await this.client.request<Branch>(
       "GET",
-      this.client.repositoryPath(`/branches/${encodeURIComponent(repository.default_branch)}`),
+      this.client.repositoryPath(
+        `/branches/${encodeURIComponent(repository.default_branch)}`,
+      ),
     );
     const [checks, runs] = await Promise.all([
       this.client.listCheckRuns<CheckRuns>(branch.commit.sha),
       this.client.listWorkflowRuns<WorkflowRuns>(repository.default_branch),
     ]);
-    const successfulChecks = checks.check_runs.filter((check) => passed(check.conclusion));
+    const successfulChecks = checks.check_runs.filter((check) =>
+      passed(check.conclusion),
+    );
     const successfulRuns = runs.workflow_runs.filter(
       (run) => run.head_sha === branch.commit.sha && passed(run.conclusion),
     );
     const integrationTests = successfulChecks.filter((check) =>
       /(integration|e2e|contract)/i.test(check.name),
     );
-    const buildChecks = successfulChecks.filter((check) => /build/i.test(check.name));
+    const buildChecks = successfulChecks.filter((check) =>
+      /build/i.test(check.name),
+    );
     const evidence = [
-      ...integrationTests.map((check) => `integration-test:${check.name}:success`),
+      ...integrationTests.map(
+        (check) => `integration-test:${check.name}:success`,
+      ),
       ...successfulChecks.map((check) => `ci:${check.name}:success`),
       ...buildChecks.map((check) => `build:${check.name}:success`),
       ...successfulRuns.map((run) => `workflow:${run.name}:success`),
     ];
-    const relationshipEvidence = evidence.length > 0 ? evidence : [`commit:${branch.commit.sha}`];
+    const relationshipEvidence =
+      evidence.length > 0 ? evidence : [`commit:${branch.commit.sha}`];
 
     return [
       new IntegratedSoftware(
@@ -208,8 +219,12 @@ export class GitHubIntegratedSoftwareRepository
         ],
         evidence,
         [
-          ...(integrationTests.length === 0 ? ["integration test evidence not found"] : []),
-          ...(buildChecks.length === 0 ? ["integrated build evidence not found"] : []),
+          ...(integrationTests.length === 0
+            ? ["integration test evidence not found"]
+            : []),
+          ...(buildChecks.length === 0
+            ? ["integrated build evidence not found"]
+            : []),
         ],
       ),
     ];
