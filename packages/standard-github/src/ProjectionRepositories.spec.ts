@@ -182,59 +182,65 @@ describe("GitHubImplementedSoftwareElementsRepository", () => {
 });
 
 describe("GitHubIntegratedSoftwareRepository", () => {
-  it("明示的に対応付けられたintegration evidenceだけをrelationship/interfaceへ射影する", async () => {
-    const repository = createIntegratedRepository([
-      "integration relationship:application->infra:dependency",
-      "contract interface:application-port",
-      "build",
-    ]);
+  it(
+    "明示的に対応付けられたintegration evidenceだけをrelationship/interfaceへ射影する",
+    async () => {
+      const repository = createIntegratedRepository([
+        "integration relationship:application->infra:dependency",
+        "contract interface:application-port",
+        "build",
+      ]);
 
-    const [artifact] = await repository.findByCycle("#1");
+      const [artifact] = await repository.findByCycle("#1");
 
-    expect(artifact.artifactReferences).toEqual(
-      expect.arrayContaining(["branch:main@main-sha", "workflow-run:20"]),
-    );
-    expect(artifact.evidence).toEqual(
-      expect.arrayContaining([
-        "integration-test:integration relationship:application->infra:dependency:success",
-        "integration-test:contract interface:application-port:success",
-        "build:build:success",
-        "workflow:CI:success",
-      ]),
-    );
-    expect(artifact.relationships).toEqual([
-      expect.objectContaining({
-        sourceElementId: "application",
-        targetElementId: "infra",
-        type: "dependency",
-        evidence: [
+      expect(artifact.artifactReferences).toEqual(
+        expect.arrayContaining(["branch:main@main-sha", "workflow-run:20"]),
+      );
+      expect(artifact.evidence).toEqual(
+        expect.arrayContaining([
           "integration-test:integration relationship:application->infra:dependency:success",
-        ],
-      }),
-    ]);
-    expect(artifact.interfaces).toEqual([
-      expect.objectContaining({
-        interfaceId: "application-port",
-        evidence: [
           "integration-test:contract interface:application-port:success",
-        ],
-      }),
-    ]);
-    expect(artifact.unresolvedItems).toEqual([]);
-  });
+          "build:build:success",
+          "workflow:CI:success",
+        ]),
+      );
+      expect(artifact.relationships).toEqual([
+        expect.objectContaining({
+          sourceElementId: "application",
+          targetElementId: "infra",
+          type: "dependency",
+          evidence: [
+            "integration-test:integration relationship:application->infra:dependency:success",
+          ],
+        }),
+      ]);
+      expect(artifact.interfaces).toEqual([
+        expect.objectContaining({
+          interfaceId: "application-port",
+          evidence: [
+            "integration-test:contract interface:application-port:success",
+          ],
+        }),
+      ]);
+      expect(artifact.unresolvedItems).toEqual([]);
+    },
+  );
 
-  it("genericなintegration testを全relationship/interfaceのevidenceへ流用しない", async () => {
-    const repository = createIntegratedRepository(["integration test", "build"]);
+  it(
+    "genericなintegration testを全relationship/interfaceのevidenceへ流用しない",
+    async () => {
+      const repository = createIntegratedRepository(["integration test", "build"]);
 
-    const [artifact] = await repository.findByCycle("#1");
+      const [artifact] = await repository.findByCycle("#1");
 
-    expect(artifact.relationships).toEqual([]);
-    expect(artifact.interfaces).toEqual([]);
-    expect(artifact.unresolvedItems).toEqual(
-      expect.arrayContaining([
-        "relationship integration evidence not found: application -> infra (dependency)",
-        "interface integration evidence not found: application-port",
-      ]),
-    );
-  });
+      expect(artifact.relationships).toEqual([]);
+      expect(artifact.interfaces).toEqual([]);
+      expect(artifact.unresolvedItems).toEqual(
+        expect.arrayContaining([
+          "relationship integration evidence not found: application -> infra (dependency)",
+          "interface integration evidence not found: application-port",
+        ]),
+      );
+    },
+  );
 });

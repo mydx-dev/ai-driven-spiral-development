@@ -58,9 +58,7 @@ const checkKind = (name: string) => {
   return "ci" as const;
 };
 
-export class GitHubImplementedSoftwareElementsRepository
-  implements ImplementedSoftwareElementsRepository
-{
+export class GitHubImplementedSoftwareElementsRepository implements ImplementedSoftwareElementsRepository {
   constructor(
     public readonly client: GitHubClient,
     public readonly designs: SoftwareElementDesignRepository,
@@ -146,9 +144,7 @@ export class GitHubImplementedSoftwareElementsRepository
   }
 }
 
-export class GitHubIntegratedSoftwareRepository
-  implements IntegratedSoftwareRepository
-{
+export class GitHubIntegratedSoftwareRepository implements IntegratedSoftwareRepository {
   constructor(
     public readonly client: GitHubClient,
     public readonly implementations: ImplementedSoftwareElementsRepository,
