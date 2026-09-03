@@ -16,6 +16,7 @@ export const standardGitHubArtifactIssueMappings = [
     name: "Spiral: Stakeholder Requirements Specification",
     titlePrefix: "[StRS]",
     template: true,
+    sections: [],
     artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
@@ -38,6 +39,7 @@ export const standardGitHubArtifactIssueMappings = [
     name: "Spiral: System Requirements Specification",
     titlePrefix: "[SyRS]",
     template: true,
+    sections: [],
     artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
@@ -58,6 +60,7 @@ export const standardGitHubArtifactIssueMappings = [
     name: "Spiral: System Architecture Description",
     titlePrefix: "[System Architecture Description]",
     template: true,
+    sections: [],
     artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
@@ -77,6 +80,7 @@ export const standardGitHubArtifactIssueMappings = [
     name: "Spiral: Software Requirements Specification",
     titlePrefix: "[SRS]",
     template: true,
+    sections: [],
     artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
@@ -113,6 +117,7 @@ export const standardGitHubArtifactIssueMappings = [
     name: "Spiral: Software Element Design",
     titlePrefix: "[Software Element Design]",
     template: true,
+    sections: [],
     artifactData: {
       id: "TODO-artifact-id",
       cycleId: "#TODO-cycle",
@@ -132,23 +137,48 @@ export const standardGitHubArtifactIssueMappings = [
     key: "verificationResult",
     stage: "QA",
     artifactType: "verification-result",
+    filename: "spiral-verification-result.md",
+    name: "Spiral: Verification Result",
     titlePrefix: "[Verification]",
     template: false,
+    sections: [],
+    artifactData: {
+      id: "TODO-artifact-id",
+      cycleId: "#TODO-cycle",
+      results: [],
+    },
   },
   {
     key: "validationResult",
     stage: "検収",
     artifactType: "validation-result",
+    filename: "spiral-validation-result.md",
+    name: "Spiral: Validation Result",
     titlePrefix: "[Validation]",
     template: false,
+    sections: [],
+    artifactData: {
+      id: "TODO-artifact-id",
+      cycleId: "#TODO-cycle",
+      results: [],
+    },
   },
   {
     key: "feedbackState",
     stage: "フィードバック",
     artifactType: "feedback-state",
+    filename: "spiral-standard-feedback-state.md",
+    name: "Spiral: Standard Feedback State",
     titlePrefix: "[Feedback]",
     template: false,
     sections: ["## Next-cycle Decision"],
+    artifactData: {
+      id: "TODO-artifact-id",
+      cycleId: "#TODO-cycle",
+      newInformation: "none",
+      changedInformation: "none",
+      needNextCycle: false,
+    },
   },
 ];
 
@@ -193,12 +223,7 @@ export const renderStandardGitHubArtifactIssueTemplate = (template) => {
     "<!-- Artifact Data内の参照IDと一致する上位Artifact IDを記載してください。 -->",
     "- None",
     "",
-    ...(template.sections ?? []).flatMap((heading) => [
-      heading,
-      "",
-      "- None",
-      "",
-    ]),
+    ...template.sections.flatMap((heading) => [heading, "", "- None", ""]),
     "## Artifact Data",
     "",
     "<!-- TODO値を置換し、JSONを対象Artifactの構造に従って編集してください。 -->",
