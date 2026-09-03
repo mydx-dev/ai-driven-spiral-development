@@ -1,5 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import {
+  renderStandardGitHubArtifactIssueTemplate,
+  standardGitHubArtifactIssueTemplates,
+} from "./generated/standard-github-issue-templates.mjs";
 import { resolveComposition } from "./registry.mjs";
 import {
   generatedFileEquivalent,
@@ -119,6 +123,9 @@ jobs:
             - run: node scripts/spiral/main.mjs
 `;
 
+const genericArtifactTemplate =
+  '---\nname: Spiral Artifact\nabout: Spiral Development artifactを記録する\ntitle: ""\nlabels: ""\nassignees: ""\n---\n\n## Artifact\n\n<!-- Artifact情報を記載してください。 -->\n\n## Traceability\n\n- Cycle: \n- Process: \n- Parent Artifact: \n';
+
 const generatedFiles = (composition) => {
   const config = `export default ${JSON.stringify(
     {
@@ -160,10 +167,15 @@ const generatedFiles = (composition) => {
   }
 
   if (composition.github) {
-    files[".github/ISSUE_TEMPLATE/spiral-artifact.md"] =
-      '---\nname: Spiral Artifact\nabout: Spiral Development artifactを記録する\ntitle: ""\nlabels: ""\nassignees: ""\n---\n\n## Artifact\n\n<!-- 8工程の対象Artifact情報を記載してください。GitHub固有mappingは @mydx-dev/spiral-standard-github の定義に従います。 -->\n\n## Traceability\n\n- Cycle: \n- Process: \n- Parent Artifact: \n';
     if (composition.binding === "@mydx-dev/spiral-standard-github") {
+      for (const template of standardGitHubArtifactIssueTemplates) {
+        files[`.github/ISSUE_TEMPLATE/${template.filename}`] =
+          renderStandardGitHubArtifactIssueTemplate(template);
+      }
       files[".github/workflows/spiral-circulate.yml"] = circulateWorkflow;
+    } else {
+      files[".github/ISSUE_TEMPLATE/spiral-artifact.md"] =
+        genericArtifactTemplate;
     }
     files[".github/pull_request_template.md"] =
       "## Spiral Traceability\n\n- Cycle: \n- Artifact / Issue: \n\n## Verification\n\n- [ ] 対応するArtifactとの整合を確認した\n- [ ] 必要なQuality / CIを確認した\n";

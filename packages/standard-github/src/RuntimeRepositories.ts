@@ -3,19 +3,7 @@ import type {
   ArtifactRepository,
   CycleRepository,
 } from "@mydx-dev/ai-driven-spiral-development";
-import {
-  ImplementedSoftwareElements,
-  IntegratedSoftware,
-  SoftwareArchitectureDescription,
-  SoftwareElementDesign,
-  SoftwareRequirementsSpecification,
-  StakeholderRequirementsSpecification,
-  StandardCycle,
-  SystemArchitectureDescription,
-  SystemRequirementsSpecification,
-  ValidationResult,
-  VerificationResult,
-} from "@mydx-dev/spiral-standard";
+import { StandardCycle } from "@mydx-dev/spiral-standard";
 import {
   GitHubApiError,
   GitHubIssueId,
@@ -25,23 +13,7 @@ import {
   StandardCycleIssue,
   StandardCycleIssueTemplate,
 } from "./IssueMappings.js";
-import {
-  implementedSoftwareElementsIssueCodec,
-  integratedSoftwareIssueCodec,
-  softwareArchitectureDescriptionIssueCodec,
-  softwareElementDesignIssueCodec,
-  softwareRequirementsIssueCodec,
-  stakeholderRequirementsIssueCodec,
-  systemArchitectureDescriptionIssueCodec,
-  systemRequirementsIssueCodec,
-  validationResultIssueCodec,
-  verificationResultIssueCodec,
-} from "./StandardArtifactIssueCodecs.js";
-import { StandardArtifactIssueRepository } from "./StandardArtifactIssueRepository.js";
-import {
-  feedbackStateIssueCodec,
-  StandardFeedbackState,
-} from "./StandardFeedbackState.js";
+import type { StandardFeedbackState } from "./StandardFeedbackState.js";
 
 type Issue = {
   readonly number: number;
@@ -50,6 +22,10 @@ type Issue = {
 };
 type SearchIssues = { readonly items: Issue[] };
 
+/**
+ * Process composition adapter only. Artifact-specific persistence is implemented
+ * by the repositories exposed from ArtifactRepositories / ProjectionRepositories.
+ */
 export class CompositeArtifactRepository implements ArtifactRepository<Artifact> {
   constructor(
     public readonly repositories: readonly ArtifactRepository<Artifact>[],
@@ -100,8 +76,9 @@ export class StandardRuntimeCycleRepository implements CycleRepository<StandardC
     try {
       await this.client.getIssue<Issue>(issueNumber);
     } catch (error) {
-      if (error instanceof GitHubApiError && error.status === 404)
+      if (error instanceof GitHubApiError && error.status === 404) {
         return undefined;
+      }
       throw error;
     }
 
@@ -201,80 +178,3 @@ export class StandardRuntimeCycleRepository implements CycleRepository<StandardC
     });
   }
 }
-
-export const createStandardRuntimeRepositories = (client: GitHubClient) => {
-  const stakeholderRequirementsRepository =
-    new StandardArtifactIssueRepository<StakeholderRequirementsSpecification>(
-      client,
-      stakeholderRequirementsIssueCodec,
-    );
-  const systemRequirementsRepository =
-    new StandardArtifactIssueRepository<SystemRequirementsSpecification>(
-      client,
-      systemRequirementsIssueCodec,
-    );
-  const systemArchitectureDescriptionRepository =
-    new StandardArtifactIssueRepository<SystemArchitectureDescription>(
-      client,
-      systemArchitectureDescriptionIssueCodec,
-    );
-  const softwareRequirementsRepository =
-    new StandardArtifactIssueRepository<SoftwareRequirementsSpecification>(
-      client,
-      softwareRequirementsIssueCodec,
-    );
-  const softwareArchitectureDescriptionRepository =
-    new StandardArtifactIssueRepository<SoftwareArchitectureDescription>(
-      client,
-      softwareArchitectureDescriptionIssueCodec,
-    );
-  const softwareElementDesignRepository =
-    new StandardArtifactIssueRepository<SoftwareElementDesign>(
-      client,
-      softwareElementDesignIssueCodec,
-    );
-  const implementedSoftwareElementsRepository =
-    new StandardArtifactIssueRepository<ImplementedSoftwareElements>(
-      client,
-      implementedSoftwareElementsIssueCodec,
-    );
-  const integratedSoftwareRepository =
-    new StandardArtifactIssueRepository<IntegratedSoftware>(
-      client,
-      integratedSoftwareIssueCodec,
-    );
-  const verificationResultRepository =
-    new StandardArtifactIssueRepository<VerificationResult>(
-      client,
-      verificationResultIssueCodec,
-    );
-  const validationResultRepository =
-    new StandardArtifactIssueRepository<ValidationResult>(
-      client,
-      validationResultIssueCodec,
-    );
-  const feedbackStateRepository =
-    new StandardArtifactIssueRepository<StandardFeedbackState>(
-      client,
-      feedbackStateIssueCodec,
-    );
-  const cycleRepository = new StandardRuntimeCycleRepository(
-    client,
-    feedbackStateRepository,
-  );
-
-  return {
-    stakeholderRequirementsRepository,
-    systemRequirementsRepository,
-    systemArchitectureDescriptionRepository,
-    softwareRequirementsRepository,
-    softwareArchitectureDescriptionRepository,
-    softwareElementDesignRepository,
-    implementedSoftwareElementsRepository,
-    integratedSoftwareRepository,
-    verificationResultRepository,
-    validationResultRepository,
-    feedbackStateRepository,
-    cycleRepository,
-  };
-};

@@ -234,4 +234,32 @@ describe("IntegrationGate", () => {
       );
     }
   });
+
+  it("integration test evidenceがなければQA可能とみなさない", () => {
+    const integration = createIntegration();
+    const invalid = new IntegratedSoftware(
+      integration.id,
+      integration.cycleId,
+      integration.elements,
+      integration.relationships,
+      integration.interfaces,
+      integration.artifactReferences,
+      ["CI passed"],
+      integration.unresolvedItems,
+    );
+    const result = new IntegrationGate(
+      [createArchitecture()],
+      createDesigns(),
+      [createImplementation()],
+    ).verifyStructuralComplete([invalid]);
+
+    expect(result.passed).toBe(false);
+    if (!result.passed) {
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("integration test evidenceがありません"),
+        ]),
+      );
+    }
+  });
 });

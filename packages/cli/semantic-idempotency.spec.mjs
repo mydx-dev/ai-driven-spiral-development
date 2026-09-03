@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { initRepository } from "./src/init.mjs";
+import { standardGitHubArtifactIssueTemplates } from "./src/generated/standard-github-issue-templates.mjs";
 
 const packageRoot = dirname(fileURLToPath(import.meta.url));
 const prettier = join(packageRoot, "../../node_modules/.bin/prettier");
@@ -17,7 +18,9 @@ const generatedPaths = [
   "quality.config.mjs",
   "scripts/spiral/main.mjs",
   "scripts/spiral/execution-channel.mjs",
-  ".github/ISSUE_TEMPLATE/spiral-artifact.md",
+  ...standardGitHubArtifactIssueTemplates.map(
+    (template) => `.github/ISSUE_TEMPLATE/${template.filename}`,
+  ),
   ".github/pull_request_template.md",
   ".github/workflows/spiral.yml",
   ".github/workflows/spiral-circulate.yml",

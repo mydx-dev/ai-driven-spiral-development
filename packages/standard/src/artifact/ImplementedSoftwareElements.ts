@@ -4,8 +4,12 @@ export type SoftwareElementDesignReference = {
   readonly designId: string;
 };
 
+export type ImplementationCheckKind =
+  "local" | "quality-guard" | "build" | "ci";
+
 export type ImplementationCheckResult = {
   readonly name: string;
+  readonly kind?: ImplementationCheckKind;
   readonly passed: boolean;
   readonly details: string | null;
 };

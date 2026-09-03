@@ -259,6 +259,11 @@ export class IntegrationGate implements ProcessGate<IntegratedSoftware> {
       integration.evidence.some((item) => !item.trim())
     ) {
       errors.push(`${integration.id}: integration evidenceが不正です`);
+    } else if (
+      implementedElementKeys.size > 0 &&
+      !(integration.evidence ?? []).some((item) => /integration/i.test(item))
+    ) {
+      errors.push(`${integration.id}: integration test evidenceがありません`);
     }
 
     if (integration.unresolvedItems === undefined) {

@@ -72,7 +72,15 @@ const createImplementation = () =>
       id: "implemented-application",
       elementDesign: { designId: "application-design" },
       artifactReferences: ["src/application.ts"],
-      checks: [{ name: "local test", passed: true, details: null }],
+      checks: [
+        { name: "unit test", kind: "local", passed: true, details: null },
+        {
+          name: "complexity",
+          kind: "quality-guard",
+          passed: true,
+          details: null,
+        },
+      ],
       knownConstraints: [],
       unimplementedItems: [],
     },
@@ -80,7 +88,15 @@ const createImplementation = () =>
       id: "implemented-repository",
       elementDesign: { designId: "repository-design" },
       artifactReferences: ["src/repository.ts"],
-      checks: [{ name: "typecheck", passed: true, details: null }],
+      checks: [
+        { name: "unit test", kind: "local", passed: true, details: null },
+        {
+          name: "typecheck",
+          kind: "quality-guard",
+          passed: true,
+          details: null,
+        },
+      ],
       knownConstraints: [],
       unimplementedItems: [],
     },
@@ -101,7 +117,6 @@ describe("ImplementationGate", () => {
       [createArchitecture()],
       [createDesigns()[0]],
     ).verifyStructuralComplete([createImplementation()]);
-
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
@@ -129,7 +144,6 @@ describe("ImplementationGate", () => {
       [createArchitecture()],
       [invalid, designs[1]],
     ).verifyStructuralComplete([createImplementation()]);
-
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
@@ -157,7 +171,6 @@ describe("ImplementationGate", () => {
       [createArchitecture()],
       createDesigns(),
     ).verifyStructuralComplete([invalid]);
-
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
@@ -168,27 +181,36 @@ describe("ImplementationGate", () => {
     }
   });
 
-  it("project-defined Quality Guard結果を注入して失敗をGateへ反映できる", () => {
+  it("project-defined Quality Guard失敗をDomain Artifactから評価する", () => {
+    const implementation = createImplementation();
+    const invalid = new ImplementedSoftwareElements(
+      implementation.id,
+      implementation.cycleId,
+      [
+        {
+          ...implementation.elements![0],
+          checks: [
+            { name: "unit test", kind: "local", passed: true, details: null },
+            {
+              name: "complexity",
+              kind: "quality-guard",
+              passed: false,
+              details: "threshold exceeded",
+            },
+          ],
+        },
+        implementation.elements![1],
+      ],
+    );
     const result = new ImplementationGate(
       [createArchitecture()],
       createDesigns(),
-      [
-        {
-          designId: "application-design",
-          name: "complexity",
-          passed: false,
-          details: "threshold exceeded",
-        },
-      ],
-    ).verifyStructuralComplete([createImplementation()]);
-
+    ).verifyStructuralComplete([invalid]);
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringContaining(
-            "project-defined Quality Guardが成功していません",
-          ),
+          expect.stringContaining("project-defined Quality Guard"),
         ]),
       );
     }
@@ -200,10 +222,7 @@ describe("ImplementationGate", () => {
       implementation.id,
       implementation.cycleId,
       [
-        {
-          ...implementation.elements![0],
-          unimplementedItems: ["TODO"],
-        },
+        { ...implementation.elements![0], unimplementedItems: ["TODO"] },
         implementation.elements![1],
       ],
     );
@@ -211,7 +230,6 @@ describe("ImplementationGate", () => {
       [createArchitecture()],
       createDesigns(),
     ).verifyStructuralComplete([invalid]);
-
     expect(result.passed).toBe(false);
     if (!result.passed) {
       expect(result.errors).toEqual(

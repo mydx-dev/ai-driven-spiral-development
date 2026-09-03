@@ -214,17 +214,60 @@ const normalizeJavaScriptTokens = (tokens) => {
   return normalized;
 };
 
+const normalizeFrontMatterValue = (value) => {
+  const trimmed = value.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return trimmed;
+    }
+  }
+  if (trimmed.startsWith("'") && trimmed.endsWith("'")) {
+    return trimmed.slice(1, -1).replace(/''/g, "'");
+  }
+  return trimmed;
+};
+
 const normalizeMarkdown = (value) => {
   const lines = normalizeText(value).split("\n");
-  if (lines[0] !== "---") return lines.join("\n");
-  const frontMatterEnd = lines.indexOf("---", 1);
-  if (frontMatterEnd < 0) return lines.join("\n");
-
-  for (let index = 1; index < frontMatterEnd; index += 1) {
-    lines[index] = lines[index].replace(/^(\s*[^:]+:\s*)'([^']*)'$/, '$1"$2"');
+  if (lines[0] === "---") {
+    const frontMatterEnd = lines.indexOf("---", 1);
+    if (frontMatterEnd >= 0) {
+      for (let index = 1; index < frontMatterEnd; index += 1) {
+        const match = lines[index].match(/^(\s*[^:]+):\s*(.*)$/);
+        if (match) {
+          lines[index] = `${match[1]}:${JSON.stringify(
+            normalizeFrontMatterValue(match[2]),
+          )}`;
+        }
+      }
+    }
   }
 
-  return lines.join("\n");
+  const normalized = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    if (lines[index].trim() === "```json") {
+      const close = lines.findIndex(
+        (line, candidate) => candidate > index && line.trim() === "```",
+      );
+      if (close >= 0) {
+        const json = lines.slice(index + 1, close).join("\n");
+        try {
+          normalized.push("```json", JSON.stringify(JSON.parse(json)), "```");
+          index = close;
+          continue;
+        } catch {
+          // Preserve an invalid JSON block so a semantic change remains visible.
+        }
+      }
+    }
+
+    if (lines[index] === "") continue;
+    normalized.push(lines[index]);
+  }
+
+  return normalized.join("\n");
 };
 
 const normalizeYaml = (value) => {

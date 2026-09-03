@@ -23,6 +23,7 @@ export * from "./gate/ValidationGate.js";
 export * from "./gate/VerificationGate.js";
 
 export * from "./orchestration/SoftwareElementExecutionPlan.js";
+export * from "./repository/Repositories.js";
 
 // Deprecated migration aliases. These are not Standard Process definitions.
 /** @deprecated Use the 8-stage Standard Artifact API. */

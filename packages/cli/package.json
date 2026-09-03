@@ -17,7 +17,7 @@
     "./registry": "./src/registry.mjs"
   },
   "scripts": {
-    "test": "node scripts/check-standard-github-issue-templates.mjs && ../../node_modules/.bin/vitest run *.spec.mjs",
+    "test": "node scripts/check-standard-github-issue-templates.mjs && node scripts/smoke-packed-standard-templates.mjs && ../../node_modules/.bin/vitest run *.spec.mjs",
     "typecheck": "../../node_modules/.bin/tsc --noEmit -p tsconfig.json",
     "build": "node scripts/check-standard-github-issue-templates.mjs && ../../node_modules/.bin/tsc --noEmit -p tsconfig.json"
   },
