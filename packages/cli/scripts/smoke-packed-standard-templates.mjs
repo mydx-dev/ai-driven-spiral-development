@@ -1,10 +1,5 @@
 import { spawnSync } from "node:child_process";
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-} from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -74,9 +69,7 @@ try {
     }
     const body = readFileSync(path, "utf8");
     if (
-      !body.includes(
-        `<!-- spiral-artifact-type: ${template.artifactType} -->`,
-      )
+      !body.includes(`<!-- spiral-artifact-type: ${template.artifactType} -->`)
     ) {
       throw new Error(
         `Packed CLI generated an invalid Artifact type for ${template.filename}`,
