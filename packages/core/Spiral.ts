@@ -25,10 +25,10 @@ export class Spiral<TCycleClass extends CycleClass<Cycle, string, never[]>> {
 
   public async circulate(
     event: SemanticCompletionEvent<TCycleClass>,
-  ): Promise<void> {
+  ): Promise<CycleProceedResult<InstanceType<TCycleClass>> | undefined> {
     if (event.isCycleCompletion()) {
       await this.transition(event.cycleId);
-      return;
+      return undefined;
     }
 
     const cycle = await this.cycleRepository.find(event.cycleId);
@@ -53,16 +53,17 @@ export class Spiral<TCycleClass extends CycleClass<Cycle, string, never[]>> {
       await this.cycleRepository.save(fallbackCycle);
       await result.retry(result.gateResult.errors);
 
-      return;
+      return result;
     }
 
     await result.dispatch();
 
     if (!result.completed) {
-      return;
+      return result;
     }
 
     await this.transition(result.cycle.id);
+    return result;
   }
 
   public async transition(cycleId: string) {
