@@ -34,7 +34,7 @@
     "@mydx-dev/spiral-github": "file:../github",
     "@mydx-dev/spiral-standard": "file:../standard",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.1.1"
   },
   "license": "ISC",
   "publishConfig": {
