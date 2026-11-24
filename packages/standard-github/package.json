@@ -33,7 +33,7 @@
     "@mydx-dev/ai-driven-spiral-development": "file:../..",
     "@mydx-dev/spiral-github": "file:../github",
     "@mydx-dev/spiral-standard": "file:../standard",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   },
   "license": "ISC",
