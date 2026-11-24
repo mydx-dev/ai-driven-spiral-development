@@ -26,7 +26,7 @@
     "@mydx-dev/ai-driven-spiral-development": ">=2 <3"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.6.6",
     "@mydx-dev/ai-driven-spiral-development": "file:../..",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
